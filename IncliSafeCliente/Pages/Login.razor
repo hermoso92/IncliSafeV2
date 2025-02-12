@@ -1,0 +1,41 @@
+
+@page "/login"
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Iniciar Sesión</MudText>
+        <MudTextField @bind-Value="email" Label="Email" Class="mb-4"/>
+        <MudTextField @bind-Value="password" Label="Contraseña" InputType="InputType.Password" Class="mb-4"/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync" Class="mb-2">
+            Ingresar
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string email = "";
+    private string password = "";
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", new { Email = email, Password = password });
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("Credenciales inválidas", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}
