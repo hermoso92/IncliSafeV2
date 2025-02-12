@@ -75,3 +75,4 @@
 /home/runner/workspace/BlazorApp/obj/Debug/net5.0/BlazorApp.dll
 /home/runner/workspace/BlazorApp/obj/Debug/net5.0/ref/BlazorApp.dll
 /home/runner/workspace/BlazorApp/obj/Debug/net5.0/BlazorApp.pdb
+/home/runner/workspace/BlazorApp/obj/Debug/net5.0/BlazorApp.csproj.GenerateResource.cache
