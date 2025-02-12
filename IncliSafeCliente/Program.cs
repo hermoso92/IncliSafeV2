@@ -10,7 +10,7 @@ using IncliSafe.Cliente.Services;
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://0.0.0.0:5000") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://0.0.0.0:80") });
 builder.Services.AddScoped<HttpService>();
 builder.Services.AddMudServices();
 
