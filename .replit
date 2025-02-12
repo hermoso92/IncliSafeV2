@@ -21,7 +21,7 @@ pattern = "**/{*.cs,*.razor}"
   start = ["omnisharp", "--languageserver"]
 
 [workflows]
-runButton = "Run API"
+runButton = "Run Full Stack"
 
 [[workflows.workflow]]
 name = "Run API"
@@ -33,6 +33,14 @@ args = "dotnet run --project IncliSafeApi"
 
 [[workflows.workflow]]
 name = "Run Api"
+author = 38606645
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "dotnet run --project IncliSafeApi"
+
+[[workflows.workflow]]
+name = "Run Full Stack"
 author = 38606645
 
 [[workflows.workflow.tasks]]
