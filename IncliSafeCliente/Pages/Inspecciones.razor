@@ -1,24 +1,37 @@
+
 @page "/inspecciones"
-@using IncliSafe.Api.Models
 @inject HttpClient Http
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h3" GutterBottom="true">Inspecciones</MudText>
+
+    <MudButton Color="Color.Primary" OnClick="@(() => OpenDialog(new()))" Class="mb-4">
+        Nueva Inspección
+    </MudButton>
 
     <MudTable Items="@inspecciones" Dense="true" Hover="true" Loading="@loading">
         <HeaderContent>
             <MudTh>Fecha</MudTh>
             <MudTh>Vehículo</MudTh>
-            <MudTh>Usuario</MudTh>
             <MudTh>Estado</MudTh>
             <MudTh>Observaciones</MudTh>
+            <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd>@context.Fecha.ToShortDateString()</MudTd>
             <MudTd>@(context.Vehiculo?.Placa ?? "-")</MudTd>
-            <MudTd>@(context.Usuario?.Nombre ?? "-")</MudTd>
             <MudTd>@context.Estado</MudTd>
             <MudTd>@context.Observaciones</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                             Color="Color.Primary" 
+                             OnClick="@(() => OpenDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                             Color="Color.Error" 
+                             OnClick="@(() => DeleteInspeccion(context))" />
+            </MudTd>
         </RowTemplate>
     </MudTable>
 </MudContainer>
@@ -29,26 +42,62 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadInspecciones();
+    }
+
+    private async Task LoadInspecciones()
+    {
         try
         {
             inspecciones = await Http.GetFromJsonAsync<List<Inspeccion>>("api/inspecciones") ?? new();
         }
-        catch
+        catch (Exception ex)
         {
-            // Manejar error
+            Snackbar.Add("Error al cargar inspecciones: " + ex.Message, Severity.Error);
         }
         finally
         {
             loading = false;
         }
     }
-    public class Inspeccion
+
+    private async Task OpenDialog(Inspeccion inspeccion)
     {
-        public int Id { get; set; }
-        public Vehiculo Vehiculo { get; set; }
-        public Usuario Usuario { get; set; }
-        public DateTime Fecha { get; set; }
-        public string Estado { get; set; }
-        public string Observaciones { get; set; }
+        var parameters = new DialogParameters
+        {
+            ["inspeccion"] = inspeccion
+        };
+
+        var dialog = await DialogService.ShowAsync<InspeccionDialog>("Inspección", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadInspecciones();
+        }
+    }
+
+    private async Task DeleteInspeccion(Inspeccion inspeccion)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Está seguro de eliminar esta inspección?",
+            yesText: "Eliminar",
+            noText: "Cancelar"
+        );
+
+        if (confirm ?? false)
+        {
+            try
+            {
+                await Http.DeleteAsync($"api/inspecciones/{inspeccion.Id}");
+                await LoadInspecciones();
+                Snackbar.Add("Inspección eliminada correctamente", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error al eliminar inspección: " + ex.Message, Severity.Error);
+            }
+        }
     }
 }

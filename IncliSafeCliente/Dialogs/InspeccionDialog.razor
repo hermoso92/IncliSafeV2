@@ -1,0 +1,58 @@
+
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form">
+            <MudDatePicker @bind-Date="inspeccion.Fecha" Label="Fecha" Required="true" />
+            <MudSelect @bind-Value="inspeccion.VehiculoId" Label="Vehículo" Required="true">
+                @foreach (var vehiculo in vehiculos)
+                {
+                    <MudSelectItem Value="@vehiculo.Id">@vehiculo.Placa - @vehiculo.Marca @vehiculo.Modelo</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="inspeccion.Observaciones" Label="Observaciones" Lines="3" />
+            <MudSelect @bind-Value="inspeccion.Estado" Label="Estado">
+                <MudSelectItem Value="@("Pendiente")">Pendiente</MudSelectItem>
+                <MudSelectItem Value="@("En Proceso")">En Proceso</MudSelectItem>
+                <MudSelectItem Value="@("Completada")">Completada</MudSelectItem>
+            </MudSelect>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Inspeccion inspeccion { get; set; } = new();
+    
+    private MudForm form;
+    private List<Vehiculo> vehiculos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al cargar vehículos: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            MudDialog.Close(DialogResult.Ok(inspeccion));
+        }
+    }
+}
