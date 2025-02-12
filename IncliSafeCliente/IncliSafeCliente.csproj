@@ -3,8 +3,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>IncliSafe.Cliente</RootNamespace>
-    <AssemblyName>IncliSafe.Cliente</AssemblyName>
+    <RootNamespace>IncliSafe.Client</RootNamespace>
+    <AssemblyName>IncliSafe.Client</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
