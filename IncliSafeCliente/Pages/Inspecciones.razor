@@ -1,33 +1,27 @@
-
 @page "/inspecciones"
-@using System.Net.Http.Json
+@using IncliSafe.Api.Models
 @inject HttpClient Http
-@inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h3" Class="mb-4">Gestión de Inspecciones</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" GutterBottom="true">Inspecciones</MudText>
 
-<MudPaper Class="pa-4">
-    <MudTable Items="@inspecciones" Dense="true" Hover="true" Loading="@loading" LoadingProgressColor="Color.Info">
+    <MudTable Items="@inspecciones" Dense="true" Hover="true" Loading="@loading">
         <HeaderContent>
-            <MudTh>ID</MudTh>
-            <MudTh>Vehículo</MudTh>
-            <MudTh>Inspector</MudTh>
             <MudTh>Fecha</MudTh>
-            <MudTh>Resultado</MudTh>
+            <MudTh>Vehículo</MudTh>
+            <MudTh>Usuario</MudTh>
+            <MudTh>Estado</MudTh>
+            <MudTh>Observaciones</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Id">@context.Id</MudTd>
-            <MudTd DataLabel="Vehiculo">@context.Vehiculo?.Placa</MudTd>
-            <MudTd DataLabel="Inspector">@context.Usuario?.Nombre</MudTd>
-            <MudTd DataLabel="Fecha">@context.FechaInspeccion.ToShortDateString()</MudTd>
-            <MudTd DataLabel="Resultado">
-                <MudChip Color="@(context.Resultado == "Aprobado" ? Color.Success : Color.Error)">
-                    @context.Resultado
-                </MudChip>
-            </MudTd>
+            <MudTd>@context.Fecha.ToShortDateString()</MudTd>
+            <MudTd>@(context.Vehiculo?.Placa ?? "-")</MudTd>
+            <MudTd>@(context.Usuario?.Nombre ?? "-")</MudTd>
+            <MudTd>@context.Estado</MudTd>
+            <MudTd>@context.Observaciones</MudTd>
         </RowTemplate>
     </MudTable>
-</MudPaper>
+</MudContainer>
 
 @code {
     private List<Inspeccion> inspecciones = new();
@@ -39,23 +33,22 @@
         {
             inspecciones = await Http.GetFromJsonAsync<List<Inspeccion>>("api/inspecciones") ?? new();
         }
-        catch (Exception ex)
+        catch
         {
-            Snackbar.Add("Error al cargar inspecciones: " + ex.Message, Severity.Error);
+            // Manejar error
         }
         finally
         {
             loading = false;
         }
     }
-
     public class Inspeccion
     {
         public int Id { get; set; }
         public Vehiculo Vehiculo { get; set; }
         public Usuario Usuario { get; set; }
-        public DateTime FechaInspeccion { get; set; }
-        public string Resultado { get; set; }
+        public DateTime Fecha { get; set; }
+        public string Estado { get; set; }
         public string Observaciones { get; set; }
     }
 }

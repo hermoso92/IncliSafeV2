@@ -9,15 +9,16 @@ namespace IncliSafe.Api.Models
         public int Id { get; set; }
         
         [Required]
+        public DateTime Fecha { get; set; }
+        
+        public string Estado { get; set; }
+        
+        public string Observaciones { get; set; }
+        
         public int VehiculoId { get; set; }
         public Vehiculo Vehiculo { get; set; }
         
-        [Required]
         public int UsuarioId { get; set; }
         public Usuario Usuario { get; set; }
-        
-        public DateTime FechaInspeccion { get; set; }
-        public string Resultado { get; set; }
-        public string Observaciones { get; set; }
     }
 }
