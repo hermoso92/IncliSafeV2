@@ -17,9 +17,7 @@ namespace IncliSafe.Api.Models
         public string Modelo { get; set; }
         
         public int Año { get; set; }
-        
         public string Estado { get; set; }
-        
         public bool Activo { get; set; }
     }
 }

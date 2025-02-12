@@ -1,56 +1,88 @@
+
 @page "/vehiculos"
-@using IncliSafe.Api.Models
+@using IncliSafe.Cliente.Models
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h3" GutterBottom="true">Vehículos</MudText>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Gestión de Vehículos</MudText>
 
-    <MudTable Items="@vehiculos" Dense="true" Hover="true" Loading="@loading">
+    <MudPaper Class="pa-4 mb-4">
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="nuevoVehiculo.Placa" Label="Placa" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="nuevoVehiculo.Marca" Label="Marca" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="nuevoVehiculo.Modelo" Label="Modelo" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudButton Color="Color.Primary" OnClick="GuardarVehiculo">Agregar Vehículo</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudTable Items="@vehiculos" Dense="true" Hover="true" Bordered="true" Striped="true">
         <HeaderContent>
             <MudTh>Placa</MudTh>
             <MudTh>Marca</MudTh>
             <MudTh>Modelo</MudTh>
-            <MudTh>Año</MudTh>
             <MudTh>Estado</MudTh>
+            <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd>@context.Placa</MudTd>
-            <MudTd>@context.Marca</MudTd>
-            <MudTd>@context.Modelo</MudTd>
-            <MudTd>@context.Año</MudTd>
-            <MudTd>@context.Estado</MudTd>
+            <MudTd DataLabel="Placa">@context.Placa</MudTd>
+            <MudTd DataLabel="Marca">@context.Marca</MudTd>
+            <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+            <MudTd DataLabel="Estado">@context.Estado</MudTd>
+            <MudTd>
+                <MudButtonGroup>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" />
+                </MudButtonGroup>
+            </MudTd>
         </RowTemplate>
     </MudTable>
 </MudContainer>
 
 @code {
     private List<Vehiculo> vehiculos = new();
-    private bool loading = true;
+    private Vehiculo nuevoVehiculo = new();
 
     protected override async Task OnInitializedAsync()
     {
+        await CargarVehiculos();
+    }
+
+    private async Task CargarVehiculos()
+    {
         try
         {
-            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
+            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("http://0.0.0.0:5000/api/vehiculos") ?? new();
         }
         catch (Exception ex)
         {
             Snackbar.Add("Error al cargar vehículos: " + ex.Message, Severity.Error);
         }
-        finally
-        {
-            loading = false;
-        }
     }
-    public class Vehiculo
+
+    private async Task GuardarVehiculo()
     {
-        public int Id { get; set; }
-        public string Placa { get; set; }
-        public string Marca { get; set; }
-        public string Modelo { get; set; }
-        public int Año { get; set; }
-        public string Estado { get; set; }
-        public bool Activo { get; set; }
+        try
+        {
+            var response = await Http.PostAsJsonAsync("http://0.0.0.0:5000/api/vehiculos", nuevoVehiculo);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Vehículo guardado correctamente", Severity.Success);
+                nuevoVehiculo = new();
+                await CargarVehiculos();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al guardar vehículo: " + ex.Message, Severity.Error);
+        }
     }
 }
