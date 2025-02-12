@@ -19,8 +19,8 @@
     {
       "code": "NU1202",
       "level": "Error",
-      "message": "Package Microsoft.EntityFrameworkCore.Tools 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.EntityFrameworkCore.Tools 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
-      "libraryId": "Microsoft.EntityFrameworkCore.Tools",
+      "message": "Package Microsoft.AspNetCore.Authentication.JwtBearer 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.AspNetCore.Authentication.JwtBearer 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
+      "libraryId": "Microsoft.AspNetCore.Authentication.JwtBearer",
       "targetGraphs": [
         "net5.0"
       ]
@@ -28,8 +28,8 @@
     {
       "code": "NU1202",
       "level": "Error",
-      "message": "Package Microsoft.AspNetCore.Authentication.JwtBearer 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.AspNetCore.Authentication.JwtBearer 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
-      "libraryId": "Microsoft.AspNetCore.Authentication.JwtBearer",
+      "message": "Package Microsoft.EntityFrameworkCore.Sqlite 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.EntityFrameworkCore.Sqlite 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
+      "libraryId": "Microsoft.EntityFrameworkCore.Sqlite",
       "targetGraphs": [
         "net5.0"
       ]
@@ -46,8 +46,8 @@
     {
       "code": "NU1202",
       "level": "Error",
-      "message": "Package Microsoft.EntityFrameworkCore.Sqlite 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.EntityFrameworkCore.Sqlite 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
-      "libraryId": "Microsoft.EntityFrameworkCore.Sqlite",
+      "message": "Package Microsoft.EntityFrameworkCore.Tools 8.0.0 is not compatible with net5.0 (.NETCoreApp,Version=v5.0). Package Microsoft.EntityFrameworkCore.Tools 8.0.0 supports: net8.0 (.NETCoreApp,Version=v8.0)",
+      "libraryId": "Microsoft.EntityFrameworkCore.Tools",
       "targetGraphs": [
         "net5.0"
       ]
