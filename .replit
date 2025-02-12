@@ -19,3 +19,14 @@ pattern = "**/{*.cs,*.razor}"
 
   [languages.csharp.languageServer]
   start = ["omnisharp", "--languageserver"]
+
+[workflows]
+runButton = "Run API"
+
+[[workflows.workflow]]
+name = "Run API"
+author = 38606645
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "dotnet run --project IncliSafeApi"
