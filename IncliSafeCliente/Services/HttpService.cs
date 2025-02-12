@@ -1,4 +1,3 @@
-
 using System;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -21,11 +20,15 @@ namespace IncliSafe.Cliente.Services
             try
             {
                 var response = await _http.GetFromJsonAsync<T>($"{_baseUrl}/{url}");
-                return response;
+                return response ?? throw new Exception("No se recibieron datos del servidor");
             }
-            catch (Exception)
+            catch (HttpRequestException ex)
             {
-                throw new Exception("Error al obtener datos del servidor");
+                throw new Exception($"Error de conexión: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener datos: {ex.Message}");
             }
         }
 
