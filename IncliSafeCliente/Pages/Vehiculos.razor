@@ -4,31 +4,19 @@
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Gestión de Vehículos</MudText>
 
-    <MudPaper Class="pa-4 mb-4">
-        <MudGrid>
-            <MudItem xs="12" md="3">
-                <MudTextField @bind-Value="nuevoVehiculo.Placa" Label="Placa" />
-            </MudItem>
-            <MudItem xs="12" md="3">
-                <MudTextField @bind-Value="nuevoVehiculo.Marca" Label="Marca" />
-            </MudItem>
-            <MudItem xs="12" md="3">
-                <MudTextField @bind-Value="nuevoVehiculo.Modelo" Label="Modelo" />
-            </MudItem>
-            <MudItem xs="12" md="3">
-                <MudButton Color="Color.Primary" OnClick="GuardarVehiculo">Agregar Vehículo</MudButton>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
+    <MudButton Color="Color.Primary" OnClick="@(() => OpenDialog(new Vehiculo()))" Class="mb-4">
+        Nuevo Vehículo
+    </MudButton>
 
-    <MudTable Items="@vehiculos" Dense="true" Hover="true" Bordered="true" Striped="true">
+    <MudTable Items="@vehiculos" Dense="true" Hover="true" Loading="@loading">
         <HeaderContent>
             <MudTh>Placa</MudTh>
             <MudTh>Marca</MudTh>
             <MudTh>Modelo</MudTh>
+            <MudTh>Año</MudTh>
             <MudTh>Estado</MudTh>
             <MudTh>Acciones</MudTh>
         </HeaderContent>
@@ -36,12 +24,11 @@
             <MudTd DataLabel="Placa">@context.Placa</MudTd>
             <MudTd DataLabel="Marca">@context.Marca</MudTd>
             <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+            <MudTd DataLabel="Año">@context.Año</MudTd>
             <MudTd DataLabel="Estado">@context.Estado</MudTd>
             <MudTd>
-                <MudButtonGroup>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" />
-                </MudButtonGroup>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => OpenDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteVehiculo(context))" />
             </MudTd>
         </RowTemplate>
     </MudTable>
@@ -49,18 +36,19 @@
 
 @code {
     private List<Vehiculo> vehiculos = new();
-    private Vehiculo nuevoVehiculo = new();
+    private bool loading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarVehiculos();
+        await LoadVehiculos();
     }
 
-    private async Task CargarVehiculos()
+    private async Task LoadVehiculos()
     {
         try
         {
-            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("http://0.0.0.0:5000/api/vehiculos") ?? new();
+            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
+            loading = false;
         }
         catch (Exception ex)
         {
@@ -68,21 +56,43 @@
         }
     }
 
-    private async Task GuardarVehiculo()
+    private async Task OpenDialog(Vehiculo vehiculo)
     {
-        try
+        var parameters = new DialogParameters
         {
-            var response = await Http.PostAsJsonAsync("http://0.0.0.0:5000/api/vehiculos", nuevoVehiculo);
-            if (response.IsSuccessStatusCode)
-            {
-                Snackbar.Add("Vehículo guardado correctamente", Severity.Success);
-                nuevoVehiculo = new();
-                await CargarVehiculos();
-            }
+            ["Vehiculo"] = vehiculo
+        };
+
+        var dialog = await DialogService.ShowAsync<VehiculoDialog>("Vehículo", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadVehiculos();
         }
-        catch (Exception ex)
+    }
+
+    private async Task DeleteVehiculo(Vehiculo vehiculo)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Está seguro de eliminar este vehículo?",
+            yesText: "Eliminar",
+            noText: "Cancelar"
+        );
+
+        if (confirm ?? false)
         {
-            Snackbar.Add("Error al guardar vehículo: " + ex.Message, Severity.Error);
+            try
+            {
+                await Http.DeleteAsync($"api/vehiculos/{vehiculo.Id}");
+                await LoadVehiculos();
+                Snackbar.Add("Vehículo eliminado correctamente", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error al eliminar vehículo: " + ex.Message, Severity.Error);
+            }
         }
     }
 }
