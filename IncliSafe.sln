@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IncliSafeApi", "IncliSafeApi\IncliSafeApi.csproj", "{5A2C8F1A-D4F0-4D57-8A8C-651B89F1E253}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IncliSafe.Client", "IncliSafeCliente\IncliSafeCliente.csproj", "{B6E2F1B6-C2F5-4D57-9A8C-651B89F1E254}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IncliSafe.Client", "IncliSafe.Client\IncliSafe.Client.csproj", "{B6E2F1B6-C2F5-4D57-9A8C-651B89F1E254}"
 EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution

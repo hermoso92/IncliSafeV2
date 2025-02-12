@@ -4,7 +4,7 @@
 #pragma warning disable 0649
 #pragma warning disable 0169
 
-namespace IncliSafe.Cliente.Shared
+namespace IncliSafe.Client.Shared
 {
     #line hidden
     using System;
