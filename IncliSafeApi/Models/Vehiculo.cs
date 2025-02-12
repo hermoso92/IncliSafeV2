@@ -8,7 +8,6 @@ namespace IncliSafe.Api.Models
         public int Id { get; set; }
         
         [Required]
-        [StringLength(10)]
         public string Placa { get; set; }
         
         [Required]
@@ -18,7 +17,9 @@ namespace IncliSafe.Api.Models
         public string Modelo { get; set; }
         
         public int Año { get; set; }
+        
         public string Estado { get; set; }
+        
         public bool Activo { get; set; }
     }
 }
