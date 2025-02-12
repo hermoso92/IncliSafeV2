@@ -21,7 +21,7 @@ pattern = "**/{*.cs,*.razor}"
   start = ["omnisharp", "--languageserver"]
 
 [workflows]
-runButton = "Run Api"
+runButton = "Run API"
 
 [[workflows.workflow]]
 name = "Run API"
