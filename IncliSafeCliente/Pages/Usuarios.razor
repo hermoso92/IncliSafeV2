@@ -1,0 +1,60 @@
+
+@page "/usuarios"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h3" Class="mb-4">Gestión de Usuarios</MudText>
+
+<MudPaper Class="pa-4">
+    <MudTable Items="@usuarios" Dense="true" Hover="true" Loading="@loading" LoadingProgressColor="Color.Info">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Nombre</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Rol</MudTh>
+            <MudTh>Estado</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Rol">@context.Rol</MudTd>
+            <MudTd DataLabel="Estado">
+                <MudChip Color="@(context.Activo ? Color.Success : Color.Error)">
+                    @(context.Activo ? "Activo" : "Inactivo")
+                </MudChip>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<Usuario> usuarios = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            usuarios = await Http.GetFromJsonAsync<List<Usuario>>("api/usuarios") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al cargar usuarios: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    public class Usuario
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string Email { get; set; }
+        public string Rol { get; set; }
+        public bool Activo { get; set; }
+    }
+}
