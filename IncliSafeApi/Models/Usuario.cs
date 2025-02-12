@@ -1,5 +1,4 @@
 
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace IncliSafe.Api.Models
@@ -9,7 +8,6 @@ namespace IncliSafe.Api.Models
         public int Id { get; set; }
         
         [Required]
-        [StringLength(100)]
         public string Nombre { get; set; }
         
         [Required]
@@ -20,7 +18,6 @@ namespace IncliSafe.Api.Models
         public string Password { get; set; }
         
         public string Rol { get; set; }
-        public DateTime FechaCreacion { get; set; }
         public bool Activo { get; set; }
     }
 }
