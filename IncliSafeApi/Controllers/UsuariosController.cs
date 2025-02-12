@@ -32,5 +32,40 @@ namespace IncliSafe.Api.Controllers
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetUsuarios), new { id = usuario.Id }, usuario);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUsuario(int id, Usuario usuario)
+        {
+            if (id != usuario.Id)
+                return BadRequest();
+
+            _context.Entry(usuario).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Usuarios.Any(e => e.Id == id))
+                    return NotFound();
+                throw;
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUsuario(int id)
+        {
+            var usuario = await _context.Usuarios.FindAsync(id);
+            if (usuario == null)
+                return NotFound();
+
+            _context.Usuarios.Remove(usuario);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
