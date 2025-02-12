@@ -8,6 +8,7 @@ namespace IncliSafe.Api.Models
         public int Id { get; set; }
         
         [Required]
+        [StringLength(10)]
         public string Placa { get; set; }
         
         [Required]
