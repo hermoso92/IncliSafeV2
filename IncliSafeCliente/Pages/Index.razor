@@ -1,7 +1,63 @@
 
 @page "/"
 
-<MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.Medium">
-    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Bienvenido a IncliSafe</MudText>
-    <MudText Align="Align.Center">Sistema de gestión de seguridad y salud ocupacional</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
+                <MudText Typo="Typo.subtitle1">Total Vehículos</MudText>
+                <MudText Typo="Typo.h3" Class="mt-auto">25</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
+                <MudText Typo="Typo.subtitle1">Inspecciones Pendientes</MudText>
+                <MudText Typo="Typo.h3" Class="mt-auto">8</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
+                <MudText Typo="Typo.subtitle1">Inspecciones Completadas</MudText>
+                <MudText Typo="Typo.h3" Class="mt-auto">42</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
+                <MudText Typo="Typo.subtitle1">Usuarios Activos</MudText>
+                <MudText Typo="Typo.h3" Class="mt-auto">12</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Class="mt-4">
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Últimas Inspecciones</MudText>
+                <MudSimpleTable>
+                    <thead>
+                        <tr>
+                            <th>Vehículo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ABC-123</td>
+                            <td>2024-02-12</td>
+                            <td><MudChip Color="Color.Success">Aprobado</MudChip></td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Vehículos por Estado</MudText>
+                <MudChart ChartType="ChartType.Pie" Width="300px" Height="300px"
+                         InputData="@new double[] { 65, 25, 10 }"
+                         InputLabels="@new[] { "Operativo", "En mantenimiento", "Fuera de servicio" }" />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 </MudContainer>
