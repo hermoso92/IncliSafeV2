@@ -35,5 +35,28 @@ namespace IncliSafe.Api.Controllers
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetInspecciones), new { id = inspeccion.Id }, inspeccion);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateInspeccion(int id, Inspeccion inspeccion)
+        {
+            if (id != inspeccion.Id)
+                return BadRequest();
+
+            _context.Entry(inspeccion).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteInspeccion(int id)
+        {
+            var inspeccion = await _context.Inspecciones.FindAsync(id);
+            if (inspeccion == null)
+                return NotFound();
+
+            _context.Inspecciones.Remove(inspeccion);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
     }
 }

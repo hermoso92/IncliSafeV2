@@ -52,7 +52,22 @@
         await form.Validate();
         if (form.IsValid)
         {
-            MudDialog.Close(DialogResult.Ok(inspeccion));
+            try
+            {
+                var response = inspeccion.Id == 0 
+                    ? await Http.PostAsJsonAsync("api/inspecciones", inspeccion)
+                    : await Http.PutAsJsonAsync($"api/inspecciones/{inspeccion.Id}", inspeccion);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add("Inspección guardada correctamente", Severity.Success);
+                    MudDialog.Close(DialogResult.Ok(true));
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+            }
         }
     }
 }
