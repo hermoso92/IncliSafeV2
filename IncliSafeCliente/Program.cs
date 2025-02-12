@@ -1,25 +1,17 @@
-using Microsoft.AspNetCore.Components.Web;
+
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using IncliSafe.Cliente;
-using MudBlazor.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using MudBlazor.Services;
+using IncliSafe.Cliente.Services;
 
-namespace IncliSafe.Cliente
-{
-    public class Program
-    {
-        public static async Task Main(string[] args)
-        {
-            var builder = WebAssemblyHostBuilder.CreateDefault(args);
-            builder.RootComponents.Add<App>("#app");
-            builder.RootComponents.Add<HeadOutlet>("head::after");
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
 
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-            builder.Services.AddMudServices();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://0.0.0.0:5000") });
+builder.Services.AddScoped<HttpService>();
+builder.Services.AddMudServices();
 
-            await builder.Build().RunAsync();
-        }
-    }
-}
+await builder.Build().RunAsync();
