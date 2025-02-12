@@ -12,6 +12,8 @@ namespace IncliSafe.Api.Data
         }
 
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Vehiculo> Vehiculos { get; set; }
+        public DbSet<Inspeccion> Inspecciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

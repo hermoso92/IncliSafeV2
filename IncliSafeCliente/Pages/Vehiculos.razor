@@ -1,0 +1,64 @@
+
+@page "/vehiculos"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h3" Class="mb-4">Gestión de Vehículos</MudText>
+
+<MudPaper Class="pa-4">
+    <MudTable Items="@vehiculos" Dense="true" Hover="true" Loading="@loading" LoadingProgressColor="Color.Info">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Placa</MudTh>
+            <MudTh>Marca</MudTh>
+            <MudTh>Modelo</MudTh>
+            <MudTh>Año</MudTh>
+            <MudTh>Estado</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Placa">@context.Placa</MudTd>
+            <MudTd DataLabel="Marca">@context.Marca</MudTd>
+            <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+            <MudTd DataLabel="Año">@context.Año</MudTd>
+            <MudTd DataLabel="Estado">
+                <MudChip Color="@(context.Activo ? Color.Success : Color.Error)">
+                    @context.Estado
+                </MudChip>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<Vehiculo> vehiculos = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al cargar vehículos: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    public class Vehiculo
+    {
+        public int Id { get; set; }
+        public string Placa { get; set; }
+        public string Marca { get; set; }
+        public string Modelo { get; set; }
+        public int Año { get; set; }
+        public string Estado { get; set; }
+        public bool Activo { get; set; }
+    }
+}
