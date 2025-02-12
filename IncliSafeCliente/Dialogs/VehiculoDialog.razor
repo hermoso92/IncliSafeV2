@@ -1,0 +1,57 @@
+
+@using IncliSafe.Cliente.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form">
+            <MudTextField @bind-Value="vehiculo.Placa" Label="Placa" Required="true" />
+            <MudTextField @bind-Value="vehiculo.Marca" Label="Marca" Required="true" />
+            <MudTextField @bind-Value="vehiculo.Modelo" Label="Modelo" Required="true" />
+            <MudNumericField @bind-Value="vehiculo.Año" Label="Año" Required="true" />
+            <MudSelect @bind-Value="vehiculo.Estado" Label="Estado">
+                <MudSelectItem Value="@("Activo")">Activo</MudSelectItem>
+                <MudSelectItem Value="@("Inactivo")">Inactivo</MudSelectItem>
+                <MudSelectItem Value="@("En Mantenimiento")">En Mantenimiento</MudSelectItem>
+            </MudSelect>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Vehiculo Vehiculo { get; set; } = new();
+    private MudForm form;
+    private Vehiculo vehiculo;
+
+    protected override void OnInitialized()
+    {
+        vehiculo = new Vehiculo
+        {
+            Id = Vehiculo.Id,
+            Placa = Vehiculo.Placa,
+            Marca = Vehiculo.Marca,
+            Modelo = Vehiculo.Modelo,
+            Año = Vehiculo.Año,
+            Estado = Vehiculo.Estado,
+            Activo = Vehiculo.Activo
+        };
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            MudDialog.Close(DialogResult.Ok(vehiculo));
+        }
+    }
+}

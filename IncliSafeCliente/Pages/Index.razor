@@ -1,63 +1,34 @@
-
 @page "/"
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudGrid>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.subtitle1">Total Vehículos</MudText>
-                <MudText Typo="Typo.h3" Class="mt-auto">25</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.subtitle1">Inspecciones Pendientes</MudText>
-                <MudText Typo="Typo.h3" Class="mt-auto">8</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.subtitle1">Inspecciones Completadas</MudText>
-                <MudText Typo="Typo.h3" Class="mt-auto">42</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.subtitle1">Usuarios Activos</MudText>
-                <MudText Typo="Typo.h3" Class="mt-auto">12</MudText>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-16">
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Bienvenido a IncliSafe</MudText>
+    <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-8">Sistema de Gestión de Inspecciones Vehiculares</MudText>
 
-    <MudGrid Class="mt-4">
-        <MudItem xs="12" md="6">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Últimas Inspecciones</MudText>
-                <MudSimpleTable>
-                    <thead>
-                        <tr>
-                            <th>Vehículo</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>ABC-123</td>
-                            <td>2024-02-12</td>
-                            <td><MudChip Color="Color.Success">Aprobado</MudChip></td>
-                        </tr>
-                    </tbody>
-                </MudSimpleTable>
-            </MudPaper>
+    <MudGrid Justify="Justify.Center" Spacing="6">
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Color="Color.Primary" Size="Size.Large" />
+                    <MudText Typo="Typo.h5" Class="mt-2">Vehículos</MudText>
+                    <MudText>Gestione la flota de vehículos</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/vehiculos">Ver más</MudButton>
+                </MudCardActions>
+            </MudCard>
         </MudItem>
-        <MudItem xs="12" md="6">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Vehículos por Estado</MudText>
-                <MudChart ChartType="ChartType.Pie" Width="300px" Height="300px"
-                         InputData="@new double[] { 65, 25, 10 }"
-                         InputLabels="@new[] { "Operativo", "En mantenimiento", "Fuera de servicio" }" />
-            </MudPaper>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Secondary" Size="Size.Large" />
+                    <MudText Typo="Typo.h5" Class="mt-2">Inspecciones</MudText>
+                    <MudText>Realice y consulte inspecciones</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/inspecciones">Ver más</MudButton>
+                </MudCardActions>
+            </MudCard>
         </MudItem>
     </MudGrid>
 </MudContainer>
