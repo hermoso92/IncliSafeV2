@@ -48,5 +48,5 @@ task = "shell.exec"
 args = "dotnet run --project IncliSafeApi"
 
 [deployment]
-run = ["sh", "-c", "dotnet run --project IncliSafeApi"]
+run = ["sh", "-c", "dotnet run --project IncliSafeApi --urls http://0.0.0.0:80"]
 build = ["sh", "-c", "dotnet build"]
