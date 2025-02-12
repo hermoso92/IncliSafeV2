@@ -1,7 +1,7 @@
 
 using System;
 
-namespace IncliSafe.Cliente.Models
+namespace IncliSafe.Client.Models
 {
     public class Usuario
     {
