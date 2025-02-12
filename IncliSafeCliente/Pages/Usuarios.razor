@@ -1,38 +1,49 @@
 
 @page "/usuarios"
 @inject HttpClient Http
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h3" Class="mb-4">Gestión de Usuarios</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" GutterBottom="true">Usuarios</MudText>
 
-<MudPaper Class="pa-4">
-    <MudTable Items="@usuarios" Dense="true" Hover="true" Loading="@loading" LoadingProgressColor="Color.Info">
+    <MudButton Color="Color.Primary" OnClick="@(() => OpenDialog(new()))" Class="mb-4">
+        Nuevo Usuario
+    </MudButton>
+
+    <MudTable Items="@usuarios" Dense="true" Hover="true" Loading="@loading">
         <HeaderContent>
-            <MudTh>ID</MudTh>
             <MudTh>Nombre</MudTh>
             <MudTh>Email</MudTh>
             <MudTh>Rol</MudTh>
-            <MudTh>Estado</MudTh>
+            <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Id">@context.Id</MudTd>
-            <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
-            <MudTd DataLabel="Email">@context.Email</MudTd>
-            <MudTd DataLabel="Rol">@context.Rol</MudTd>
-            <MudTd DataLabel="Estado">
-                <MudChip Color="@(context.Activo ? Color.Success : Color.Error)">
-                    @(context.Activo ? "Activo" : "Inactivo")
-                </MudChip>
+            <MudTd>@context.Nombre</MudTd>
+            <MudTd>@context.Email</MudTd>
+            <MudTd>@context.Rol</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                             Color="Color.Primary" 
+                             OnClick="@(() => OpenDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                             Color="Color.Error" 
+                             OnClick="@(() => DeleteUsuario(context))" />
             </MudTd>
         </RowTemplate>
     </MudTable>
-</MudPaper>
+</MudContainer>
 
 @code {
     private List<Usuario> usuarios = new();
     private bool loading = true;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadUsuarios();
+    }
+
+    private async Task LoadUsuarios()
     {
         try
         {
@@ -48,12 +59,43 @@
         }
     }
 
-    public class Usuario
+    private async Task OpenDialog(Usuario usuario)
     {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public string Email { get; set; }
-        public string Rol { get; set; }
-        public bool Activo { get; set; }
+        var parameters = new DialogParameters
+        {
+            ["usuario"] = usuario
+        };
+
+        var dialog = await DialogService.ShowAsync<UsuarioDialog>("Usuario", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadUsuarios();
+        }
+    }
+
+    private async Task DeleteUsuario(Usuario usuario)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Está seguro de eliminar este usuario?",
+            yesText: "Eliminar",
+            noText: "Cancelar"
+        );
+
+        if (confirm ?? false)
+        {
+            try
+            {
+                await Http.DeleteAsync($"api/usuarios/{usuario.Id}");
+                await LoadUsuarios();
+                Snackbar.Add("Usuario eliminado correctamente", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error al eliminar usuario: " + ex.Message, Severity.Error);
+            }
+        }
     }
 }

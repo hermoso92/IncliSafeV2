@@ -1,0 +1,57 @@
+
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form">
+            <MudTextField @bind-Value="usuario.Nombre" Label="Nombre" Required="true" />
+            <MudTextField @bind-Value="usuario.Email" Label="Email" Required="true" />
+            @if(usuario.Id == 0)
+            {
+                <MudTextField @bind-Value="usuario.Password" Label="Contraseña" InputType="InputType.Password" Required="true" />
+            }
+            <MudSelect @bind-Value="usuario.Rol" Label="Rol" Required="true">
+                <MudSelectItem Value="@("Admin")">Administrador</MudSelectItem>
+                <MudSelectItem Value="@("User")">Usuario</MudSelectItem>
+            </MudSelect>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Usuario usuario { get; set; } = new();
+    
+    private MudForm form;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            try
+            {
+                var response = usuario.Id == 0 
+                    ? await Http.PostAsJsonAsync("api/usuarios", usuario)
+                    : await Http.PutAsJsonAsync($"api/usuarios/{usuario.Id}", usuario);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add("Usuario guardado correctamente", Severity.Success);
+                    MudDialog.Close(DialogResult.Ok(true));
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}
