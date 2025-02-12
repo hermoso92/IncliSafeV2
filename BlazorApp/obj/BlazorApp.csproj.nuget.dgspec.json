@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/runner/Blazor/BlazorApp/BlazorApp.csproj": {}
+    "/home/runner/workspace/BlazorApp/BlazorApp.csproj": {}
   },
   "projects": {
-    "/home/runner/Blazor/BlazorApp/BlazorApp.csproj": {
+    "/home/runner/workspace/BlazorApp/BlazorApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/runner/Blazor/BlazorApp/BlazorApp.csproj",
+        "projectUniqueName": "/home/runner/workspace/BlazorApp/BlazorApp.csproj",
         "projectName": "BlazorApp",
-        "projectPath": "/home/runner/Blazor/BlazorApp/BlazorApp.csproj",
+        "projectPath": "/home/runner/workspace/BlazorApp/BlazorApp.csproj",
         "packagesPath": "/home/runner/.nuget/packages/",
-        "outputPath": "/home/runner/Blazor/BlazorApp/obj/",
+        "outputPath": "/home/runner/workspace/BlazorApp/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/runner/.nuget/NuGet/NuGet.Config"
@@ -37,6 +37,32 @@
       "frameworks": {
         "net5.0": {
           "targetAlias": "net5.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[5.0.7, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "target": "Package",
+              "version": "[5.0.7, )"
+            },
+            "MudBlazor": {
+              "target": "Package",
+              "version": "[5.0.14, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[5.0.7, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[6.11.0, )"
+            },
+            "itext7": {
+              "target": "Package",
+              "version": "[7.1.16, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
