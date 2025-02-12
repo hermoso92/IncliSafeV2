@@ -46,3 +46,7 @@ author = 38606645
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "dotnet run --project IncliSafeApi"
+
+[deployment]
+run = ["sh", "-c", "dotnet run --project IncliSafeApi"]
+build = ["sh", "-c", "dotnet build"]
