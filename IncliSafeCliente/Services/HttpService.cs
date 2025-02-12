@@ -10,7 +10,7 @@ namespace IncliSafe.Cliente.Services
     public class HttpService
     {
         private readonly HttpClient _http;
-        private readonly string _baseUrl = "http://0.0.0.0:5000/api";
+        private readonly string _baseUrl = "http://0.0.0.0:80/api";
 
         public HttpService(HttpClient http)
         {
