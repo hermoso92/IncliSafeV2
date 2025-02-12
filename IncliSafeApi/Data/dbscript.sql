@@ -1,38 +1,38 @@
 
-CREATE TABLE IF NOT EXISTS Usuarios (
-    Id SERIAL PRIMARY KEY,
-    Nombre VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) NOT NULL UNIQUE,
-    Password VARCHAR(100) NOT NULL,
-    Rol VARCHAR(50),
-    Activo BOOLEAN DEFAULT true
+USE IncliSafe;
+
+CREATE TABLE Usuarios (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NOT NULL UNIQUE,
+    Password NVARCHAR(100) NOT NULL,
+    Rol NVARCHAR(50),
+    Activo BIT DEFAULT 1
 );
 
-CREATE TABLE IF NOT EXISTS Vehiculos (
-    Id SERIAL PRIMARY KEY,
-    Placa VARCHAR(10) NOT NULL UNIQUE,
-    Marca VARCHAR(100) NOT NULL,
-    Modelo VARCHAR(50) NOT NULL,
-    Año INTEGER NOT NULL CHECK (Año BETWEEN 1900 AND 2100),
-    Estado VARCHAR(50),
-    Activo BOOLEAN DEFAULT true
+CREATE TABLE Vehiculos (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Placa NVARCHAR(10) NOT NULL UNIQUE,
+    Marca NVARCHAR(100) NOT NULL,
+    Modelo NVARCHAR(50) NOT NULL,
+    Año INT NOT NULL CHECK (Año BETWEEN 1900 AND 2100),
+    Estado NVARCHAR(50),
+    Activo BIT DEFAULT 1
 );
 
-CREATE TABLE IF NOT EXISTS Inspecciones (
-    Id SERIAL PRIMARY KEY,
-    Fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Estado VARCHAR(50),
-    Observaciones TEXT,
-    VehiculoId INTEGER NOT NULL REFERENCES Vehiculos(Id),
-    UsuarioId INTEGER NOT NULL REFERENCES Usuarios(Id)
+CREATE TABLE Inspecciones (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Fecha DATETIME NOT NULL DEFAULT GETDATE(),
+    Estado NVARCHAR(50),
+    Observaciones NVARCHAR(MAX),
+    VehiculoId INT NOT NULL FOREIGN KEY REFERENCES Vehiculos(Id),
+    UsuarioId INT NOT NULL FOREIGN KEY REFERENCES Usuarios(Id)
 );
 
--- Índices para mejorar el rendimiento
-CREATE INDEX IF NOT EXISTS idx_vehiculos_placa ON Vehiculos(Placa);
-CREATE INDEX IF NOT EXISTS idx_usuarios_email ON Usuarios(Email);
-CREATE INDEX IF NOT EXISTS idx_inspecciones_fecha ON Inspecciones(Fecha);
+CREATE INDEX idx_vehiculos_placa ON Vehiculos(Placa);
+CREATE INDEX idx_usuarios_email ON Usuarios(Email);
+CREATE INDEX idx_inspecciones_fecha ON Inspecciones(Fecha);
 
--- Usuario admin por defecto (password: admin123)
+-- Usuario admin con password admin123 (hash generado para 'admin123')
 INSERT INTO Usuarios (Nombre, Email, Password, Rol, Activo)
-VALUES ('Admin', 'admin@inclisafe.com', 'AQAAAAEAACcQAAAAEJk6Hk/r3cNvnKQTJ8TmWiN+C5C0sQqbVKYuXJVDhDjLCMHo1SdKQ8MNXP0/N0gR8A==', 'Admin', true)
-ON CONFLICT (Email) DO NOTHING;
+VALUES ('Admin', 'admin@inclisafe.com', 'AQAAAAEAACcQAAAAEBqqjV2JZP+3QR8VBexE02FXRTXkL1pXMoGn+FkvcZV8dQtIvEFgTF42pDUvLPmP6Q==', 'Admin', 1);
