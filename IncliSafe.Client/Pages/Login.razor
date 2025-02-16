@@ -1,41 +1,59 @@
-
 @page "/login"
+@using IncliSafe.Shared.Models
 @inject NavigationManager NavigationManager
-@inject HttpClient Http
+@inject AuthService AuthService
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
-    <MudPaper Class="pa-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Iniciar Sesión</MudText>
-        <MudTextField @bind-Value="email" Label="Email" Class="mb-4"/>
-        <MudTextField @bind-Value="password" Label="Contraseña" InputType="InputType.Password" Class="mb-4"/>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync" Class="mb-2">
-            Ingresar
-        </MudButton>
-    </MudPaper>
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Iniciar Sesión</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="form" Model="@model">
+                <MudTextField @bind-Value="model.Nombre"
+                             Label="Nombre de Usuario"
+                             Required="true"
+                             RequiredError="El nombre es requerido"/>
+                <MudTextField @bind-Value="model.Password"
+                             Label="Contraseña"
+                             Required="true"
+                             RequiredError="La contraseña es requerida"
+                             InputType="InputType.Password"/>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton OnClick="Submit" 
+                      Variant="Variant.Filled" 
+                      Color="Color.Primary" 
+                      Class="ml-auto">
+                Iniciar Sesión
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
 </MudContainer>
 
 @code {
-    private string email = "";
-    private string password = "";
+    private MudForm? form;
+    private LoginRequest model = new();
 
-    private async Task LoginAsync()
+    private async Task Submit()
     {
-        try
+        await form?.Validate()!;
+        if (form?.IsValid ?? false)
         {
-            var response = await Http.PostAsJsonAsync("api/auth/login", new { Email = email, Password = password });
-            if (response.IsSuccessStatusCode)
+            try
             {
-                NavigationManager.NavigateTo("/");
+                var result = await AuthService.Login(model);
+                if (result)
+                {
+                    NavigationManager.NavigateTo("/dashboard");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Snackbar.Add("Credenciales inválidas", Severity.Error);
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
             }
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
     }
 }

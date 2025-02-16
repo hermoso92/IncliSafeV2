@@ -1,58 +1,101 @@
-
+using System;
+using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IncliSafe.Api.Data;
-using IncliSafe.Api.Models;
-using System.Threading.Tasks;
+using IncliSafeApi.Data;
+using IncliSafe.Shared.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
 
-namespace IncliSafe.Api.Controllers
+namespace IncliSafeApi.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
     public class UsuariosController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<UsuariosController> _logger;
 
-        public UsuariosController(ApplicationDbContext context)
+        public UsuariosController(ApplicationDbContext context, ILogger<UsuariosController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUsuarios()
+        public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
         {
-            var usuarios = await _context.Usuarios.ToListAsync();
+            var usuarios = await _context.Usuarios
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Username,
+                    u.Name,
+                    u.Email,
+                    u.Role,
+                    u.IsActive,
+                    u.CreatedAt,
+                    u.LastLogin
+                })
+                .ToListAsync();
+
             return Ok(usuarios);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateUsuario(Usuario usuario)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Usuario>> GetUsuario(int id)
         {
-            _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetUsuarios), new { id = usuario.Id }, usuario);
+            var usuario = await _context.Usuarios.FindAsync(id);
+
+            if (usuario == null)
+            {
+                return NotFound();
+            }
+
+            return usuario;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
+        {
+            try
+            {
+                _context.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetUsuario), new { id = usuario.Id }, usuario);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear usuario");
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUsuario(int id, Usuario usuario)
+        public async Task<IActionResult> PutUsuario(int id, Usuario usuario)
         {
             if (id != usuario.Id)
+            {
                 return BadRequest();
-
-            _context.Entry(usuario).State = EntityState.Modified;
+            }
 
             try
             {
+                _context.Entry(usuario).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
+                return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Usuarios.Any(e => e.Id == id))
+                if (!await UsuarioExists(id))
+                {
                     return NotFound();
+                }
                 throw;
             }
-
-            return NoContent();
         }
 
         [HttpDelete("{id}")]
@@ -60,12 +103,19 @@ namespace IncliSafe.Api.Controllers
         {
             var usuario = await _context.Usuarios.FindAsync(id);
             if (usuario == null)
+            {
                 return NotFound();
+            }
 
             _context.Usuarios.Remove(usuario);
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private async Task<bool> UsuarioExists(int id)
+        {
+            return await _context.Usuarios.AnyAsync(e => e.Id == id);
         }
     }
 }

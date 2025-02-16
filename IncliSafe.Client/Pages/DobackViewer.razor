@@ -1,0 +1,198 @@
+@page "/doback/{VehicleId:int}/{FileId:int}"
+@inject IDobackAnalysisService DobackService
+@inject IVehicleService VehicleService
+@inject IJSRuntime JS
+@attribute [Authorize]
+@using MudBlazor
+@using MudBlazor.Charts
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Información General -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.h5">Análisis Doback</MudText>
+                        <MudText Typo="Typo.subtitle1">@_vehicleInfo</MudText>
+                        <MudText Typo="Typo.body2">@_analysis?.FileName</MudText>
+                        <MudText Typo="Typo.body2">@(_analysis?.Timestamp.ToLocalTime().ToString("g"))</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6" Class="d-flex justify-end align-center">
+                        <MudChip Color="@GetStabilityColor(_analysis?.Result.StabilityScore ?? 0)" Size="Size.Large">
+                            Índice de Estabilidad: @((_analysis?.Result.StabilityScore ?? 0).ToString("P1"))
+                        </MudChip>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Gráficas Principales -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Aceleraciones</MudText>
+                <MudChart ChartType="@ChartType.Line" 
+                         ChartSeries="@_accelerationSeries"
+                         XAxisLabels="@_timeLabels"
+                         Width="100%" Height="300px">
+                    <MudChartLegend Position="Position.Bottom" />
+                </MudChart>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Orientación</MudText>
+                <MudChart ChartType="ChartType.Line" 
+                         ChartSeries="@_orientationSeries"
+                         XAxisLabels="@_timeLabels"
+                         Width="100%" Height="300px">
+                    <MudChartLegend Position="Position.Bottom" />
+                </MudChart>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Gráfica 3D de Estabilidad -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Análisis 3D de Estabilidad</MudText>
+                <div id="stability3dChart" style="height: 400px;"></div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Patrones Detectados -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Patrones Detectados</MudText>
+                @foreach (var pattern in _analysis?.DetectedPatterns ?? new())
+                {
+                    <MudAlert Severity="@GetPatternSeverity(pattern.ConfidenceScore)" Class="mb-2">
+                        <MudText><b>@pattern.PatternName</b></MudText>
+                        <MudText Typo="Typo.body2">@pattern.RecommendedActions</MudText>
+                        <MudText Typo="Typo.caption">
+                            Confianza: @pattern.ConfidenceScore.ToString("P1")
+                        </MudText>
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Métricas Detalladas -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Métricas Detalladas</MudText>
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudNumericField Label="Velocidad Máxima" 
+                                       Value="@_maxSpeed" ReadOnly="true"
+                                       Adornment="Adornment.End" AdornmentText="km/h"/>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField Label="Ángulo Máximo" 
+                                       Value="@_maxRoll" ReadOnly="true"
+                                       Adornment="Adornment.End" AdornmentText="°"/>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField Label="Aceleración Máxima" 
+                                       Value="@_maxAcceleration" ReadOnly="true"
+                                       Adornment="Adornment.End" AdornmentText="m/s²"/>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudNumericField Label="Giro Máximo" 
+                                       Value="@_maxSteer" ReadOnly="true"
+                                       Adornment="Adornment.End" AdornmentText="°"/>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+    [Parameter] public int FileId { get; set; }
+
+    private DobackAnalysis? _analysis;
+    private string _vehicleInfo = "";
+    private List<ChartSeries> _accelerationSeries = new();
+    private List<ChartSeries> _orientationSeries = new();
+    private string[] _timeLabels = Array.Empty<string>();
+    
+    private decimal _maxSpeed;
+    private decimal _maxRoll;
+    private decimal _maxAcceleration;
+    private decimal _maxSteer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        await InitializeCharts();
+    }
+
+    private async Task LoadData()
+    {
+        var vehicle = await VehicleService.GetVehicle(VehicleId);
+        _vehicleInfo = $"{vehicle.Marca} {vehicle.Modelo} - {vehicle.Placa}";
+        
+        _analysis = await DobackService.GetAnalysis(FileId);
+        if (_analysis != null)
+        {
+            CalculateMetrics();
+            PrepareChartData();
+        }
+    }
+
+    private void CalculateMetrics()
+    {
+        if (_analysis?.Data == null) return;
+        
+        _maxSpeed = _analysis.Data.Speed;
+        _maxRoll = Math.Abs(_analysis.Data.Roll);
+        _maxAcceleration = Math.Max(
+            Math.Max(_analysis.Data.AccelerationX, _analysis.Data.AccelerationY),
+            _analysis.Data.AccelerationZ);
+        _maxSteer = Math.Abs(_analysis.Data.Steer);
+    }
+
+    private void PrepareChartData()
+    {
+        // Preparar datos para las gráficas
+        _accelerationSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Acc X", Data = new double[] { (double)_analysis!.Data.AccelerationX } },
+            new ChartSeries { Name = "Acc Y", Data = new double[] { (double)_analysis.Data.AccelerationY } },
+            new ChartSeries { Name = "Acc Z", Data = new double[] { (double)_analysis.Data.AccelerationZ } }
+        };
+
+        _orientationSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Roll", Data = new double[] { (double)_analysis!.Data.Roll } },
+            new ChartSeries { Name = "Pitch", Data = new double[] { (double)_analysis.Data.Pitch } },
+            new ChartSeries { Name = "Yaw", Data = new double[] { (double)_analysis.Data.Yaw } }
+        };
+    }
+
+    private async Task InitializeCharts()
+    {
+        await JS.InvokeVoidAsync("initStability3DChart", "stability3dChart", new
+        {
+            roll = _analysis?.Data.Roll,
+            pitch = _analysis?.Data.Pitch,
+            yaw = _analysis?.Data.Yaw
+        });
+    }
+
+    private Color GetStabilityColor(decimal score) => score switch
+    {
+        >= 0.8M => Color.Success,
+        >= 0.6M => Color.Warning,
+        _ => Color.Error
+    };
+
+    private Severity GetPatternSeverity(decimal confidence) => confidence switch
+    {
+        >= 0.8M => Severity.Error,
+        >= 0.6M => Severity.Warning,
+        _ => Severity.Info
+    };
+} 

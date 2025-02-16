@@ -1,0 +1,246 @@
+@inject IDobackAnalysisService DobackService
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using System.Text.Json
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Detalles del Patrón</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <!-- Información General -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Pattern.Name</MudText>
+                            <MudText Typo="Typo.body2">@Pattern.Description</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudChip Color="@GetPatternColor(Pattern.Type)" Size="Size.Small">
+                                @Pattern.Type
+                            </MudChip>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList Dense>
+                            <MudListItem Icon="@Icons.Material.Filled.Timeline">
+                                Primera Detección: @Pattern.FirstDetected.ToLocalTime().ToString("g")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Update">
+                                Última Detección: @Pattern.LastDetected.ToLocalTime().ToString("g")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Numbers">
+                                Total Detecciones: @Pattern.TimesDetected
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Speed">
+                                Confianza: @Pattern.Confidence.ToString("P1")
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Gráfica de Detecciones -->
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Historial de Detecciones</MudText>
+                    <div id="detectionHistoryChart" style="height: 300px;"></div>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Valores Detectados -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Valores Detectados</MudText>
+                    <MudTable Items="@_detectedValues" Dense Hover>
+                        <HeaderContent>
+                            <MudTh>Métrica</MudTh>
+                            <MudTh>Valor</MudTh>
+                            <MudTh>Umbral</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Metric</MudTd>
+                            <MudTd>
+                                <MudChip Color="@GetValueColor(context)" Size="Size.Small">
+                                    @context.Value.ToString("N2")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>@context.Threshold.ToString("N2")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Recomendaciones -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Recomendaciones</MudText>
+                    @foreach (var recommendation in _recommendations)
+                    {
+                        <MudAlert Severity="@recommendation.Severity" Class="mb-2">
+                            <MudText>@recommendation.Message</MudText>
+                            @if (!string.IsNullOrEmpty(recommendation.Action))
+                            {
+                                <MudText Typo="Typo.body2" Class="mt-2">
+                                    Acción Recomendada: @recommendation.Action
+                                </MudText>
+                            }
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <!-- Acciones -->
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudGrid Justify="Justify.FlexEnd" Spacing="2">
+                        <MudItem>
+                            <MudButton Variant="Variant.Outlined"
+                                     OnClick="ExportDetails"
+                                     StartIcon="@Icons.Material.Filled.Download">
+                                Exportar Detalles
+                            </MudButton>
+                        </MudItem>
+                        <MudItem>
+                            <MudButton Variant="Variant.Filled"
+                                     Color="Color.Primary"
+                                     OnClick="ConfigureAlerts"
+                                     StartIcon="@Icons.Material.Filled.Notifications">
+                                Configurar Alertas
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cerrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public DetectedPattern Pattern { get; set; } = null!;
+    [Parameter] public int VehicleId { get; set; }
+
+    private List<DetectedValue> _detectedValues = new();
+    private List<Recommendation> _recommendations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPatternDetails();
+        await InitializeCharts();
+    }
+
+    private async Task LoadPatternDetails()
+    {
+        var details = await DobackService.GetPatternDetails(Pattern.PatternId, VehicleId);
+        _detectedValues = ParseDetectedValues(details.DetectedValues);
+        _recommendations = GenerateRecommendations(details);
+    }
+
+    private async Task InitializeCharts()
+    {
+        var historyData = await DobackService.GetPatternHistory(Pattern.PatternId, VehicleId);
+        await JS.InvokeVoidAsync("initDetectionHistoryChart", "detectionHistoryChart", historyData);
+    }
+
+    private List<DetectedValue> ParseDetectedValues(string jsonValues)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<List<DetectedValue>>(jsonValues) ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
+
+    private List<Recommendation> GenerateRecommendations(PatternDetails details)
+    {
+        var recommendations = new List<Recommendation>();
+        
+        // Generar recomendaciones basadas en los valores detectados
+        foreach (var value in _detectedValues)
+        {
+            if (value.Value > value.Threshold * 1.5M)
+            {
+                recommendations.Add(new Recommendation(
+                    $"Valor crítico detectado en {value.Metric}",
+                    $"Revisar y ajustar {value.Metric}",
+                    Severity.Error
+                ));
+            }
+        }
+
+        return recommendations;
+    }
+
+    private Color GetPatternColor(string type) => type switch
+    {
+        "Stability" => Color.Primary,
+        "Safety" => Color.Error,
+        "Performance" => Color.Success,
+        _ => Color.Default
+    };
+
+    private Color GetValueColor(DetectedValue value)
+    {
+        var ratio = value.Value / value.Threshold;
+        return ratio switch
+        {
+            > 1.5M => Color.Error,
+            > 1.2M => Color.Warning,
+            _ => Color.Success
+        };
+    }
+
+    private async Task ExportDetails()
+    {
+        var exportData = new
+        {
+            Pattern,
+            DetectedValues = _detectedValues,
+            Recommendations = _recommendations,
+            ExportDate = DateTime.Now
+        };
+
+        await JS.InvokeVoidAsync("exportToFile", 
+            $"pattern_details_{Pattern.PatternId}.json",
+            JsonSerializer.Serialize(exportData, new JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            }));
+    }
+
+    private async Task ConfigureAlerts()
+    {
+        var parameters = new DialogParameters
+        {
+            ["PatternId"] = Pattern.PatternId,
+            ["VehicleId"] = VehicleId,
+            ["CurrentSettings"] = await DobackService.GetAlertSettings(Pattern.PatternId, VehicleId)
+        };
+
+        var dialog = await DialogService.ShowAsync<AlertConfigDialog>("Configurar Alertas", parameters);
+        await dialog.Result;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private record DetectedValue(string Metric, decimal Value, decimal Threshold);
+    private record Recommendation(string Message, string Action, Severity Severity);
+
+    private Color GetConfidenceColor(decimal confidence) => confidence switch
+    {
+        >= 0.8M => Color.Success,
+        >= 0.6M => Color.Warning,
+        _ => Color.Error
+    };
+} 

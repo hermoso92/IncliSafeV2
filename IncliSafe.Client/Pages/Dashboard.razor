@@ -1,52 +1,200 @@
+@page "/"
+@inject IDobackService DobackService
+@inject IVehicleService VehicleService
+@inject IPredictiveAnalysisService PredictiveService
+@attribute [Authorize]
 
-@page "/dashboard"
-@inject HttpClient Http
-
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
     <MudGrid>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.h6">Total Vehículos</MudText>
-                <MudText Typo="Typo.h3" Class="flex-grow-1 d-flex align-center justify-center">
-                    @totalVehiculos
-                </MudText>
+        <!-- Resumen General -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.h5">Dashboard</MudText>
+                        <MudText Typo="Typo.subtitle1">Resumen de Operaciones</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6" Class="d-flex justify-end align-center">
+                        <MudButton Variant="Variant.Outlined"
+                                 StartIcon="@Icons.Material.Filled.Refresh"
+                                 OnClick="RefreshData">
+                            Actualizar
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="d-flex flex-column pa-4" Style="height: 150px;">
-                <MudText Typo="Typo.h6">Inspecciones Pendientes</MudText>
-                <MudText Typo="Typo.h3" Class="flex-grow-1 d-flex align-center justify-center">
-                    @inspeccionesPendientes
-                </MudText>
+
+        <!-- Métricas Principales -->
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Style="height: 100%;">
+                <MudStack>
+                    <MudText Typo="Typo.h6">Estabilidad General</MudText>
+                    <MudProgressCircular Value="@(_metrics.StabilityIndex * 100)"
+                                       Color="@GetStabilityColor(_metrics.StabilityIndex)"
+                                       Size="Size.Large">
+                        @(_metrics.StabilityIndex.ToString("P0"))
+                    </MudProgressCircular>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Predicciones -->
+        <MudItem xs="12" md="9">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Predicciones</MudText>
+                <div id="dashboardPredictionChart" style="height: 200px;"></div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Alertas Recientes -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Alertas Recientes</MudText>
+                <MudList Dense="true">
+                    @foreach (var alert in _recentAlerts)
+                    {
+                        <MudListItem>
+                            <MudChip Color="@GetAlertColor(alert.Severity)" Size="Size.Small" Class="mr-2">
+                                @alert.Severity
+                            </MudChip>
+                            <MudText Typo="Typo.body2">@alert.Message</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Primary">
+                                @alert.Timestamp.ToLocalTime().ToString("g")
+                            </MudText>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Anomalías Detectadas -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Anomalías Detectadas</MudText>
+                <MudTable Items="@_anomalies" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Valor</MudTh>
+                        <MudTh>Desviación</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudChip Color="@GetAnomalyColor(context.Type)" Size="Size.Small">
+                                @context.Type
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>@context.Value.ToString("N2")</MudTd>
+                        <MudTd>@context.Deviation.ToString("N1")σ</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Info"
+                                         OnClick="@(() => ShowAnomalyDetails(context))"/>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Análisis de Tendencias -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Análisis de Tendencias</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>Corto Plazo</MudText>
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.ShortTerm.Direction)">
+                                    @GetTrendIndicator(_trends.ShortTerm)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>Medio Plazo</MudText>
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.MediumTerm.Direction)">
+                                    @GetTrendIndicator(_trends.MediumTerm)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>Largo Plazo</MudText>
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.LongTerm.Direction)">
+                                    @GetTrendIndicator(_trends.LongTerm)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
             </MudPaper>
         </MudItem>
     </MudGrid>
 </MudContainer>
 
 @code {
-    private int totalVehiculos;
-    private int inspeccionesPendientes;
+    private DashboardMetrics _metrics = new();
+    private List<Alert> _recentAlerts = new();
+    private List<Anomaly> _anomalies = new();
+    private TrendAnalysis _trends = new();
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var stats = await Http.GetFromJsonAsync<DashboardStats>("api/dashboard/stats");
-            if (stats != null)
-            {
-                totalVehiculos = stats.TotalVehiculos;
-                inspeccionesPendientes = stats.InspeccionesPendientes;
-            }
-        }
-        catch (Exception)
-        {
-            // Manejar error
-        }
+        await LoadDashboardData();
     }
 
-    private class DashboardStats
+    private async Task LoadDashboardData()
     {
-        public int TotalVehiculos { get; set; }
-        public int InspeccionesPendientes { get; set; }
+        var tasks = new[]
+        {
+            LoadMetrics(),
+            LoadAlerts(),
+            LoadAnomalies(),
+            LoadTrends()
+        };
+
+        await Task.WhenAll(tasks);
+        await UpdateCharts();
     }
+
+    private async Task LoadMetrics()
+    {
+        _metrics = await DobackService.GetDashboardMetrics();
+    }
+
+    private async Task LoadAlerts()
+    {
+        _recentAlerts = await DobackService.GetRecentAlerts();
+    }
+
+    private async Task LoadAnomalies()
+    {
+        _anomalies = await PredictiveService.DetectAnomalies(0, DateTime.Now.AddDays(-7), DateTime.Now);
+    }
+
+    private async Task LoadTrends()
+    {
+        _trends = await PredictiveService.AnalyzeTrends(0, DateTime.Now.AddDays(-30), DateTime.Now);
+    }
+
+    private async Task UpdateCharts()
+    {
+        await JS.InvokeVoidAsync("updateDashboardCharts", new
+        {
+            Metrics = _metrics,
+            Trends = _trends
+        });
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadDashboardData();
+    }
+
+    // ... (resto del código existente)
 }

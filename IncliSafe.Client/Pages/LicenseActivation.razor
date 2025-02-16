@@ -1,0 +1,136 @@
+@page "/license-activation"
+@using MudBlazor
+@using MudBlazor.Utilities
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Estado de la Licencia</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (licenseStatus != null)
+            {
+                <MudPaper Class="pa-4">
+                    <MudStack>
+                        <MudText>
+                            <strong>Estado:</strong> 
+                            @(licenseStatus.IsActive ? "Activa" : "Inactiva")
+                        </MudText>
+                        <MudText>
+                            <strong>Mensaje:</strong> @licenseStatus.Message
+                        </MudText>
+                        <MudText>
+                            <strong>Fecha de Expiración:</strong> 
+                            @licenseStatus.ExpirationDate.ToShortDateString()
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            <MudDivider Class="my-6"/>
+
+            <MudForm @ref="form" Model="@model">
+                <MudTextField @bind-Value="model.LicenseKey"
+                             Label="Clave de Licencia"
+                             Required="true"
+                             RequiredError="La clave de licencia es requerida"/>
+                <MudTextField @bind-Value="model.CompanyName"
+                             Label="Nombre de la Empresa"
+                             Required="true"
+                             RequiredError="El nombre de la empresa es requerido"/>
+                <MudTextField @bind-Value="model.Email"
+                             Label="Email"
+                             Required="true"
+                             RequiredError="El email es requerido"
+                             InputType="InputType.Email"/>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton OnClick="Submit" 
+                      Variant="Variant.Filled" 
+                      Color="Color.Primary"
+                      Disabled="@isLoading"
+                      Class="ml-auto">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                    <MudText Class="ms-2">Procesando...</MudText>
+                }
+                else
+                {
+                    <MudText>Activar Licencia</MudText>
+                }
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private MudForm? form;
+    private LicenseActivationRequest model = new();
+    private LicenseStatus? licenseStatus;
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLicenseStatus();
+    }
+
+    private async Task LoadLicenseStatus()
+    {
+        try
+        {
+            licenseStatus = await Http.GetFromJsonAsync<LicenseStatus>("api/license/status");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al cargar el estado de la licencia", Severity.Error);
+            Console.WriteLine($"Error: {ex}");
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (isLoading) return;
+        
+        try
+        {
+            isLoading = true;
+            await form?.Validate()!;
+            
+            if (form?.IsValid ?? false)
+            {
+                var response = await Http.PostAsJsonAsync("api/license/activate", model);
+                if (response.IsSuccessStatusCode)
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+                    Snackbar.Add(message, Severity.Success);
+                    await LoadLicenseStatus();
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Snackbar.Add(error, Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public class LicenseActivationRequest
+    {
+        public string LicenseKey { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+} 

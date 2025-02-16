@@ -1,0 +1,157 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = IncliSafe.Client
+build_property.RootNamespace = IncliSafe.Client
+build_property.ProjectDir = C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/App.razor]
+build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Dialogs/InspeccionDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = RGlhbG9nc1xJbnNwZWNjaW9uRGlhbG9nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Dialogs/UsuarioDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = RGlhbG9nc1xVc3VhcmlvRGlhbG9nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Dialogs/VehiculoDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = RGlhbG9nc1xWZWhpY3Vsb0RpYWxvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/BaseConocimiento.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQmFzZUNvbm9jaW1pZW50by5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/DobackAnalytics.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9iYWNrQW5hbHl0aWNzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/DobackViewer.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9iYWNrVmlld2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Index.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5kZXgucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Inspecciones.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5zcGVjY2lvbmVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/LicenseActivation.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTGljZW5zZUFjdGl2YXRpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Usuarios.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVXN1YXJpb3MucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Pages/Vehiculos.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVmVoaWN1bG9zLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/ConfirmDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXENvbmZpcm1EaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/Dialogs/AlertConfigDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERpYWxvZ3NcQWxlcnRDb25maWdEaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/Dialogs/AnomalyDetailsDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERpYWxvZ3NcQW5vbWFseURldGFpbHNEaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/Dialogs/PatternDetailsDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERpYWxvZ3NcUGF0dGVybkRldGFpbHNEaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/Dialogs/PatternDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERpYWxvZ3NcUGF0dGVybkRpYWxvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/DobackViews/DobackAdvancedView.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERvYmFja1ZpZXdzXERvYmFja0FkdmFuY2VkVmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/DobackViews/DobackBasicView.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERvYmFja1ZpZXdzXERvYmFja0Jhc2ljVmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/DobackViews/DobackComparisonView.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERvYmFja1ZpZXdzXERvYmFja0NvbXBhcmlzb25WaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/DobackViews/DobackTrendsView.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERvYmFja1ZpZXdzXERvYmFja1RyZW5kc1ZpZXcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/ErrorBoundary.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEVycm9yQm91bmRhcnkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/ErrorComponent.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEVycm9yQ29tcG9uZW50LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/LoadingComponent.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXExvYWRpbmdDb21wb25lbnQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE1haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE5hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/NotificationCenter.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE5vdGlmaWNhdGlvbkNlbnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/PageHeader.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXFBhZ2VIZWFkZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/PredictiveAnalysis/PredictionViewer.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXFByZWRpY3RpdmVBbmFseXNpc1xQcmVkaWN0aW9uVmlld2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/Shared/RedirectToLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXFJlZGlyZWN0VG9Mb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Hermoso/Desktop/IncliSafeV2/IncliSafe.Client/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 

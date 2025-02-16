@@ -1,20 +1,50 @@
-
-@inject HttpClient Http
+@using MudBlazor.Utilities
+@using MudBlazor
+@using IncliSafe.Shared.Models
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(Usuario.Id == 0 ? "Nuevo Usuario" : $"Editar Usuario - {Usuario.Nombre}")
+        </MudText>
+    </TitleContent>
     <DialogContent>
-        <MudForm @ref="form">
-            <MudTextField @bind-Value="usuario.Nombre" Label="Nombre" Required="true" />
-            <MudTextField @bind-Value="usuario.Email" Label="Email" Required="true" />
-            @if(usuario.Id == 0)
-            {
-                <MudTextField @bind-Value="usuario.Password" Label="Contraseña" InputType="InputType.Password" Required="true" />
-            }
-            <MudSelect @bind-Value="usuario.Rol" Label="Rol" Required="true">
-                <MudSelectItem Value="@("Admin")">Administrador</MudSelectItem>
-                <MudSelectItem Value="@("User")">Usuario</MudSelectItem>
-            </MudSelect>
+        <MudForm @ref="form" Model="@Usuario">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Usuario.Nombre" 
+                                Label="Nombre" 
+                                Required="true"
+                                id="nombre"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Usuario.Email" 
+                                Label="Email" 
+                                Required="true"
+                                id="email"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Usuario.Password" 
+                                Label="Contraseña" 
+                                Required="@(Usuario.Id == 0)"
+                                Type="InputType.Password"
+                                id="password"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Usuario.Rol" Label="Rol" Required="true" id="rol">
+                        <MudSelectItem Value="@("Administrador")">Administrador</MudSelectItem>
+                        <MudSelectItem Value="@("Inspector")">Inspector</MudSelectItem>
+                        <MudSelectItem Value="@("Usuario")">Usuario</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="Usuario.Activo" 
+                              Label="Activo" 
+                              Color="Color.Primary" 
+                              id="activo"/>
+                </MudItem>
+            </MudGrid>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -24,33 +54,32 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
-    [Parameter] public Usuario usuario { get; set; } = new();
-    
-    private MudForm form;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Usuario Usuario { get; set; } = new();
+    private MudForm? form;
 
-    private void Cancel() => MudDialog.Cancel();
+    protected override void OnInitialized()
+    {
+        if (Usuario.Id == 0)
+        {
+            Usuario.Activo = true;
+            Usuario.Rol = "Usuario";
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
 
     private async Task Submit()
     {
-        await form.Validate();
-        if (form.IsValid)
+        if (form is not null)
         {
-            try
+            await form.Validate();
+            if (form.IsValid)
             {
-                var response = usuario.Id == 0 
-                    ? await Http.PostAsJsonAsync("api/usuarios", usuario)
-                    : await Http.PutAsJsonAsync($"api/usuarios/{usuario.Id}", usuario);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    Snackbar.Add("Usuario guardado correctamente", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(true));
-                }
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+                MudDialog.Close(DialogResult.Ok(Usuario));
             }
         }
     }

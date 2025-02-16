@@ -1,103 +1,185 @@
-
 @page "/inspecciones"
-@inject HttpClient Http
+@attribute [Authorize]
+@using IncliSafe.Shared.Models
+@inject InspeccionService InspeccionService
+@inject VehiculoService VehiculoService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h3" GutterBottom="true">Inspecciones</MudText>
+<PageHeader Title="Inspecciones"
+           ShowAddButton="true"
+           AddButtonText="Nueva Inspección"
+           OnAddClick="@(() => OpenDialog(null))" />
 
-    <MudButton Color="Color.Primary" OnClick="@(() => OpenDialog(new()))" Class="mb-4">
-        Nueva Inspección
-    </MudButton>
+<LoadingComponent IsLoading="@_loading" Message="Cargando inspecciones..." />
 
-    <MudTable Items="@inspecciones" Dense="true" Hover="true" Loading="@loading">
-        <HeaderContent>
-            <MudTh>Fecha</MudTh>
-            <MudTh>Vehículo</MudTh>
-            <MudTh>Estado</MudTh>
-            <MudTh>Observaciones</MudTh>
-            <MudTh>Acciones</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.Fecha.ToShortDateString()</MudTd>
-            <MudTd>@(context.Vehiculo?.Placa ?? "-")</MudTd>
-            <MudTd>@context.Estado</MudTd>
-            <MudTd>@context.Observaciones</MudTd>
-            <MudTd>
-                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                             Color="Color.Primary" 
-                             OnClick="@(() => OpenDialog(context))" />
-                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                             Color="Color.Error" 
-                             OnClick="@(() => DeleteInspeccion(context))" />
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
-</MudContainer>
+@if (!_loading)
+{
+    @if (_error)
+    {
+        <ErrorComponent Message="@_errorMessage" 
+                       ShowRetry="true" 
+                       OnRetryClick="LoadData" />
+    }
+    else
+    {
+        <MudTable Items="@inspecciones" 
+                  Dense="true" 
+                  Hover="true" 
+                  Striped="true"
+                  Loading="@_loading"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Vehículo</MudTh>
+                <MudTh>Fecha</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh>Observaciones</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Vehículo">
+                    <MudText>
+                        @(context.Vehiculo?.Placa ?? "-") - @(context.Vehiculo?.Marca ?? "") @(context.Vehiculo?.Modelo ?? "")
+                    </MudText>
+                </MudTd>
+                <MudTd DataLabel="Fecha">
+                    @(context.Fecha.HasValue ? context.Fecha.Value.ToShortDateString() : "-")
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip Color="@GetEstadoColor(context.Estado)" Size="Size.Small">
+                        @context.Estado
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Observaciones">
+                    <MudText Typo="Typo.body2">@context.Observaciones</MudText>
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                 Color="Color.Primary"
+                                 Size="Size.Small"
+                                 OnClick="@(() => OpenDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                 Color="Color.Error"
+                                 Size="Size.Small"
+                                 OnClick="@(() => DeleteInspeccion(context))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No hay inspecciones registradas.</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    }
+}
 
 @code {
     private List<Inspeccion> inspecciones = new();
-    private bool loading = true;
+    private List<Vehiculo> vehiculos = new();
+    private bool _loading = true;
+    private bool _error;
+    private string _errorMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadInspecciones();
+        await LoadData();
     }
 
-    private async Task LoadInspecciones()
+    private async Task LoadData()
     {
         try
         {
-            inspecciones = await Http.GetFromJsonAsync<List<Inspeccion>>("api/inspecciones") ?? new();
+            _loading = true;
+            _error = false;
+            inspecciones = await InspeccionService.GetInspecciones();
+            vehiculos = await VehiculoService.GetVehiculos();
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Error al cargar inspecciones: " + ex.Message, Severity.Error);
+            _error = true;
+            _errorMessage = ex.Message;
         }
         finally
         {
-            loading = false;
+            _loading = false;
         }
     }
 
-    private async Task OpenDialog(Inspeccion inspeccion)
+    private async Task OpenDialog(Inspeccion? inspeccion)
     {
+        if (!vehiculos.Any())
+        {
+            Snackbar.Add("No hay vehículos disponibles para crear una inspección", Severity.Warning);
+            return;
+        }
+
         var parameters = new DialogParameters
         {
-            ["inspeccion"] = inspeccion
+            ["Inspeccion"] = inspeccion ?? new Inspeccion(),
+            ["Vehiculos"] = vehiculos
         };
 
-        var dialog = await DialogService.ShowAsync<InspeccionDialog>("Inspección", parameters);
-        var result = await dialog.Result;
+        var dialog = await DialogService.ShowAsync<InspeccionDialog>(
+            inspeccion == null ? "Nueva Inspección" : "Editar Inspección",
+            parameters);
 
+        var result = await dialog.Result;
         if (!result.Canceled)
         {
-            await LoadInspecciones();
+            var editedInspeccion = (Inspeccion)result.Data;
+            try
+            {
+                if (editedInspeccion.Id == 0)
+                {
+                    await InspeccionService.CreateInspeccion(editedInspeccion);
+                }
+                else
+                {
+                    await InspeccionService.UpdateInspeccion(editedInspeccion);
+                }
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
         }
     }
 
     private async Task DeleteInspeccion(Inspeccion inspeccion)
     {
-        var confirm = await DialogService.ShowMessageBox(
-            "Confirmar",
-            "¿Está seguro de eliminar esta inspección?",
-            yesText: "Eliminar",
-            noText: "Cancelar"
-        );
+        var parameters = new DialogParameters
+        {
+            ["Title"] = "Eliminar Inspección",
+            ["Message"] = $"¿Está seguro de eliminar esta inspección?",
+            ["Color"] = Color.Error,
+            ["ConfirmText"] = "Eliminar"
+        };
 
-        if (confirm ?? false)
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
         {
             try
             {
-                await Http.DeleteAsync($"api/inspecciones/{inspeccion.Id}");
-                await LoadInspecciones();
-                Snackbar.Add("Inspección eliminada correctamente", Severity.Success);
+                await InspeccionService.DeleteInspeccion(inspeccion.Id);
+                await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add("Error al eliminar inspección: " + ex.Message, Severity.Error);
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
             }
         }
     }
+
+    private Color GetEstadoColor(string estado) => estado switch
+    {
+        "Pendiente" => Color.Warning,
+        "En Proceso" => Color.Info,
+        "Completada" => Color.Success,
+        "Cancelada" => Color.Error,
+        _ => Color.Default
+    };
 }

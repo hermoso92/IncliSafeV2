@@ -1,0 +1,6 @@
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.csproj.AssemblyReference.cache
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.AssemblyInfoInputs.cache
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.AssemblyInfo.cs
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.csproj.CoreCompileInputs.cache
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Client\obj\Debug\net8.0\IncliSafe.Client.MvcApplicationPartsAssemblyInfo.cache

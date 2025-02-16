@@ -1,0 +1,178 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IJSRuntime JS
+@using MudBlazor
+@using MudBlazor.Dialog
+@using IncliSafe.Shared.Models
+
+<MudGrid>
+    <!-- Controles de Comparación -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudDateRangePicker @bind-DateRange="_dateRange" 
+                                      Label="Rango de Fechas"
+                                      AutoClose="true"/>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Métrica Principal" 
+                             @bind-Value="_selectedMetric">
+                        <MudSelectItem Value="@("stability")">Estabilidad</MudSelectItem>
+                        <MudSelectItem Value="@("acceleration")">Aceleración</MudSelectItem>
+                        <MudSelectItem Value="@("orientation")">Orientación</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                             OnClick="UpdateComparison">
+                        Actualizar Comparación
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráficas de Comparación -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Comparación de Datos</MudText>
+            <div id="comparisonChart" style="height: 400px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Análisis de Diferencias -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Análisis de Diferencias</MudText>
+            <MudTable Items="@_differences" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Métrica</MudTh>
+                    <MudTh>Base</MudTh>
+                    <MudTh>Comparación</MudTh>
+                    <MudTh>Diferencia</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Metric</MudTd>
+                    <MudTd>@context.BaseValue.ToString("N2")</MudTd>
+                    <MudTd>@context.ComparisonValue.ToString("N2")</MudTd>
+                    <MudTd>
+                        <MudChip Color="@GetDifferenceColor(context.Difference)"
+                                Size="Size.Small">
+                            @(context.Difference > 0 ? "+" : "")@context.Difference.ToString("P1")
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Conclusiones -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Conclusiones</MudText>
+            @foreach (var conclusion in _conclusions)
+            {
+                <MudAlert Severity="@conclusion.Severity" Class="mb-2">
+                    <MudText>@conclusion.Message</MudText>
+                </MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+    [Parameter] public DobackAnalysis? BaseAnalysis { get; set; }
+    [Parameter] public DobackAnalysis? ComparisonAnalysis { get; set; }
+
+    private DateRange _dateRange = new DateRange(DateTime.Now.AddDays(-7), DateTime.Now);
+    private string _selectedMetric = "stability";
+    private List<DifferenceMetric> _differences = new();
+    private List<Conclusion> _conclusions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (BaseAnalysis != null && ComparisonAnalysis != null)
+        {
+            await CompareAnalyses();
+        }
+    }
+
+    private async Task CompareAnalyses()
+    {
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return;
+
+        // Calcular diferencias
+        _differences = CalculateDifferences();
+
+        // Generar conclusiones
+        _conclusions = GenerateConclusions();
+
+        // Actualizar gráfica
+        await UpdateComparisonChart();
+    }
+
+    private List<DifferenceMetric> CalculateDifferences()
+    {
+        return new List<DifferenceMetric>
+        {
+            new("Estabilidad", 
+                BaseAnalysis!.Data.StabilityIndex,
+                ComparisonAnalysis!.Data.StabilityIndex),
+            new("Velocidad Media",
+                BaseAnalysis!.Data.Speed,
+                ComparisonAnalysis!.Data.Speed),
+            new("Ángulo Máximo",
+                Math.Max(Math.Abs(BaseAnalysis!.Data.Roll), Math.Abs(BaseAnalysis.Data.Pitch)),
+                Math.Max(Math.Abs(ComparisonAnalysis!.Data.Roll), Math.Abs(ComparisonAnalysis.Data.Pitch)))
+        };
+    }
+
+    private List<Conclusion> GenerateConclusions()
+    {
+        var conclusions = new List<Conclusion>();
+        
+        foreach (var diff in _differences)
+        {
+            if (Math.Abs(diff.Difference) > 0.2M)
+            {
+                conclusions.Add(new Conclusion(
+                    $"Diferencia significativa en {diff.Metric}: {diff.Difference:P1}",
+                    diff.Difference > 0 ? Severity.Success : Severity.Warning
+                ));
+            }
+        }
+
+        return conclusions;
+    }
+
+    private async Task UpdateComparisonChart()
+    {
+        await JS.InvokeVoidAsync("updateComparisonChart", "comparisonChart",
+            new
+            {
+                BaseData = BaseAnalysis!.Data,
+                ComparisonData = ComparisonAnalysis!.Data,
+                Metric = _selectedMetric
+            });
+    }
+
+    private Color GetDifferenceColor(decimal difference) => difference switch
+    {
+        > 0.1M => Color.Success,
+        < -0.1M => Color.Error,
+        _ => Color.Default
+    };
+
+    private record DifferenceMetric(string Metric, decimal BaseValue, decimal ComparisonValue)
+    {
+        public decimal Difference => (ComparisonValue - BaseValue) / BaseValue;
+    }
+
+    private record Conclusion(string Message, Severity Severity);
+
+    private async Task UpdateComparison()
+    {
+        await CompareAnalyses();
+    }
+} 

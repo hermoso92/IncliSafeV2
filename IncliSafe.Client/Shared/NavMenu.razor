@@ -1,7 +1,65 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthenticationService AuthService
 
 <MudNavMenu>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
-    <MudNavLink Href="vehiculos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.DirectionsCar">Vehículos</MudNavLink>
-    <MudNavLink Href="inspecciones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Assignment">Inspecciones</MudNavLink>
-    <MudNavLink Href="usuarios" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Usuarios</MudNavLink>
+    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="ml-4 my-3">
+        @_organizationName
+    </MudText>
+
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+        Dashboard
+    </MudNavLink>
+
+    <MudNavLink Href="vehiculos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.DirectionsCar">
+        Vehículos
+    </MudNavLink>
+
+    <MudNavLink Href="inspecciones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Assignment">
+        Inspecciones
+    </MudNavLink>
+
+    <MudNavLink Href="reportes" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Assessment">
+        Reportes Doback
+    </MudNavLink>
+
+    <AuthorizeView Roles="Administrador">
+        <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+            <MudNavLink Href="usuarios" Icon="@Icons.Material.Filled.People">
+                Usuarios
+            </MudNavLink>
+            <MudNavLink Href="organizaciones" Icon="@Icons.Material.Filled.Business">
+                Organizaciones
+            </MudNavLink>
+            <MudNavLink Href="conocimiento" Icon="@Icons.Material.Filled.Psychology">
+                Base de Conocimiento
+            </MudNavLink>
+            <MudNavLink Href="analytics" Icon="@Icons.Material.Filled.Analytics">
+                Analytics
+            </MudNavLink>
+        </MudNavGroup>
+    </AuthorizeView>
+
+    <MudNavGroup Title="Configuración" Icon="@Icons.Material.Filled.Settings" Expanded="false">
+        <MudNavLink Href="perfil" Icon="@Icons.Material.Filled.Person">
+            Perfil
+        </MudNavLink>
+        <MudNavLink Href="notificaciones" Icon="@Icons.Material.Filled.Notifications">
+            Notificaciones
+        </MudNavLink>
+        <AuthorizeView Roles="Usuario">
+            <MudNavLink Href="organizacion" Icon="@Icons.Material.Filled.Business">
+                Mi Organización
+            </MudNavLink>
+        </AuthorizeView>
+    </MudNavGroup>
 </MudNavMenu>
+
+@code {
+    private string _organizationName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUser();
+        _organizationName = user?.Nombre ?? "IncliSafe";
+    }
+}

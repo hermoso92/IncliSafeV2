@@ -1,0 +1,18 @@
+<MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-2">
+    <MudText>@Message</MudText>
+    @if (ShowRetry)
+    {
+        <MudButton Class="ml-auto" 
+                   Variant="Variant.Text" 
+                   Color="Color.Inherit"
+                   OnClick="OnRetryClick">
+            Reintentar
+        </MudButton>
+    }
+</MudAlert>
+
+@code {
+    [Parameter] public string Message { get; set; } = "Ha ocurrido un error.";
+    [Parameter] public bool ShowRetry { get; set; }
+    [Parameter] public EventCallback OnRetryClick { get; set; }
+} 

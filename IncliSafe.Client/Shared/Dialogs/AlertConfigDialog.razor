@@ -1,0 +1,121 @@
+@inject IDobackAnalysisService DobackService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Class="mb-4">Configuración de Alertas</MudText>
+            </MudItem>
+
+            <!-- Umbrales -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText>Umbrales de Alerta</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudNumericField @bind-Value="_settings.WarningThreshold"
+                                       Label="Umbral de Advertencia"
+                                       Min="0" Max="1" Step="0.05M"
+                                       Format="P0"/>
+                        
+                        <MudNumericField @bind-Value="_settings.CriticalThreshold"
+                                       Label="Umbral Crítico"
+                                       Min="0" Max="1" Step="0.05M"
+                                       Format="P0"
+                                       Class="mt-4"/>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Notificaciones -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText>Notificaciones</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudCheckBox @bind-Checked="_settings.EnableEmail"
+                                   Label="Notificaciones por Email"/>
+                        
+                        <MudCheckBox @bind-Checked="_settings.EnablePush"
+                                   Label="Notificaciones Push"
+                                   Class="mt-2"/>
+                        
+                        <MudCheckBox @bind-Checked="_settings.EnableSMS"
+                                   Label="Notificaciones SMS"
+                                   Class="mt-2"/>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Frecuencia -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText>Frecuencia de Notificaciones</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudSelect T="int" @bind-Value="_settings.MinutesBetweenAlerts"
+                                 Label="Tiempo mínimo entre alertas">
+                            <MudSelectItem Value="5">5 minutos</MudSelectItem>
+                            <MudSelectItem Value="15">15 minutos</MudSelectItem>
+                            <MudSelectItem Value="30">30 minutos</MudSelectItem>
+                            <MudSelectItem Value="60">1 hora</MudSelectItem>
+                            <MudSelectItem Value="120">2 horas</MudSelectItem>
+                        </MudSelect>
+
+                        <MudSelect T="string" @bind-Value="_settings.AlertPriority"
+                                 Label="Prioridad de Alertas"
+                                 Class="mt-4">
+                            <MudSelectItem Value="low">Baja</MudSelectItem>
+                            <MudSelectItem Value="medium">Media</MudSelectItem>
+                            <MudSelectItem Value="high">Alta</MudSelectItem>
+                        </MudSelect>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="SaveSettings">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int PatternId { get; set; }
+    [Parameter] public int VehicleId { get; set; }
+    [Parameter] public AlertSettings CurrentSettings { get; set; } = new();
+
+    private AlertSettings _settings = new();
+
+    protected override void OnInitialized()
+    {
+        _settings = CurrentSettings with { };
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            await DobackService.UpdateAlertSettings(PatternId, VehicleId, _settings);
+            Snackbar.Add("Configuración guardada correctamente", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(_settings));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar la configuración: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+} 

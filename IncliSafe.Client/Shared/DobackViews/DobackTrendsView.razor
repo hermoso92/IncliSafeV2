@@ -1,0 +1,209 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IDobackAnalysisService DobackService
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+@using MudBlazor
+@using MudBlazor.Dialog
+@using IncliSafe.Shared.Models
+
+<MudGrid>
+    <!-- Controles de Análisis -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudDateRangePicker @bind-DateRange="_dateRange" 
+                                      Label="Periodo de Análisis"
+                                      AutoClose="true"/>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Tipo de Tendencia" 
+                             @bind-Value="_trendType">
+                        <MudSelectItem Value="@("stability")">Estabilidad</MudSelectItem>
+                        <MudSelectItem Value="@("performance")">Rendimiento</MudSelectItem>
+                        <MudSelectItem Value="@("patterns")">Patrones</MudSelectItem>
+                        <MudSelectItem Value="@("predictions")">Predicciones</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                             OnClick="UpdateTrends" Class="mt-4">
+                        Actualizar Análisis
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráfica Principal de Tendencias -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Análisis de Tendencias</MudText>
+            <div id="trendChart" style="height: 500px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Métricas de Tendencia -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Métricas de Tendencia</MudText>
+            <MudGrid>
+                @foreach (var metric in _trendMetrics)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>@metric.Name</MudText>
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(metric.Change)">
+                                    @(metric.Change > 0 ? "+" : "")@metric.Change.ToString("P1")
+                                </MudText>
+                                <MudText Typo="Typo.caption">
+                                    vs periodo anterior
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Predicciones -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Predicciones</MudText>
+            @foreach (var prediction in _predictions)
+            {
+                <MudAlert Severity="@GetPredictionSeverity(prediction.Risk)" Class="mb-2">
+                    <MudText><b>@prediction.Type</b></MudText>
+                    <MudText>@prediction.Description</MudText>
+                    <MudText Typo="Typo.caption">
+                        Confianza: @prediction.Confidence.ToString("P0")
+                    </MudText>
+                </MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Patrones Detectados -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Patrones Detectados</MudText>
+            <MudGrid>
+                @foreach (var pattern in _detectedPatterns)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">@pattern.Name</MudText>
+                                </CardHeaderContent>
+                                <CardHeaderActions>
+                                    <MudChip Color="@GetPatternColor(pattern.Type)" Size="Size.Small">
+                                        @pattern.Type
+                                    </MudChip>
+                                </CardHeaderActions>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText>@pattern.Description</MudText>
+                                <MudProgressLinear Color="@GetConfidenceColor(pattern.Confidence)"
+                                                 Value="@((double)pattern.Confidence * 100)"
+                                                 Class="my-2">
+                                    @pattern.Confidence.ToString("P0")
+                                </MudProgressLinear>
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                         OnClick="@(() => ShowPatternDetails(pattern))">
+                                    Ver Detalles
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+
+    private DateRange _dateRange = new DateRange(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private string _trendType = "stability";
+    private List<TrendMetric> _trendMetrics = new();
+    private List<Prediction> _predictions = new();
+    private List<DetectedPattern> _detectedPatterns = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTrendData();
+    }
+
+    private async Task LoadTrendData()
+    {
+        var data = await DobackService.GetTrendData(VehicleId, _dateRange.Start!.Value, _dateRange.End!.Value);
+        
+        _trendMetrics = data.Metrics;
+        _predictions = data.Predictions;
+        _detectedPatterns = data.Patterns;
+
+        await UpdateTrendChart(data);
+    }
+
+    private async Task UpdateTrendChart(TrendData data)
+    {
+        await JS.InvokeVoidAsync("updateTrendChart", "trendChart", new
+        {
+            data.TimePoints,
+            data.Values,
+            Type = _trendType
+        });
+    }
+
+    private Color GetTrendColor(decimal change) => change switch
+    {
+        > 0.1M => Color.Success,
+        < -0.1M => Color.Error,
+        _ => Color.Info
+    };
+
+    private Severity GetPredictionSeverity(string risk) => risk switch
+    {
+        "High" => Severity.Error,
+        "Medium" => Severity.Warning,
+        "Low" => Severity.Info,
+        _ => Severity.Normal
+    };
+
+    private Color GetPatternColor(string type) => type switch
+    {
+        "Stability" => Color.Primary,
+        "Safety" => Color.Error,
+        "Performance" => Color.Success,
+        _ => Color.Default
+    };
+
+    private Color GetConfidenceColor(decimal confidence) => confidence switch
+    {
+        >= 0.8M => Color.Success,
+        >= 0.6M => Color.Warning,
+        _ => Color.Error
+    };
+
+    private async Task ShowPatternDetails(DetectedPattern pattern)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Pattern"] = pattern,
+            ["VehicleId"] = VehicleId
+        };
+
+        await DialogService.ShowAsync<PatternDetailsDialog>("Detalles del Patrón", parameters);
+    }
+
+    private async Task UpdateTrends()
+    {
+        await LoadTrendData();
+    }
+} 

@@ -1,0 +1,82 @@
+@inject IKnowledgeBaseService KnowledgeService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudSelect T="string" Label="Tipo de Patrón" @bind-Value="_pattern.PatternType" Required>
+                <MudSelectItem Value="@("Stability")">Estabilidad</MudSelectItem>
+                <MudSelectItem Value="@("Maintenance")">Mantenimiento</MudSelectItem>
+                <MudSelectItem Value="@("Performance")">Rendimiento</MudSelectItem>
+                <MudSelectItem Value="@("Safety")">Seguridad</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField @bind-Value="_pattern.PatternName" 
+                         Label="Nombre del Patrón"
+                         Required />
+
+            <MudTextField @bind-Value="_pattern.Description" 
+                         Label="Descripción"
+                         Lines="3"
+                         Required />
+
+            <MudTextField @bind-Value="_pattern.DetectionCriteria" 
+                         Label="Criterios de Detección"
+                         HelperText="Ejemplo: Roll > 0.7 AND Speed > 40"
+                         Required />
+
+            <MudTextField @bind-Value="_pattern.RecommendedActions" 
+                         Label="Acciones Recomendadas"
+                         Lines="3"
+                         Required />
+
+            <MudNumericField @bind-Value="_pattern.Confidence" 
+                            Label="Confianza Inicial"
+                            Min="0" Max="1" Step="0.05M"
+                            Format="P0"
+                            Required />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="!_isValid">
+            @(_isNew ? "Crear" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public KnowledgePattern Pattern { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; }
+
+    private KnowledgePattern _pattern = new();
+    private bool _isValid;
+    private bool _isNew;
+    private MudForm _form = new();
+
+    protected override void OnInitialized()
+    {
+        _pattern = Pattern with { };
+        _isNew = IsNew;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        try
+        {
+            if (_isNew)
+                await KnowledgeService.CreatePattern(_pattern);
+            else
+                await KnowledgeService.UpdatePattern(_pattern);
+
+            MudDialog.Close(DialogResult.Ok(_pattern));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+} 

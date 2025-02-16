@@ -1,0 +1,129 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@inject INotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IAsyncDisposable
+
+<MudMenu Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Direction="Direction.Bottom" OffsetY="true">
+    <ActivatorContent>
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit">
+            @if (_unreadCount > 0)
+            {
+                <MudBadge Color="Color.Error" Content="@_unreadCount" Overlap="true" />
+            }
+        </MudIconButton>
+    </ActivatorContent>
+    <ChildContent>
+        <MudList Dense="true" DisablePadding="true">
+            @if (!_notifications.Any())
+            {
+                <MudListItem>
+                    <MudText>No hay notificaciones</MudText>
+                </MudListItem>
+            }
+            else
+            {
+                foreach (var notification in _notifications.Take(5))
+                {
+                    <MudListItem OnClick="@(() => HandleNotificationClick(notification))"
+                                Class="@(notification.IsRead ? "" : "unread-notification")">
+                        <div class="d-flex">
+                            <MudIcon Icon="@GetSeverityIcon(notification.Severity)" 
+                                    Color="@GetSeverityColor(notification.Severity)"
+                                    Class="mr-2" />
+                            <div>
+                                <MudText Typo="Typo.body2"><b>@notification.Title</b></MudText>
+                                <MudText Typo="Typo.caption">@notification.Message</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Primary">
+                                    @notification.CreatedAt.ToLocalTime().ToString("g")
+                                </MudText>
+                            </div>
+                        </div>
+                    </MudListItem>
+                }
+                <MudDivider />
+                <MudListItem OnClick="@(() => NavigationManager.NavigateTo("/notifications"))">
+                    <MudText Color="Color.Primary">Ver todas</MudText>
+                </MudListItem>
+            }
+        </MudList>
+    </ChildContent>
+</MudMenu>
+
+@code {
+    private HubConnection? _hubConnection;
+    private List<Notification> _notifications = new();
+    private int _unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+        await InitializeSignalR();
+    }
+
+    private async Task InitializeSignalR()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notificationHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<Notification>("ReceiveNotification", (notification) =>
+        {
+            _notifications.Insert(0, notification);
+            if (!notification.IsRead) _unreadCount++;
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task LoadNotifications()
+    {
+        _notifications = await NotificationService.GetRecentNotifications();
+        _unreadCount = _notifications.Count(n => !n.IsRead);
+    }
+
+    private async Task HandleNotificationClick(Notification notification)
+    {
+        if (!notification.IsRead)
+        {
+            await NotificationService.MarkAsRead(notification.Id);
+            notification.IsRead = true;
+            _unreadCount--;
+        }
+
+        if (notification.VehicleId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/vehiculo/{notification.VehicleId}");
+        }
+    }
+
+    private string GetSeverityIcon(string severity) => severity switch
+    {
+        "high" => Icons.Material.Filled.Warning,
+        "medium" => Icons.Material.Filled.Info,
+        _ => Icons.Material.Filled.Notifications
+    };
+
+    private Color GetSeverityColor(string severity) => severity switch
+    {
+        "high" => Color.Error,
+        "medium" => Color.Warning,
+        _ => Color.Info
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}
+
+<style>
+.unread-notification {
+    background-color: var(--mud-palette-background-grey);
+}
+</style> 

@@ -1,0 +1,13 @@
+@if (IsLoading)
+{
+    <MudContainer Class="d-flex justify-center align-center" Style="height: 200px;">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large">
+            <MudText Class="ms-4">@Message</MudText>
+        </MudProgressCircular>
+    </MudContainer>
+}
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string Message { get; set; } = "Cargando...";
+} 

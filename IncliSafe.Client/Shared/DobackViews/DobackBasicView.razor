@@ -1,0 +1,79 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IJSRuntime JS
+
+<MudGrid>
+    <!-- Gráficas de Aceleración -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Aceleraciones</MudText>
+            <div id="accelerationChart" style="height: 300px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráficas de Orientación -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Orientación</MudText>
+            <div id="orientationChart" style="height: 300px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráfica de Estabilidad -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Índice de Estabilidad</MudText>
+            <div id="stabilityChart" style="height: 400px;"></div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public DobackAnalysis? Analysis { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InitializeCharts();
+        }
+        else if (Analysis != null)
+        {
+            await UpdateCharts();
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        await JS.InvokeVoidAsync("initDobackCharts");
+    }
+
+    private async Task UpdateCharts()
+    {
+        if (Analysis?.Data == null) return;
+
+        var accelerationData = new
+        {
+            x = Analysis.Data.AccelerationX,
+            y = Analysis.Data.AccelerationY,
+            z = Analysis.Data.AccelerationZ,
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        var orientationData = new
+        {
+            roll = Analysis.Data.Roll,
+            pitch = Analysis.Data.Pitch,
+            yaw = Analysis.Data.Yaw,
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        var stabilityData = new
+        {
+            index = Analysis.Data.StabilityIndex,
+            speed = Analysis.Data.Speed,
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        await JS.InvokeVoidAsync("updateDobackCharts", accelerationData, orientationData, stabilityData);
+    }
+} 

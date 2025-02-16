@@ -1,18 +1,40 @@
-
-<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <MudThemeProvider/>
-        <MudDialogProvider/>
-        <MudSnackbarProvider/>
-        <MudLayout>
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (!context.User.Identity?.IsAuthenticated ?? true)
+                    {
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Error">
+                            No tiene permisos para acceder a esta página.
+                        </MudAlert>
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </Authorizing>
+            </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-        </MudLayout>
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <MudText Typo="Typo.h4" Class="mud-text-center">404 - Página no encontrada</MudText>
-        </LayoutView>
-    </NotFound>
-</Router>
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <MudContainer>
+                    <MudText Typo="Typo.h4" Class="mb-4">404 - Página no encontrada</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                        OnClick="@(() => NavigationManager.NavigateTo("/"))">
+                        Volver al inicio
+                    </MudButton>
+                </MudContainer>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+}

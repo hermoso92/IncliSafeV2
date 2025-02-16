@@ -1,23 +1,53 @@
-
-@inject HttpClient Http
+@using MudBlazor
+@using MudBlazor.Dialog
+@using IncliSafe.Shared.Models
 @inject ISnackbar Snackbar
+@inject VehiculoService VehiculoService
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(Inspeccion.Id == 0 ? "Nueva Inspección" : $"Editar Inspección - {Inspeccion.Id}")
+        </MudText>
+    </TitleContent>
     <DialogContent>
-        <MudForm @ref="form">
-            <MudDatePicker @bind-Date="inspeccion.Fecha" Label="Fecha" Required="true" />
-            <MudSelect @bind-Value="inspeccion.VehiculoId" Label="Vehículo" Required="true">
-                @foreach (var vehiculo in vehiculos)
-                {
-                    <MudSelectItem Value="@vehiculo.Id">@vehiculo.Placa - @vehiculo.Marca @vehiculo.Modelo</MudSelectItem>
-                }
-            </MudSelect>
-            <MudTextField @bind-Value="inspeccion.Observaciones" Label="Observaciones" Lines="3" />
-            <MudSelect @bind-Value="inspeccion.Estado" Label="Estado">
-                <MudSelectItem Value="@("Pendiente")">Pendiente</MudSelectItem>
-                <MudSelectItem Value="@("En Proceso")">En Proceso</MudSelectItem>
-                <MudSelectItem Value="@("Completada")">Completada</MudSelectItem>
-            </MudSelect>
+        <MudForm @ref="form" Model="@Inspeccion">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Inspeccion.VehiculoId" 
+                             Label="Vehículo" 
+                             Required="true"
+                             id="vehiculo">
+                        @foreach (var vehiculo in Vehiculos)
+                        {
+                            <MudSelectItem Value="@vehiculo.Id">@vehiculo.Placa - @vehiculo.Marca @vehiculo.Modelo</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Inspeccion.Fecha" 
+                                 Label="Fecha" 
+                                 Required="true"
+                                 id="fecha"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Inspeccion.Estado" 
+                             Label="Estado" 
+                             Required="true"
+                             id="estado">
+                        <MudSelectItem Value="@("Pendiente")">Pendiente</MudSelectItem>
+                        <MudSelectItem Value="@("En Proceso")">En Proceso</MudSelectItem>
+                        <MudSelectItem Value="@("Completada")">Completada</MudSelectItem>
+                        <MudSelectItem Value="@("Cancelada")">Cancelada</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Inspeccion.Observaciones" 
+                                Label="Observaciones" 
+                                Lines="3"
+                                id="observaciones"/>
+                </MudItem>
+            </MudGrid>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -27,46 +57,52 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
-    [Parameter] public Inspeccion inspeccion { get; set; } = new();
-    
-    private MudForm form;
-    private List<Vehiculo> vehiculos = new();
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Inspeccion Inspeccion { get; set; } = new();
+    [Parameter] public List<Vehiculo> Vehiculos { get; set; } = new();
+    private MudForm? form;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        try
+        if (Inspeccion.Id == 0)
         {
-            vehiculos = await Http.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add("Error al cargar vehículos: " + ex.Message, Severity.Error);
+            // Valores por defecto para nueva inspección
+            Inspeccion.Fecha = DateTime.Today;
+            Inspeccion.Estado = "Pendiente";
+            
+            // Si hay vehículos disponibles, seleccionar el primero
+            if (Vehiculos.Any())
+            {
+                Inspeccion.VehiculoId = Vehiculos.First().Id;
+            }
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
 
     private async Task Submit()
     {
-        await form.Validate();
-        if (form.IsValid)
+        if (form is not null)
         {
-            try
+            await form.Validate();
+            if (form.IsValid)
             {
-                var response = inspeccion.Id == 0 
-                    ? await Http.PostAsJsonAsync("api/inspecciones", inspeccion)
-                    : await Http.PutAsJsonAsync($"api/inspecciones/{inspeccion.Id}", inspeccion);
-                
-                if (response.IsSuccessStatusCode)
+                if (Inspeccion.VehiculoId == 0)
                 {
-                    Snackbar.Add("Inspección guardada correctamente", Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(true));
+                    Snackbar.Add("Debe seleccionar un vehículo", Severity.Warning);
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+
+                if (Inspeccion.Fecha == default)
+                {
+                    Snackbar.Add("Debe seleccionar una fecha", Severity.Warning);
+                    return;
+                }
+
+                MudDialog.Close(DialogResult.Ok(Inspeccion));
             }
         }
     }

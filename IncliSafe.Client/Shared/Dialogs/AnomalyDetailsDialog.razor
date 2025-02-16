@@ -1,0 +1,109 @@
+@inject IDobackAnalysisService DobackService
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <!-- Información General -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">
+                                Anomalía Detectada
+                                <MudChip Color="@GetAnomalyColor(Anomaly.Type)" Size="Size.Small" Class="ml-2">
+                                    @Anomaly.Type
+                                </MudChip>
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList Dense>
+                            <MudListItem Icon="@Icons.Material.Filled.Schedule">
+                                Fecha: @Anomaly.Timestamp.ToLocalTime().ToString("g")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Speed">
+                                Valor: @Anomaly.Value.ToString("N2")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.TrendingUp">
+                                Valor Esperado: @Anomaly.ExpectedValue.ToString("N2")
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Analytics">
+                                Desviación: @Anomaly.Deviation.ToString("N1")σ
+                            </MudListItem>
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Posibles Causas -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Posibles Causas</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList>
+                            @foreach (var cause in Anomaly.PossibleCauses)
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.ErrorOutline">
+                                    @cause
+                                </MudListItem>
+                            }
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Acciones Recomendadas -->
+            <MudItem xs="12">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Acciones Recomendadas</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @foreach (var action in Anomaly.RecommendedActions)
+                        {
+                            <MudAlert Severity="Severity.Info" Class="mb-2">
+                                @action
+                            </MudAlert>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cerrar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="CreateIncident">
+            Crear Incidente
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Anomaly Anomaly { get; set; } = new();
+    [Parameter] public int VehicleId { get; set; }
+
+    private Color GetAnomalyColor(AnomalyType type) => type switch
+    {
+        AnomalyType.High => Color.Error,
+        AnomalyType.Low => Color.Warning,
+        AnomalyType.Pattern => Color.Info,
+        AnomalyType.Seasonal => Color.Success,
+        AnomalyType.Trend => Color.Primary,
+        _ => Color.Default
+    };
+
+    private async Task CreateIncident()
+    {
+        // TODO: Implementar creación de incidente
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+} 

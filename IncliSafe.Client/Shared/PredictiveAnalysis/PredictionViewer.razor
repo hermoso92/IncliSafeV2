@@ -1,0 +1,212 @@
+@inject IPredictiveAnalysisService PredictiveService
+@inject IJSRuntime JS
+
+<MudGrid>
+    <!-- Panel de Control -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudDateRangePicker @bind-DateRange="_dateRange"
+                                      Label="Rango de Análisis"
+                                      AutoClose="true"/>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Tipo de Predicción"
+                             @bind-Value="_predictionType">
+                        <MudSelectItem Value="@("stability")">Estabilidad</MudSelectItem>
+                        <MudSelectItem Value="@("performance")">Rendimiento</MudSelectItem>
+                        <MudSelectItem Value="@("risk")">Riesgo</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                             OnClick="UpdatePredictions" Class="mt-4">
+                        Actualizar Predicciones
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráfica de Predicciones -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Predicciones</MudText>
+            <div id="predictionChart" style="height: 400px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Métricas de Predicción -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Métricas de Predicción</MudText>
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText>Confianza</MudText>
+                            <MudText Typo="Typo.h4" Color="@GetConfidenceColor(_predictionResult?.Confidence ?? 0)">
+                                @((_predictionResult?.Confidence ?? 0).ToString("P1"))
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText>Tendencia</MudText>
+                            <MudText Typo="Typo.h4" Color="@GetTrendColor(_predictionResult?.Trend ?? 0)">
+                                @GetTrendDescription(_predictionResult?.Trend ?? 0)
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Recomendaciones -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Recomendaciones</MudText>
+            @if (_predictionResult?.Recommendations != null)
+            {
+                foreach (var recommendation in _predictionResult.Recommendations)
+                {
+                    <MudAlert Severity="@GetRecommendationSeverity(recommendation)" Class="mb-2">
+                        @recommendation
+                    </MudAlert>
+                }
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Anomalías Detectadas -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Anomalías Detectadas</MudText>
+            <MudTable Items="@_anomalies" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Fecha</MudTh>
+                    <MudTh>Tipo</MudTh>
+                    <MudTh>Valor</MudTh>
+                    <MudTh>Desviación</MudTh>
+                    <MudTh>Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Timestamp.ToLocalTime().ToString("g")</MudTd>
+                    <MudTd>
+                        <MudChip Color="@GetAnomalyColor(context.Type)" Size="Size.Small">
+                            @context.Type
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@context.Value.ToString("N2")</MudTd>
+                    <MudTd>@context.Deviation.ToString("N1")σ</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Info"
+                                     OnClick="@(() => ShowAnomalyDetails(context))"/>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+
+    private DateRange _dateRange = new DateRange(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private string _predictionType = "stability";
+    private PredictionResult? _predictionResult;
+    private List<Anomaly> _anomalies = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPredictions();
+    }
+
+    private async Task LoadPredictions()
+    {
+        _predictionResult = await PredictiveService.PredictStability(
+            VehicleId,
+            _dateRange.Start!.Value,
+            _dateRange.End!.Value);
+
+        _anomalies = await PredictiveService.DetectAnomalies(
+            VehicleId,
+            _dateRange.Start!.Value,
+            _dateRange.End!.Value);
+
+        await UpdatePredictionChart();
+    }
+
+    private async Task UpdatePredictionChart()
+    {
+        if (_predictionResult == null) return;
+
+        await JS.InvokeVoidAsync("updatePredictionChart", "predictionChart", new
+        {
+            _predictionResult.TimePoints,
+            _predictionResult.Predictions,
+            _predictionResult.UpperBound,
+            _predictionResult.LowerBound,
+            Type = _predictionType
+        });
+    }
+
+    private Color GetConfidenceColor(decimal confidence) => confidence switch
+    {
+        >= 0.8M => Color.Success,
+        >= 0.6M => Color.Warning,
+        _ => Color.Error
+    };
+
+    private Color GetTrendColor(double trend) => trend switch
+    {
+        > 0.01 => Color.Success,
+        < -0.01 => Color.Error,
+        _ => Color.Info
+    };
+
+    private string GetTrendDescription(double trend)
+    {
+        var direction = trend switch
+        {
+            > 0.01 => "↑",
+            < -0.01 => "↓",
+            _ => "→"
+        };
+        return $"{direction} {Math.Abs(trend):P1}";
+    }
+
+    private Severity GetRecommendationSeverity(string recommendation)
+    {
+        if (recommendation.Contains("crítico", StringComparison.OrdinalIgnoreCase))
+            return Severity.Error;
+        if (recommendation.Contains("atención", StringComparison.OrdinalIgnoreCase))
+            return Severity.Warning;
+        return Severity.Info;
+    }
+
+    private Color GetAnomalyColor(AnomalyType type) => type switch
+    {
+        AnomalyType.High => Color.Error,
+        AnomalyType.Low => Color.Warning,
+        AnomalyType.Pattern => Color.Info,
+        AnomalyType.Seasonal => Color.Success,
+        AnomalyType.Trend => Color.Primary,
+        _ => Color.Default
+    };
+
+    private async Task ShowAnomalyDetails(Anomaly anomaly)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Anomaly"] = anomaly,
+            ["VehicleId"] = VehicleId
+        };
+
+        await DialogService.ShowAsync<AnomalyDetailsDialog>("Detalles de Anomalía", parameters);
+    }
+} 
