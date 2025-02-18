@@ -6,16 +6,14 @@ namespace IncliSafe.Shared.Models.Analysis
 {
     public class DashboardMetrics
     {
-        public int TotalVehicles { get; set; }
-        public int ActiveAlerts { get; set; }
-        public int PendingAnalyses { get; set; }
-        public double StabilityIndex { get; set; }
-        public double SafetyScore { get; set; }
-        public double MaintenanceScore { get; set; }
+        public decimal StabilityScore { get; set; }
+        public decimal SafetyScore { get; set; }
+        public decimal MaintenanceScore { get; set; }
+        public decimal PerformanceScore { get; set; }
+        public decimal TrendDirection { get; set; }
         public List<TrendMetric> Trends { get; set; } = new();
         public List<Alert> RecentAlerts { get; set; } = new();
         public List<Anomaly> RecentAnomalies { get; set; } = new();
         public DateTime LastUpdate { get; set; }
-        public Dictionary<string, double> PatternDistribution { get; set; } = new();
     }
 } 

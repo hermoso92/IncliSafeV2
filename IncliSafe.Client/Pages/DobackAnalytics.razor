@@ -3,6 +3,7 @@
 @inject IVehicleService VehicleService
 @inject IDialogService DialogService
 @attribute [Authorize]
+@using IncliSafe.Shared.Models.Analysis
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
     <MudGrid>
@@ -78,10 +79,10 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText Typo="Typo.h6">Índice de Estabilidad</MudText>
-                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result.StabilityScore ?? 0) * 100)"
-                                                   Color="@GetStabilityColor(_currentAnalysis?.Result.StabilityScore ?? 0)"
+                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result?.GetStabilityScore() ?? 0) * 100)"
+                                                   Color="@GetStabilityColor(_currentAnalysis?.Result?.GetStabilityScore() ?? 0)"
                                                    Size="Size.Large">
-                                    @((_currentAnalysis?.Result.StabilityScore ?? 0).ToString("P0"))
+                                    @((_currentAnalysis?.Result?.GetStabilityScore() ?? 0).ToString("P0"))
                                 </MudProgressCircular>
                             </MudCardContent>
                         </MudCard>
@@ -91,10 +92,10 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText Typo="Typo.h6">Índice de Seguridad</MudText>
-                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result.SafetyScore ?? 0) * 100)"
+                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result?.GetSafetyScore() ?? 0) * 100)"
                                                    Color="Color.Success"
                                                    Size="Size.Large">
-                                    @((_currentAnalysis?.Result.SafetyScore ?? 0).ToString("P0"))
+                                    @((_currentAnalysis?.Result?.GetSafetyScore() ?? 0).ToString("P0"))
                                 </MudProgressCircular>
                             </MudCardContent>
                         </MudCard>
@@ -155,7 +156,7 @@
     {
         if (_selectedFileId > 0)
         {
-            _currentAnalysis = await DobackService.GetAnalysis(_selectedFileId);
+            _currentAnalysis = await DobackService.GetAnalysisAsync(_selectedFileId);
         }
     }
 
@@ -204,7 +205,7 @@
 
         if (!result.Canceled && result.Data is int comparisonFileId)
         {
-            _comparisonAnalysis = await DobackService.GetAnalysis(comparisonFileId);
+            _comparisonAnalysis = await DobackService.GetAnalysisAsync(comparisonFileId);
             _selectedView = "comparison";
         }
     }
@@ -218,7 +219,7 @@
 
     private string GetOverallStatus()
     {
-        if (_currentAnalysis == null) return "Sin datos";
+        if (_currentAnalysis?.Result == null) return "Sin datos";
 
         return (_currentAnalysis.Result.StabilityScore, _currentAnalysis.Result.SafetyScore) switch
         {

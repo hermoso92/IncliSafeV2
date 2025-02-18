@@ -1,96 +1,47 @@
-@page "/conocimiento"
+@page "/base-conocimiento"
 @attribute [Authorize(Roles = "Administrador")]
 @inject IKnowledgeBaseService KnowledgeService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@using IncliSafe.Shared.Models.Patterns
 
 <PageHeader Title="Base de Conocimiento"
            ShowAddButton="true"
            AddButtonText="Nuevo Patrón"
            OnAddClick="@(() => OpenPatternDialog(null))" />
 
-<MudGrid>
-    <!-- Patrones Detectados -->
-    <MudItem xs="12" md="8">
-        <MudCard>
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Patrones Detectados</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudTable Items="@_patterns" Dense="true" Hover="true" Loading="@_loading">
-                    <HeaderContent>
-                        <MudTh>Tipo</MudTh>
-                        <MudTh>Nombre</MudTh>
-                        <MudTh>Confianza</MudTh>
-                        <MudTh>Detecciones</MudTh>
-                        <MudTh>Acciones</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>
-                            <MudChip Color="@GetPatternColor(context.PatternType)" Size="Size.Small">
-                                @context.PatternType
-                            </MudChip>
-                        </MudTd>
-                        <MudTd>@context.PatternName</MudTd>
-                        <MudTd>@(context.Confidence.ToString("P1"))</MudTd>
-                        <MudTd>@context.TimesDetected</MudTd>
-                        <MudTd>
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => OpenPatternDialog(context))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => ShowPatternDetails(context))" />
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
+<MudContainer>
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5">Base de Conocimiento</MudText>
+        </MudItem>
 
-    <!-- Estadísticas -->
-    <MudItem xs="12" md="4">
-        <MudCard>
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Estadísticas</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudList>
-                    <MudListItem>
-                        <MudChip Color="Color.Primary">Ejemplo</MudChip>
-                    </MudListItem>
-                </MudList>
-            </MudCardContent>
-        </MudCard>
-
-        <MudCard Class="mt-4">
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Distribución de Patrones</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudChart ChartType="ChartType.Pie" 
-                         InputData="@_patternDistribution.Values.ToArray()"
-                         InputLabels="@_patternDistribution.Keys.ToArray()" />
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-</MudGrid>
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardContent>
+                    @if (_patternDistributions != null)
+                    {
+                        <MudChart ChartType="ChartType.Pie"
+                                 InputData="@_patternDistributions.Select(p => Convert.ToDouble(p.Confidence)).ToArray()"
+                                 InputLabels="@_patternDistributions.Select(p => p.Name).ToArray()" />
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
     private bool _loading = true;
     private List<KnowledgePattern> _patterns = new();
     private KnowledgeStats _stats = new();
     private Dictionary<string, double> _patternDistribution = new();
+    private List<PatternDistribution>? _patternDistributions;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        await LoadPatternDistributions();
     }
 
     private async Task LoadData()
@@ -110,6 +61,11 @@
         {
             _loading = false;
         }
+    }
+
+    private async Task LoadPatternDistributions()
+    {
+        _patternDistributions = await KnowledgeService.GetPatternDistributionAsync();
     }
 
     private Color GetPatternColor(string patternType) => patternType switch

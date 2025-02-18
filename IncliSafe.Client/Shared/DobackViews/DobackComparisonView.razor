@@ -3,6 +3,9 @@
 @using MudBlazor
 @using MudBlazor.Dialog
 @using IncliSafe.Shared.Models
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@inject IDobackAnalysisService DobackService
 
 <MudGrid>
     <!-- Controles de Comparación -->
@@ -80,12 +83,43 @@
     </MudItem>
 </MudGrid>
 
+<MudGrid>
+    <MudItem xs="12">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Comparación</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (BaseAnalysis != null && ComparisonAnalysis != null)
+                {
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText>Estabilidad Base: @BaseAnalysis.GetStabilityIndex()</MudText>
+                            <MudText>Velocidad Base: @BaseAnalysis.GetSpeed()</MudText>
+                            <MudText>Roll Base: @BaseAnalysis.GetRoll()</MudText>
+                            <MudText>Pitch Base: @BaseAnalysis.GetPitch()</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText>Estabilidad Comparación: @ComparisonAnalysis.GetStabilityIndex()</MudText>
+                            <MudText>Velocidad Comparación: @ComparisonAnalysis.GetSpeed()</MudText>
+                            <MudText>Roll Comparación: @ComparisonAnalysis.GetRoll()</MudText>
+                            <MudText>Pitch Comparación: @ComparisonAnalysis.GetPitch()</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
 @code {
     [Parameter] public int VehicleId { get; set; }
     [Parameter] public DobackAnalysis? BaseAnalysis { get; set; }
     [Parameter] public DobackAnalysis? ComparisonAnalysis { get; set; }
 
-    private DateRange _dateRange = new DateRange(DateTime.Now.AddDays(-7), DateTime.Now);
+    private DateRange _dateRange = new(DateTime.Now.AddDays(-7), DateTime.Now);
     private string _selectedMetric = "stability";
     private List<DifferenceMetric> _differences = new();
     private List<Conclusion> _conclusions = new();
@@ -102,30 +136,67 @@
     {
         if (BaseAnalysis == null || ComparisonAnalysis == null) return;
 
-        // Calcular diferencias
         _differences = CalculateDifferences();
-
-        // Generar conclusiones
         _conclusions = GenerateConclusions();
-
-        // Actualizar gráfica
         await UpdateComparisonChart();
+    }
+
+    private async Task UpdateComparisonChart()
+    {
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return;
+
+        var baseData = BaseAnalysis.GetData().Select(d => new
+        {
+            Timestamp = d.Timestamp,
+            Value = _selectedMetric switch
+            {
+                "stability" => d.StabilityIndex,
+                "speed" => d.Speed,
+                "roll" => d.Roll,
+                "pitch" => d.Pitch,
+                _ => 0M
+            }
+        }).ToList();
+
+        var compData = ComparisonAnalysis.GetData().Select(d => new
+        {
+            Timestamp = d.Timestamp,
+            Value = _selectedMetric switch
+            {
+                "stability" => d.StabilityIndex,
+                "speed" => d.Speed,
+                "roll" => d.Roll,
+                "pitch" => d.Pitch,
+                _ => 0M
+            }
+        }).ToList();
+
+        await JS.InvokeVoidAsync("updateComparisonChart", "comparisonChart", new
+        {
+            BaseData = baseData,
+            ComparisonData = compData,
+            Metric = _selectedMetric
+        });
     }
 
     private List<DifferenceMetric> CalculateDifferences()
     {
-        return new List<DifferenceMetric>
-        {
-            new("Estabilidad", 
-                BaseAnalysis!.Data.StabilityIndex,
-                ComparisonAnalysis!.Data.StabilityIndex),
-            new("Velocidad Media",
-                BaseAnalysis!.Data.Speed,
-                ComparisonAnalysis!.Data.Speed),
-            new("Ángulo Máximo",
-                Math.Max(Math.Abs(BaseAnalysis!.Data.Roll), Math.Abs(BaseAnalysis.Data.Pitch)),
-                Math.Max(Math.Abs(ComparisonAnalysis!.Data.Roll), Math.Abs(ComparisonAnalysis.Data.Pitch)))
-        };
+        var metrics = new List<DifferenceMetric>();
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return metrics;
+
+        metrics.Add(new DifferenceMetric(
+            "Estabilidad",
+            BaseAnalysis.GetStabilityIndex(),
+            ComparisonAnalysis.GetStabilityIndex()
+        ));
+
+        metrics.Add(new DifferenceMetric(
+            "Velocidad",
+            BaseAnalysis.GetSpeed(),
+            ComparisonAnalysis.GetSpeed()
+        ));
+
+        return metrics;
     }
 
     private List<Conclusion> GenerateConclusions()
@@ -146,17 +217,6 @@
         return conclusions;
     }
 
-    private async Task UpdateComparisonChart()
-    {
-        await JS.InvokeVoidAsync("updateComparisonChart", "comparisonChart",
-            new
-            {
-                BaseData = BaseAnalysis!.Data,
-                ComparisonData = ComparisonAnalysis!.Data,
-                Metric = _selectedMetric
-            });
-    }
-
     private Color GetDifferenceColor(decimal difference) => difference switch
     {
         > 0.1M => Color.Success,
@@ -175,4 +235,29 @@
     {
         await CompareAnalyses();
     }
+
+    private List<ChartSeries> GetChartData(ICollection<DobackData>? data)
+    {
+        if (data == null) return new();
+
+        return new List<ChartSeries>
+        {
+            new ChartSeries 
+            { 
+                Name = "Estabilidad",
+                Data = data.Select(d => Convert.ToDouble(d.StabilityIndex)).ToArray()
+            },
+            new ChartSeries 
+            { 
+                Name = "Velocidad",
+                Data = data.Select(d => Convert.ToDouble(d.Speed)).ToArray()
+            }
+        };
+    }
+
+    private string[] GetTimeLabels() => 
+        BaseAnalysis?.GetData()
+            .Select(d => d.Timestamp.ToString("HH:mm:ss"))
+            .ToArray() 
+        ?? Array.Empty<string>();
 } 

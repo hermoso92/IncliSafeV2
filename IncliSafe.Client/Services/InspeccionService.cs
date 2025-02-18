@@ -3,113 +3,61 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models;
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Client.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using MudBlazor;
+using IncliSafe.Shared.Exceptions;
 
 namespace IncliSafe.Client.Services
 {
-    public class InspeccionService
+    public class InspeccionService : ServiceBase, IInspeccionService
     {
-        private readonly HttpClient _http;
-        private readonly ILogger<InspeccionService> _logger;
-        private readonly ISnackbar _snackbar;
+        private readonly HttpClient _httpClient;
+        private new readonly ILogger<InspeccionService> _logger;
+        private new readonly ISnackbar _snackbar;
 
-        public InspeccionService(HttpClient http, ILogger<InspeccionService> logger, ISnackbar snackbar)
+        public InspeccionService(
+            HttpClient httpClient,
+            ILogger<InspeccionService> logger,
+            ISnackbar snackbar,
+            CacheService cache) : base(httpClient, snackbar, logger, cache)
         {
-            _http = http;
+            _httpClient = httpClient;
             _logger = logger;
             _snackbar = snackbar;
         }
 
-        public async Task<List<Inspeccion>> GetInspecciones()
+        public async Task<List<InspeccionDTO>> GetInspeccionesAsync()
         {
-            try
-            {
-                var response = await _http.GetAsync("api/inspecciones");
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return new List<Inspeccion>();
-                }
-
-                var inspecciones = await response.Content.ReadFromJsonAsync<List<Inspeccion>>();
-                return inspecciones ?? new List<Inspeccion>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener inspecciones");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return new List<Inspeccion>();
-            }
+            return await _httpClient.GetFromJsonAsync<List<InspeccionDTO>>("api/inspecciones") ?? new();
         }
 
-        public async Task<Inspeccion?> CreateInspeccion(Inspeccion inspeccion)
+        public async Task<InspeccionDTO> GetInspeccionAsync(int id)
         {
-            try
-            {
-                var response = await _http.PostAsJsonAsync("api/inspecciones", inspeccion);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return null;
-                }
-
-                var nuevaInspeccion = await response.Content.ReadFromJsonAsync<Inspeccion>();
-                _snackbar.Add("Inspección creada correctamente", Severity.Success);
-                return nuevaInspeccion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear inspección");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return null;
-            }
+            return await _httpClient.GetFromJsonAsync<InspeccionDTO>($"api/inspecciones/{id}") 
+                ?? throw new NotFoundException("Inspección no encontrada");
         }
 
-        public async Task<Inspeccion?> UpdateInspeccion(Inspeccion inspeccion)
+        public async Task<InspeccionDTO> CreateInspeccionAsync(InspeccionDTO inspeccion)
         {
-            try
-            {
-                var response = await _http.PutAsJsonAsync($"api/inspecciones/{inspeccion.Id}", inspeccion);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return null;
-                }
-
-                _snackbar.Add("Inspección actualizada correctamente", Severity.Success);
-                return inspeccion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar inspección");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return null;
-            }
+            var response = await _httpClient.PostAsJsonAsync("api/inspecciones", inspeccion);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<InspeccionDTO>() ?? throw new Exception("Error al crear la inspección");
         }
 
-        public async Task DeleteInspeccion(int id)
+        public async Task<InspeccionDTO> UpdateInspeccionAsync(InspeccionDTO inspeccion)
         {
-            try
-            {
-                var response = await _http.DeleteAsync($"api/inspecciones/{id}");
-                response.EnsureSuccessStatusCode();
-                _snackbar.Add("Inspección eliminada correctamente", Severity.Success);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar inspección");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                throw;
-            }
+            var response = await _httpClient.PutAsJsonAsync($"api/inspecciones/{inspeccion.Id}", inspeccion);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<InspeccionDTO>() ?? throw new Exception("Error al actualizar la inspección");
+        }
+
+        public async Task<bool> DeleteInspeccionAsync(int id)
+        {
+            var response = await _httpClient.DeleteAsync($"api/inspecciones/{id}");
+            return response.IsSuccessStatusCode;
         }
     }
 }

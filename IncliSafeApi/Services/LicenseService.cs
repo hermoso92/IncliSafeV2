@@ -107,6 +107,11 @@ namespace IncliSafeApi.Services
 
         public async Task<License> CreateLicenseAsync(License license)
         {
+            license.Type = LicenseType.Standard;
+            license.CreatedAt = DateTime.UtcNow;
+            license.ExpiryDate = DateTime.UtcNow.AddYears(1);
+            license.IsActive = true;
+            
             _context.Licenses.Add(license);
             await _context.SaveChangesAsync();
             return license;
@@ -150,18 +155,18 @@ namespace IncliSafeApi.Services
         {
             return await _context.Licenses
                 .Include(l => l.Vehiculo)
-                .Where(l => l.IsActive && l.ExpiresAt > DateTime.UtcNow)
+                .Where(l => l.IsActive && l.ExpiryDate > DateTime.UtcNow)
                 .ToListAsync();
         }
 
-        public async Task<bool> ValidateLicenseAsync(string licenseKey)
+        public async Task<bool> ValidateLicenseAsync(string licenseNumber)
         {
             var license = await _context.Licenses
-                .FirstOrDefaultAsync(l => l.LicenseKey == licenseKey);
+                .FirstOrDefaultAsync(l => l.LicenseNumber == licenseNumber);
 
             return license != null && 
                    license.IsActive && 
-                   license.ExpiresAt > DateTime.UtcNow;
+                   license.ExpiryDate > DateTime.UtcNow;
         }
 
         private async Task<bool> LicenseExistsAsync(int id)

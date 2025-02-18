@@ -6,11 +6,12 @@ namespace IncliSafe.Client.Services.Interfaces
 {
     public interface IVehicleService
     {
-        Task<List<Vehiculo>> GetVehiculosAsync();
-        Task<Vehiculo> GetVehiculoAsync(int id);
-        Task<Vehiculo> CreateVehiculoAsync(Vehiculo vehiculo);
-        Task<Vehiculo> UpdateVehiculoAsync(Vehiculo vehiculo);
-        Task DeleteVehiculoAsync(int id);
+        Task<List<Vehiculo>> GetVehiculos();
+        Task<Vehiculo?> GetVehicle(int id);
+        Task<List<Vehiculo>> GetUserVehiculos(int userId);
+        Task<Vehiculo?> CreateVehiculo(Vehiculo vehiculo);
+        Task<bool> UpdateVehiculo(Vehiculo vehiculo);
+        Task<bool> DeleteVehiculo(int id);
         Task<List<Inspeccion>> GetInspeccionesAsync(int vehiculoId);
     }
 } 

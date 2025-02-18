@@ -12,5 +12,7 @@ namespace IncliSafe.Shared.Models.Auth
         public string Password { get; set; } = string.Empty;
 
         public bool RememberMe { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
     }
 } 

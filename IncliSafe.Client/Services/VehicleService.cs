@@ -9,82 +9,73 @@ using MudBlazor;
 
 namespace IncliSafe.Client.Services
 {
-    public class VehicleService : ServiceBase, IVehicleService
+    public class VehicleService : IVehicleService
     {
         private readonly HttpClient _httpClient;
-        private const string BaseUrl = "api/vehiculos";
+        private readonly ILogger<VehicleService> _logger;
 
-        public VehicleService(
-            HttpClient httpClient,
-            ISnackbar snackbar,
-            ILogger<VehicleService> logger,
-            CacheService cache) : base(httpClient, snackbar, logger, cache)
+        public VehicleService(HttpClient httpClient, ILogger<VehicleService> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
-        public async Task<List<Vehiculo>> GetVehiculosAsync()
+        public async Task<List<Vehiculo>> GetVehiculos()
         {
-            var result = await GetFromCacheOrApiAsync<List<Vehiculo>>(
-                "vehiculos",
-                BaseUrl,
-                TimeSpan.FromMinutes(5));
-
-            return result.Data ?? new List<Vehiculo>();
+            return await _httpClient.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") 
+                ?? new List<Vehiculo>();
         }
 
-        public async Task<Vehiculo> GetVehiculoAsync(int id)
+        public async Task<Vehiculo?> GetVehicle(int id)
         {
-            var result = await HandleRequestAsync(async () =>
+            try
             {
-                return await _httpClient.GetFromJsonAsync<Vehiculo>($"{BaseUrl}/{id}");
-            }, "Error al obtener el vehículo");
-
-            return result.Data ?? throw new Exception("Vehículo no encontrado");
+                return await _httpClient.GetFromJsonAsync<Vehiculo>($"api/vehiculos/{id}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting vehicle {Id}", id);
+                return null;
+            }
         }
 
-        public async Task<Vehiculo> CreateVehiculoAsync(Vehiculo vehiculo)
+        public async Task<Vehiculo?> CreateVehiculo(Vehiculo vehiculo)
         {
-            var result = await HandleRequestAsync(async () =>
+            try
             {
-                var response = await _httpClient.PostAsJsonAsync(BaseUrl, vehiculo);
+                var response = await _httpClient.PostAsJsonAsync("api/vehiculos", vehiculo);
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadFromJsonAsync<Vehiculo>();
-            }, "Error al crear el vehículo");
-
-            return result.Data ?? throw new Exception("Error al crear el vehículo");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating vehicle");
+                return null;
+            }
         }
 
-        public async Task<Vehiculo> UpdateVehiculoAsync(Vehiculo vehiculo)
+        public async Task<bool> UpdateVehiculo(Vehiculo vehiculo)
         {
-            var result = await HandleRequestAsync(async () =>
-            {
-                var response = await _httpClient.PutAsJsonAsync($"{BaseUrl}/{vehiculo.Id}", vehiculo);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<Vehiculo>();
-            }, "Error al actualizar el vehículo");
-
-            return result.Data ?? throw new Exception("Error al actualizar el vehículo");
+            var response = await _httpClient.PutAsJsonAsync($"api/vehiculos/{vehiculo.Id}", vehiculo);
+            return response.IsSuccessStatusCode;
         }
 
-        public async Task DeleteVehiculoAsync(int id)
+        public async Task<bool> DeleteVehiculo(int id)
         {
-            await HandleRequestAsync(async () =>
-            {
-                var response = await _httpClient.DeleteAsync($"{BaseUrl}/{id}");
-                response.EnsureSuccessStatusCode();
-                return true;
-            }, "Error al eliminar el vehículo");
+            var response = await _httpClient.DeleteAsync($"api/vehiculos/{id}");
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<List<Vehiculo>> GetUserVehiculos(int userId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<Vehiculo>>($"api/vehiculos/user/{userId}") 
+                ?? new List<Vehiculo>();
         }
 
         public async Task<List<Inspeccion>> GetInspeccionesAsync(int vehiculoId)
         {
-            var result = await HandleRequestAsync(async () =>
-            {
-                return await _httpClient.GetFromJsonAsync<List<Inspeccion>>($"{BaseUrl}/{vehiculoId}/inspecciones");
-            }, "Error al obtener inspecciones");
-
-            return result.Data ?? new List<Inspeccion>();
+            return await _httpClient.GetFromJsonAsync<List<Inspeccion>>($"api/vehiculos/{vehiculoId}/inspecciones") 
+                ?? new List<Inspeccion>();
         }
     }
 } 

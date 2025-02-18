@@ -27,6 +27,26 @@
     </MudItem>
 </MudGrid>
 
+@if (Analysis?.Data != null)
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Aceleración</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText>X: @Analysis.GetValue("AccelerationX")</MudText>
+                    <MudText>Y: @Analysis.GetValue("AccelerationY")</MudText>
+                    <MudText>Z: @Analysis.GetValue("AccelerationZ")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
 @code {
     [Parameter] public DobackAnalysis? Analysis { get; set; }
 
@@ -53,24 +73,24 @@
 
         var accelerationData = new
         {
-            x = Analysis.Data.AccelerationX,
-            y = Analysis.Data.AccelerationY,
-            z = Analysis.Data.AccelerationZ,
+            x = Analysis.Data.Select(d => d.AccelerationX).ToList(),
+            y = Analysis.Data.Select(d => d.AccelerationY).ToList(),
+            z = Analysis.Data.Select(d => d.AccelerationZ).ToList(),
             time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
         };
 
         var orientationData = new
         {
-            roll = Analysis.Data.Roll,
-            pitch = Analysis.Data.Pitch,
-            yaw = Analysis.Data.Yaw,
+            roll = Analysis.Data.Select(d => d.Roll).ToList(),
+            pitch = Analysis.Data.Select(d => d.Pitch).ToList(),
+            yaw = Analysis.Data.Select(d => d.Yaw).ToList(),
             time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
         };
 
         var stabilityData = new
         {
-            index = Analysis.Data.StabilityIndex,
-            speed = Analysis.Data.Speed,
+            index = Analysis.Data.Select(d => d.StabilityIndex).ToList(),
+            speed = Analysis.Data.Select(d => d.Speed).ToList(),
             time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
         };
 

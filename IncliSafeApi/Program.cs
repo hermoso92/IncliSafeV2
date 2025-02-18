@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.OpenApi.Models;
 using IncliSafeApi.Services.Interfaces;
 using IncliSafeApi.Hubs;
+using IncliSafeApi.Services.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,13 +60,40 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar CORS
+// Registrar servicios
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IKnowledgeBaseService, KnowledgeBaseService>();
+builder.Services.AddScoped<IDobackService, DobackService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
+builder.Services.AddScoped<ILicenseService, LicenseService>();
+
+// Registrar servicios de alertas
+builder.Services.AddScoped<IAlertGenerationService, AlertGenerationService>();
+builder.Services.AddHostedService<AlertGenerationBackgroundService>();
+
+// Registrar servicios de notificación en tiempo real
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationService>();
+
+// Registrar servicios de métricas
+builder.Services.AddScoped<IVehicleMetricsService, VehicleMetricsService>();
+
+// Registrar servicios de análisis de tendencias
+builder.Services.AddScoped<ITrendAnalysisService, TrendAnalysisService>();
+builder.Services.AddHostedService<TrendAnalysisBackgroundService>();
+
+// Registrar servicios de predicción de mantenimiento
+builder.Services.AddScoped<IMaintenancePredictionService, MaintenancePredictionService>();
+builder.Services.AddHostedService<MaintenancePredictionBackgroundService>();
+
+// Configurar CORS con opciones más específicas
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
-        builder.AllowAnyOrigin()
+        builder.WithOrigins("https://localhost:7268") // URL del cliente Blazor
                .AllowAnyMethod()
-               .AllowAnyHeader());
+               .AllowAnyHeader()
+               .AllowCredentials());
 });
 
 // Configurar DbContext
@@ -76,27 +104,80 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IKnowledgeBaseService, KnowledgeBaseService>();
-builder.Services.AddSignalR();
 
-// Configurar JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Configurar autenticación con más opciones de seguridad
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] ?? 
+                throw new InvalidOperationException("JWT Secret Key no configurada"))),
+        ClockSkew = TimeSpan.Zero
+    };
+    
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] ?? 
-                    throw new InvalidOperationException("JWT Secret Key no configurada")))
-        };
-    });
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.Headers["Token-Expired"] = "true";
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// Validar configuración crítica
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+if (string.IsNullOrEmpty(jwtSettings?.SecretKey) || jwtSettings.SecretKey.Length < 32)
+{
+    throw new InvalidOperationException("JWT SecretKey debe tener al menos 32 caracteres");
+}
+
+if (string.IsNullOrEmpty(jwtSettings.Issuer) || string.IsNullOrEmpty(jwtSettings.Audience))
+{
+    throw new InvalidOperationException("JWT Issuer y Audience son requeridos");
+}
+
+// Validar la cadena de conexión
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("La cadena de conexión DefaultConnection es requerida");
+}
 
 var app = builder.Build();
+
+// Asegurar que la base de datos existe y está actualizada
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+        DbInitializer.Initialize(context); // Inicializar datos
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error al inicializar la base de datos.");
+        throw;
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -120,5 +201,8 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Configurar endpoints de SignalR
+app.MapHub<NotificationHub>("/hubs/notification");
 
 app.Run();

@@ -1,7 +1,10 @@
 @page "/inspecciones"
 @attribute [Authorize]
-@using IncliSafe.Shared.Models
-@inject InspeccionService InspeccionService
+@using IncliSafe.Client.Shared.Dialogs
+@using IncliSafe.Client.Dialogs
+@using IncliSafe.Shared.Models.Entities
+@using IncliSafe.Shared.Models.DTOs
+@inject IInspeccionService InspeccionService
 @inject VehiculoService VehiculoService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -43,11 +46,11 @@
                     </MudText>
                 </MudTd>
                 <MudTd DataLabel="Fecha">
-                    @(context.Fecha.HasValue ? context.Fecha.Value.ToShortDateString() : "-")
+                    @context.Fecha.ToShortDateString()
                 </MudTd>
                 <MudTd DataLabel="Estado">
-                    <MudChip Color="@GetEstadoColor(context.Estado)" Size="Size.Small">
-                        @context.Estado
+                    <MudChip Color="@GetEstadoColor(context.Observaciones)" Size="Size.Small">
+                        @context.Observaciones
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="Observaciones">
@@ -75,11 +78,10 @@
 }
 
 @code {
-    private List<Inspeccion> inspecciones = new();
-    private List<Vehiculo> vehiculos = new();
     private bool _loading = true;
-    private bool _error;
-    private string _errorMessage = "";
+    private bool _error = false;
+    private string _errorMessage = string.Empty;
+    private List<InspeccionDTO> inspecciones = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -92,13 +94,13 @@
         {
             _loading = true;
             _error = false;
-            inspecciones = await InspeccionService.GetInspecciones();
-            vehiculos = await VehiculoService.GetVehiculos();
+            inspecciones = await InspeccionService.GetInspeccionesAsync();
         }
         catch (Exception ex)
         {
             _error = true;
             _errorMessage = ex.Message;
+            Snackbar.Add("Error al cargar las inspecciones", Severity.Error);
         }
         finally
         {
@@ -106,79 +108,49 @@
         }
     }
 
-    private async Task OpenDialog(Inspeccion? inspeccion)
+    private async Task OpenDialog(InspeccionDTO? inspeccion)
     {
-        if (!vehiculos.Any())
-        {
-            Snackbar.Add("No hay vehículos disponibles para crear una inspección", Severity.Warning);
-            return;
-        }
-
         var parameters = new DialogParameters
         {
-            ["Inspeccion"] = inspeccion ?? new Inspeccion(),
-            ["Vehiculos"] = vehiculos
+            ["Inspeccion"] = inspeccion ?? new InspeccionDTO()
         };
 
-        var dialog = await DialogService.ShowAsync<InspeccionDialog>(
+        var dialog = await DialogService.ShowAsync<IncliSafe.Client.Shared.Dialogs.InspeccionDialog>(
             inspeccion == null ? "Nueva Inspección" : "Editar Inspección",
             parameters);
 
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            var editedInspeccion = (Inspeccion)result.Data;
-            try
-            {
-                if (editedInspeccion.Id == 0)
-                {
-                    await InspeccionService.CreateInspeccion(editedInspeccion);
-                }
-                else
-                {
-                    await InspeccionService.UpdateInspeccion(editedInspeccion);
-                }
-                await LoadData();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-            }
+            await LoadData();
         }
     }
 
-    private async Task DeleteInspeccion(Inspeccion inspeccion)
+    private async Task DeleteInspeccion(InspeccionDTO inspeccion)
     {
         var parameters = new DialogParameters
         {
-            ["Title"] = "Eliminar Inspección",
-            ["Message"] = $"¿Está seguro de eliminar esta inspección?",
-            ["Color"] = Color.Error,
-            ["ConfirmText"] = "Eliminar"
+            ["ContentText"] = "¿Está seguro de eliminar esta inspección?",
+            ["ButtonText"] = "Eliminar",
+            ["Color"] = Color.Error
         };
 
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("", parameters);
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmar eliminación", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
         {
-            try
-            {
-                await InspeccionService.DeleteInspeccion(inspeccion.Id);
-                await LoadData();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-            }
+            await InspeccionService.DeleteInspeccionAsync(inspeccion.Id);
+            await LoadData();
+            Snackbar.Add("Inspección eliminada correctamente", Severity.Success);
         }
     }
 
     private Color GetEstadoColor(string estado) => estado switch
     {
-        "Pendiente" => Color.Warning,
-        "En Proceso" => Color.Info,
         "Completada" => Color.Success,
+        "En Proceso" => Color.Warning,
+        "Pendiente" => Color.Info,
         "Cancelada" => Color.Error,
         _ => Color.Default
     };

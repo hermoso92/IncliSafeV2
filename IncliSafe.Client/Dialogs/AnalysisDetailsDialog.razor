@@ -1,0 +1,24 @@
+@using MudBlazor
+@using IncliSafe.Shared.Models.Analysis
+
+<MudDialog>
+    <DialogContent>
+        <MudText>Detalles del análisis</MudText>
+        @if (Analysis != null)
+        {
+            <MudText>Fecha: @Analysis.Timestamp.ToString("dd/MM/yyyy HH:mm")</MudText>
+            <MudText>Índice de estabilidad: @Analysis.StabilityIndex.ToString("P2")</MudText>
+            <MudText>Confianza: @Analysis.Confidence.ToString("P2")</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Cerrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public DobackAnalysis? Analysis { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private void Close() => MudDialog.Close();
+} 

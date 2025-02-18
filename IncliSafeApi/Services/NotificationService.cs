@@ -13,6 +13,7 @@ using System.Security.Claims;
 using IncliSafe.Shared.Models.Notifications;
 using System.Linq;
 using IncliSafe.Shared.Models.Patterns;
+using IncliSafe.Shared.Models.Analysis;
 
 namespace IncliSafeApi.Services
 {
@@ -32,19 +33,45 @@ namespace IncliSafeApi.Services
             _logger = logger;
         }
 
-        public async Task SendAlertAsync(int userId, string title, string message, NotificationSeverity severity)
+        public async Task SendAlertAsync(Alert alert)
         {
-            var alert = new Alert
-            {
-                Title = title,
-                Message = message,
-                Severity = severity,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                UserId = userId
-            };
+            alert.CreatedAt = DateTime.UtcNow;
+            alert.IsActive = true;
+            
+            _context.Alerts.Add(alert);
+            await _context.SaveChangesAsync();
 
-            await CreateAlertAsync(alert);
+            if (alert.UserId.HasValue)
+            {
+                await _hubContext.Clients.User(alert.UserId.Value.ToString())
+                    .SendAsync("ReceiveAlert", alert);
+            }
+        }
+
+        public async Task MarkAlertAsReadAsync(int alertId)
+        {
+            var alert = await _context.Alerts.FindAsync(alertId);
+            if (alert != null)
+            {
+                alert.ReadAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<AlertSettings> GetAlertSettingsAsync(int vehicleId)
+        {
+            var settings = await _context.AlertSettings
+                .FirstOrDefaultAsync(s => s.VehicleId == vehicleId);
+
+            return settings ?? new AlertSettings
+            {
+                VehicleId = vehicleId,
+                StabilityThreshold = 0.7M,
+                SafetyThreshold = 0.7M,
+                MinimumSeverity = NotificationSeverity.Warning,
+                EnableEmailNotifications = true,
+                EnablePushNotifications = true
+            };
         }
 
         public async Task SendVehicleAlertAsync(int vehicleId, string title, string message, NotificationSeverity severity)
@@ -158,11 +185,17 @@ namespace IncliSafeApi.Services
         public async Task<Notification> CreateNotificationAsync(Notification notification)
         {
             notification.CreatedAt = DateTime.UtcNow;
+            notification.IsRead = false;
+            notification.IsActive = true;
+            
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
-            await _hubContext.Clients.User(notification.UserId.ToString())
-                .SendAsync("ReceiveNotification", notification);
+            if (notification.UserId.HasValue)
+            {
+                await _hubContext.Clients.User(notification.UserId.ToString())
+                    .SendAsync("ReceiveNotification", notification);
+            }
 
             return notification;
         }
@@ -177,9 +210,23 @@ namespace IncliSafeApi.Services
 
         public async Task<Alert> CreateAlertAsync(Alert alert)
         {
+            alert.CreatedAt = DateTime.UtcNow;
+            alert.IsActive = true;
+
             _context.Alerts.Add(alert);
             await _context.SaveChangesAsync();
+
+            await NotifyUserAsync(alert);
             return alert;
+        }
+
+        private async Task NotifyUserAsync(Alert alert)
+        {
+            if (alert.UserId.HasValue)
+            {
+                await _hubContext.Clients.User(alert.UserId.Value.ToString())
+                    .SendAsync("ReceiveAlert", alert);
+            }
         }
 
         public async Task<bool> DismissAlertAsync(int alertId)
@@ -229,28 +276,24 @@ namespace IncliSafeApi.Services
             var notification = new Notification
             {
                 Title = $"Patrón Detectado: {pattern.PatternName}",
-                Message = $"Se ha detectado un patrón con confianza del {pattern.ConfidenceScore:P2}",
+                Message = pattern.Description,
                 Type = NotificationType.PatternDetected,
                 Severity = NotificationSeverity.Info,
-                CreatedAt = DateTime.UtcNow,
-                IsRead = false,
-                UserId = pattern.VehicleId
+                VehicleId = pattern.VehicleId
             };
 
             await CreateNotificationAsync(notification);
         }
 
-        public async Task NotifyAnomalyDetectedAsync(int vehicleId, string message)
+        public async Task NotifyAnomalyDetectedAsync(Anomaly anomaly)
         {
             var notification = new Notification
             {
-                Title = "Anomalía Detectada",
-                Message = message,
+                Title = $"Anomalía Detectada: {anomaly.Type}",
+                Message = anomaly.Description,
                 Type = NotificationType.Anomaly,
                 Severity = NotificationSeverity.Warning,
-                CreatedAt = DateTime.UtcNow,
-                IsRead = false,
-                UserId = vehicleId
+                VehicleId = anomaly.VehicleId
             };
 
             await CreateNotificationAsync(notification);
@@ -261,9 +304,130 @@ namespace IncliSafeApi.Services
             var vehiculo = await _context.Vehiculos.FindAsync(vehicleId);
             if (vehiculo == null) return false;
 
+            settings.StabilityThreshold = Convert.ToDecimal(settings.StabilityThreshold);
+            settings.SafetyThreshold = Convert.ToDecimal(settings.SafetyThreshold);
+            settings.MinimumSeverity = settings.MinimumSeverity;
+
             vehiculo.NotificationSettings = settings;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<Alert> CreateAlert(string message, NotificationSeverity severity, int vehicleId)
+        {
+            var alert = new Alert
+            {
+                Message = message,
+                Severity = severity,
+                VehicleId = vehicleId,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.Alerts.Add(alert);
+            await _context.SaveChangesAsync();
+            return alert;
+        }
+
+        public async Task<Notification> CreateNotification(string title, string message, NotificationType type, int vehicleId, int? userId = null)
+        {
+            var notification = new Notification
+            {
+                Title = title,
+                Message = message,
+                Type = type,
+                VehicleId = vehicleId,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                IsRead = false
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+            return notification;
+        }
+
+        public async Task<IEnumerable<Notification>> GetUserNotifications(int userId)
+        {
+            return await _context.Notifications
+                .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Notification>> GetActiveAlerts(int vehicleId)
+        {
+            return await _context.Notifications
+                .Where(n => n.VehicleId == vehicleId && n.IsActive)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<NotificationSettings> GetNotificationSettings(int vehicleId)
+        {
+            return await _context.NotificationSettings
+                .FirstOrDefaultAsync(s => s.VehicleId == vehicleId) 
+                ?? new NotificationSettings { VehicleId = vehicleId };
+        }
+
+        public async Task<NotificationSettings> UpdateNotificationSettings(NotificationSettings settings)
+        {
+            var existing = await _context.NotificationSettings
+                .FirstOrDefaultAsync(s => s.VehicleId == settings.VehicleId);
+
+            if (existing == null)
+            {
+                _context.NotificationSettings.Add(settings);
+            }
+            else
+            {
+                _context.Entry(existing).CurrentValues.SetValues(settings);
+            }
+
+            await _context.SaveChangesAsync();
+            return settings;
+        }
+
+        public async Task<bool> DismissNotificationAsync(int notificationId)
+        {
+            var notification = await _context.Notifications.FindAsync(notificationId);
+            if (notification == null) return false;
+
+            notification.IsActive = false;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<Alert> CreateAlert(string message, NotificationSeverity severity, string userId)
+        {
+            var alert = new Alert
+            {
+                Title = severity.ToString(),
+                Message = message,
+                Severity = severity.ToString(),
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                UserId = userId
+            };
+
+            _context.Alerts.Add(alert);
+            await _context.SaveChangesAsync();
+            return alert;
+        }
+
+        public async Task<bool> SendAlert(string message, NotificationSeverity severity, string userId)
+        {
+            try
+            {
+                var alert = await CreateAlert(message, severity, userId);
+                await _hubContext.Clients.User(userId).SendAsync("ReceiveAlert", alert);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 } 

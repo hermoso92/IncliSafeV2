@@ -41,24 +41,24 @@ namespace IncliSafe.Client.Services
                     _snackbar.Add(successMessage ?? "Operación exitosa", Severity.Success);
                 }
                 
-                return ServiceResult<T>.Success(result);
+                return ServiceResult<T>.CreateSuccess(result);
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 _logger.LogWarning(ex, "Sesión expirada");
-                return ServiceResult<T>.Error("Sesión expirada");
+                return ServiceResult<T>.CreateError("Sesión expirada");
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, errorMessage);
                 _snackbar.Add($"Error de conexión: {ex.Message}", Severity.Error);
-                return ServiceResult<T>.Error(ex.Message);
+                return ServiceResult<T>.CreateError(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, errorMessage);
                 _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return ServiceResult<T>.Error(ex.Message);
+                return ServiceResult<T>.CreateError(ex.Message);
             }
         }
 
@@ -74,13 +74,13 @@ namespace IncliSafe.Client.Services
                     cacheExpiration);
 
                 return result != null 
-                    ? ServiceResult<T>.Success(result) 
-                    : ServiceResult<T>.Error("No se pudo obtener los datos");
+                    ? ServiceResult<T>.CreateSuccess(result) 
+                    : ServiceResult<T>.CreateError("No se pudo obtener los datos");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener datos de {Endpoint}", apiEndpoint);
-                return ServiceResult<T>.Error(ex.Message);
+                return ServiceResult<T>.CreateError(ex.Message);
             }
         }
 
@@ -92,14 +92,16 @@ namespace IncliSafe.Client.Services
 
     public class ServiceResult<T>
     {
-        public bool IsSuccess { get; set; }
-        public string Message { get; set; }
-        public T Data { get; set; }
+        public required string Message { get; set; }
+        public required T Data { get; set; }
+        public bool Success { get; set; }
 
-        public static ServiceResult<T> Success(T data, string? message = default) =>
-            new ServiceResult<T> { IsSuccess = true, Data = data, Message = message };
+        private ServiceResult() { }  // Constructor privado para forzar el uso de los métodos factory
 
-        public static ServiceResult<T> Error(string message) =>
-            new ServiceResult<T> { IsSuccess = false, Message = message };
+        public static ServiceResult<T> CreateSuccess(T data, string? message = null) =>
+            new() { Success = true, Data = data, Message = message ?? string.Empty };
+
+        public static ServiceResult<T> CreateError(string message) =>
+            new() { Success = false, Message = message, Data = default! };
     }
 } 

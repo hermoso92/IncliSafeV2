@@ -1,52 +1,33 @@
 @using Microsoft.AspNetCore.SignalR.Client
+@using IncliSafe.Shared.Models.Notifications
 @inject INotificationService NotificationService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 @implements IAsyncDisposable
 
-<MudMenu Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Direction="Direction.Bottom" OffsetY="true">
+<MudMenu AnchorOrigin="Origin.BottomRight" 
+         TransformOrigin="Origin.TopRight">
     <ActivatorContent>
-        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit">
-            @if (_unreadCount > 0)
-            {
-                <MudBadge Color="Color.Error" Content="@_unreadCount" Overlap="true" />
-            }
-        </MudIconButton>
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
+                       Color="Color.Inherit" />
     </ActivatorContent>
     <ChildContent>
-        <MudList Dense="true" DisablePadding="true">
-            @if (!_notifications.Any())
+        @if (_notifications.Any())
+        {
+            foreach (var notification in _notifications)
             {
-                <MudListItem>
-                    <MudText>No hay notificaciones</MudText>
-                </MudListItem>
+                <MudMenuItem>
+                    <MudText>@notification.Message</MudText>
+                    <MudText Typo="Typo.caption">
+                        @notification.CreatedAt.ToLocalTime().ToString("g")
+                    </MudText>
+                </MudMenuItem>
             }
-            else
-            {
-                foreach (var notification in _notifications.Take(5))
-                {
-                    <MudListItem OnClick="@(() => HandleNotificationClick(notification))"
-                                Class="@(notification.IsRead ? "" : "unread-notification")">
-                        <div class="d-flex">
-                            <MudIcon Icon="@GetSeverityIcon(notification.Severity)" 
-                                    Color="@GetSeverityColor(notification.Severity)"
-                                    Class="mr-2" />
-                            <div>
-                                <MudText Typo="Typo.body2"><b>@notification.Title</b></MudText>
-                                <MudText Typo="Typo.caption">@notification.Message</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Primary">
-                                    @notification.CreatedAt.ToLocalTime().ToString("g")
-                                </MudText>
-                            </div>
-                        </div>
-                    </MudListItem>
-                }
-                <MudDivider />
-                <MudListItem OnClick="@(() => NavigationManager.NavigateTo("/notifications"))">
-                    <MudText Color="Color.Primary">Ver todas</MudText>
-                </MudListItem>
-            }
-        </MudList>
+        }
+        else
+        {
+            <MudMenuItem>No hay notificaciones</MudMenuItem>
+        }
     </ChildContent>
 </MudMenu>
 
@@ -80,7 +61,7 @@
 
     private async Task LoadNotifications()
     {
-        _notifications = await NotificationService.GetRecentNotifications();
+        _notifications = await NotificationService.GetNotificationsAsync();
         _unreadCount = _notifications.Count(n => !n.IsRead);
     }
 
@@ -99,17 +80,17 @@
         }
     }
 
-    private string GetSeverityIcon(string severity) => severity switch
+    private string GetSeverityIcon(NotificationSeverity severity) => severity switch
     {
-        "high" => Icons.Material.Filled.Warning,
-        "medium" => Icons.Material.Filled.Info,
+        NotificationSeverity.Critical => Icons.Material.Filled.Warning,
+        NotificationSeverity.Warning => Icons.Material.Filled.Info,
         _ => Icons.Material.Filled.Notifications
     };
 
-    private Color GetSeverityColor(string severity) => severity switch
+    private Color GetSeverityColor(NotificationSeverity severity) => severity switch
     {
-        "high" => Color.Error,
-        "medium" => Color.Warning,
+        NotificationSeverity.Critical => Color.Error,
+        NotificationSeverity.Warning => Color.Warning,
         _ => Color.Info
     };
 

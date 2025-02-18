@@ -7,67 +7,66 @@ using IncliSafe.Shared.Models;
 using MudBlazor;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Text.Json;
+using System.Security.Claims;
+using IncliSafe.Shared.Models.Entities;
+using IncliSafe.Client.Services.Interfaces;
 
 namespace IncliSafe.Client.Services
 {
-    public class VehiculoService : ServiceBase
+    public class VehiculoService : ServiceBase, IVehicleService
     {
+        private readonly HttpClient _httpClient;
+        private readonly AuthenticationStateProvider _authStateProvider;
+        private new readonly ILogger<VehiculoService> _logger;
+
         public VehiculoService(
-            HttpClient http,
-            ISnackbar snackbar,
+            HttpClient httpClient,
+            AuthenticationStateProvider authStateProvider,
             ILogger<VehiculoService> logger,
-            CacheService cache)
-            : base(http, snackbar, logger, cache)
+            ISnackbar snackbar,
+            CacheService cache) : base(httpClient, snackbar, logger, cache)
         {
+            _httpClient = httpClient;
+            _authStateProvider = authStateProvider;
+            _logger = logger;
         }
 
         public async Task<List<Vehiculo>> GetVehiculos()
         {
             try
             {
-                _logger.LogInformation("Obteniendo vehículos...");
-                var response = await _http.GetAsync("api/vehiculos");
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error al obtener vehículos: {error}");
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return new List<Vehiculo>();
-                }
-
-                var vehiculos = await response.Content.ReadFromJsonAsync<List<Vehiculo>>();
-                _logger.LogInformation($"Vehículos obtenidos: {vehiculos?.Count ?? 0}");
-                return vehiculos ?? new List<Vehiculo>();
+                return await _httpClient.GetFromJsonAsync<List<Vehiculo>>("api/vehiculos") ?? new();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener vehículos");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return new List<Vehiculo>();
+                _logger.LogError(ex, "Error getting vehicles");
+                return new();
             }
         }
 
-        public async Task<Vehiculo?> GetVehiculo(int id)
+        public async Task<Vehiculo?> GetVehicle(int id)
         {
             try
             {
-                var response = await _http.GetAsync($"api/vehiculos/{id}");
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<Vehiculo>();
-                }
-                
-                var error = await response.Content.ReadAsStringAsync();
-                _snackbar.Add(error, Severity.Error);
-                return null;
+                return await _httpClient.GetFromJsonAsync<Vehiculo>($"api/vehiculos/{id}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener vehículo");
-                _snackbar.Add($"Error al obtener vehículo: {ex.Message}", Severity.Error);
+                _logger.LogError(ex, "Error getting vehicle {Id}", id);
                 return null;
+            }
+        }
+
+        public async Task<List<Vehiculo>> GetUserVehiculos(int userId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<Vehiculo>>($"api/vehiculos/user/{userId}") ?? new();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user vehicles");
+                return new();
             }
         }
 
@@ -75,83 +74,55 @@ namespace IncliSafe.Client.Services
         {
             try
             {
-                _logger.LogInformation($"[CreateVehiculo] Iniciando creación de vehículo: {JsonSerializer.Serialize(vehiculo)}");
-                
-                var authState = await _authStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst("UserId")?.Value;
-                
-                if (string.IsNullOrEmpty(userId))
-                {
-                    _snackbar.Add("Error: Usuario no identificado", Severity.Error);
-                    return null;
-                }
-
-                vehiculo.UserId = int.Parse(userId);
-                
-                var response = await _http.PostAsJsonAsync("api/vehiculos", vehiculo);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return null;
-                }
-
-                var nuevoVehiculo = await response.Content.ReadFromJsonAsync<Vehiculo>();
-                if (nuevoVehiculo == null)
-                {
-                    _snackbar.Add("Error al procesar la respuesta del servidor", Severity.Error);
-                    return null;
-                }
-
-                _snackbar.Add("Vehículo creado correctamente", Severity.Success);
-                return nuevoVehiculo;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear vehículo");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return null;
-            }
-        }
-
-        public async Task<Vehiculo?> UpdateVehiculo(Vehiculo vehiculo)
-        {
-            try
-            {
-                var response = await _http.PutAsJsonAsync($"api/vehiculos/{vehiculo.Id}", vehiculo);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _snackbar.Add($"Error: {error}", Severity.Error);
-                    return null;
-                }
-
-                _snackbar.Add("Vehículo actualizado correctamente", Severity.Success);
-                return vehiculo;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar vehículo");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                return null;
-            }
-        }
-
-        public async Task DeleteVehiculo(int id)
-        {
-            try
-            {
-                var response = await _http.DeleteAsync($"api/vehiculos/{id}");
+                var response = await _httpClient.PostAsJsonAsync("api/vehiculos", vehiculo);
                 response.EnsureSuccessStatusCode();
-                _snackbar.Add("Vehículo eliminado correctamente", Severity.Success);
+                return await response.Content.ReadFromJsonAsync<Vehiculo>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar vehículo");
-                _snackbar.Add($"Error: {ex.Message}", Severity.Error);
-                throw;
+                _logger.LogError(ex, "Error creating vehicle");
+                return null;
+            }
+        }
+
+        public async Task<bool> UpdateVehiculo(Vehiculo vehiculo)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync($"api/vehiculos/{vehiculo.Id}", vehiculo);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating vehicle");
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteVehiculo(int id)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"api/vehiculos/{id}");
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting vehicle");
+                return false;
+            }
+        }
+
+        public async Task<List<Inspeccion>> GetInspeccionesAsync(int vehiculoId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<Inspeccion>>($"api/vehiculos/{vehiculoId}/inspecciones") ?? new();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting inspections");
+                return new();
             }
         }
     }

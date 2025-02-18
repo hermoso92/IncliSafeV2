@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace IncliSafe.Shared.Models
@@ -20,5 +21,6 @@ namespace IncliSafe.Shared.Models
 
         public string Rol { get; set; } = "Usuario";
         public bool Activo { get; set; } = true;
+        public DateTime CreatedAt { get; set; }
     }
 } 

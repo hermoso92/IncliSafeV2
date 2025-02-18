@@ -1,14 +1,1 @@
-namespace IncliSafe.Shared.Models.Analysis
-{
-    public enum AnomalyType
-    {
-        Acceleration,
-        Orientation,
-        Speed,
-        Stability,
-        System,
-        Maintenance,
-        Pattern,
-        Prediction
-    }
-} 
+// Este archivo debe ser eliminado ya que el enum AnomalyType está definido en Anomaly.cs 

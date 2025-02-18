@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Components.Authorization;
 using Blazored.LocalStorage;
 using Microsoft.Extensions.Logging;
-using IncliSafe.Shared.Models;
+using IncliSafe.Shared.Models.Auth;
 
 namespace IncliSafe.Client.Auth
 {
@@ -14,61 +14,59 @@ namespace IncliSafe.Client.Auth
     {
         private readonly ILocalStorageService _localStorage;
         private readonly AuthenticationState _anonymous;
-        private readonly HttpClient _httpClient;
+        private readonly HttpClient _http;
 
         public CustomAuthStateProvider(
             ILocalStorageService localStorage,
-            HttpClient httpClient)
+            HttpClient http)
         {
             _localStorage = localStorage;
-            _httpClient = httpClient;
+            _http = http;
             _anonymous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            try
-            {
-                var userSession = await _localStorage.GetItemAsync<UserSession>("UserSession");
-                if (userSession == null)
-                {
-                    return _anonymous;
-                }
-
-                // Restaurar el token en el HttpClient
-                _httpClient.DefaultRequestHeaders.Authorization = 
-                    new AuthenticationHeaderValue("Bearer", userSession.Token);
-
-                var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.Name, userSession.Nombre),
-                    new Claim(ClaimTypes.Email, userSession.Email),
-                    new Claim(ClaimTypes.Role, userSession.Rol),
-                    new Claim("UserId", userSession.Id.ToString()),
-                    new Claim("Token", userSession.Token)
-                }, "JwtAuth"));
-
-                return new AuthenticationState(claimsPrincipal);
-            }
-            catch
-            {
+            var userSession = await _localStorage.GetItemAsync<UserSession>("UserSession");
+            if (userSession == null)
                 return _anonymous;
+
+            var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userSession.Id.ToString()),
+                new Claim(ClaimTypes.Name, userSession.Nombre),
+                new Claim(ClaimTypes.Role, userSession.Rol)
+            }, "JwtAuth"));
+
+            return new AuthenticationState(claimsPrincipal);
+        }
+
+        public async Task UpdateAuthenticationState(UserSession? userSession)
+        {
+            if (userSession != null)
+            {
+                await _localStorage.SetItemAsync("UserSession", userSession);
+                NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            }
+            else
+            {
+                await _localStorage.RemoveItemAsync("UserSession");
+                NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
             }
         }
 
-        public async Task MarkUserAsAuthenticated(UserSession userSession)
+        public async Task MarkUserAsAuthenticated(UserSession user)
         {
-            await _localStorage.SetItemAsync("UserSession", userSession);
-            var authState = Task.FromResult(await GetAuthenticationStateAsync());
-            NotifyAuthenticationStateChanged(authState);
+            await _localStorage.SetItemAsync("user", user);
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         public async Task MarkUserAsLoggedOut()
         {
-            await _localStorage.RemoveItemAsync("UserSession");
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-            var authState = Task.FromResult(_anonymous);
-            NotifyAuthenticationStateChanged(authState);
+            await _localStorage.RemoveItemAsync("user");
+            await _localStorage.RemoveItemAsync("authToken");
+            _http.DefaultRequestHeaders.Authorization = null;
+            NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
         }
     }
 } 

@@ -10,10 +10,10 @@ namespace IncliSafeApi.Services.Interfaces
     {
         Task<DashboardMetrics> GetDashboardMetrics();
         Task<List<DobackAnalysis>> GetAnalysisHistoryAsync(int vehicleId);
-        Task<DobackAnalysis?> GetAnalysisAsync(int analysisId);
+        Task<DobackAnalysis?> GetAnalysis(int id);
         Task<DobackAnalysis> CreateAnalysisAsync(DobackAnalysis analysis);
         Task<bool> UpdateAnalysisAsync(DobackAnalysis analysis);
-        Task<bool> DeleteAnalysisAsync(int analysisId);
+        Task<bool> DeleteAnalysisAsync(int id);
         Task<List<DetectedPattern>> GetDetectedPatternsAsync(int analysisId);
         Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId);
         Task<List<DobackData>> GetDobackDataAsync(int analysisId);
@@ -22,6 +22,7 @@ namespace IncliSafeApi.Services.Interfaces
         Task<List<Anomaly>> GetRecentAnomalies(int vehicleId);
         Task<TrendAnalysis> GetTrendAnalysis(int vehicleId);
         Task<AnalysisResult> GetAnalysisResult(int vehicleId);
-        Task<List<Prediction>> GetPredictions(int vehicleId);
+        Task<List<AnalysisPrediction>> GetPredictions(int vehicleId);
+        Task<AnalysisPrediction> GeneratePredictionAsync(int vehicleId);
     }
 } 

@@ -2,7 +2,11 @@
 @inject IDobackService DobackService
 @inject IVehicleService VehicleService
 @inject IPredictiveAnalysisService PredictiveService
+@inject IJSRuntime JS
+@inject IDialogService DialogService
 @attribute [Authorize]
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
     <MudGrid>
@@ -26,16 +30,21 @@
         </MudItem>
 
         <!-- Métricas Principales -->
-        <MudItem xs="12" md="3">
-            <MudPaper Class="pa-4" Style="height: 100%;">
-                <MudStack>
-                    <MudText Typo="Typo.h6">Estabilidad General</MudText>
-                    <MudProgressCircular Value="@(_metrics.StabilityIndex * 100)"
-                                       Color="@GetStabilityColor(_metrics.StabilityIndex)"
-                                       Size="Size.Large">
-                        @(_metrics.StabilityIndex.ToString("P0"))
-                    </MudProgressCircular>
-                </MudStack>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText>Estabilidad</MudText>
+                <MudText Typo="Typo.h3">
+                    @(Convert.ToDecimal(_metrics.StabilityScore).ToString("P0"))
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText>Seguridad</MudText>
+                <MudText Typo="Typo.h3">
+                    @(_metrics.SafetyScore.ToString("P0"))
+                </MudText>
             </MudPaper>
         </MudItem>
 
@@ -196,5 +205,60 @@
         await LoadDashboardData();
     }
 
-    // ... (resto del código existente)
+    private Color GetStabilityColor(decimal value) => value switch
+    {
+        > 0.8m => Color.Success,
+        > 0.5m => Color.Warning,
+        _ => Color.Error
+    };
+
+    private Color GetAlertColor(NotificationSeverity severity) => severity switch
+    {
+        NotificationSeverity.Info => Color.Info,
+        NotificationSeverity.Success => Color.Success,
+        NotificationSeverity.Warning => Color.Warning,
+        NotificationSeverity.Error => Color.Error,
+        NotificationSeverity.Critical => Color.Error,
+        _ => Color.Default
+    };
+
+    private Color GetAnomalyColor(decimal severity) => severity switch
+    {
+        > 0.8m => Color.Error,
+        > 0.5m => Color.Warning,
+        _ => Color.Info
+    };
+
+    private Color GetTrendColor(decimal value) => value switch
+    {
+        > 0M => Color.Success,
+        < 0M => Color.Error,
+        _ => Color.Warning
+    };
+
+    private string GetTrendIndicator(decimal value) => value switch
+    {
+        > 0m => "↑",
+        < 0m => "↓",
+        _ => "→"
+    };
+
+    private async Task ShowAnomalyDetails(Anomaly anomaly)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Anomaly"] = anomaly
+        };
+        await DialogService.ShowAsync<AnomalyDetailsDialog>("Detalles de Anomalía", parameters);
+    }
+
+    private decimal ConvertToDecimal(double value) => Convert.ToDecimal(value);
+    private string GetDirection(decimal value) => value > 0 ? "↑" : value < 0 ? "↓" : "→";
+
+    private string GetTrendDirection(decimal value) => value switch
+    {
+        > 0.7M => "Positiva",
+        > 0.3M => "Estable",
+        _ => "Negativa"
+    };
 }

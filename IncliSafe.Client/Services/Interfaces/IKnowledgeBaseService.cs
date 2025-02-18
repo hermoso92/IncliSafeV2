@@ -1,4 +1,4 @@
-using IncliSafe.Shared.Models;
+using IncliSafe.Shared.Models.Patterns;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using IncliSafe.Shared.Models.Patterns;
@@ -12,10 +12,11 @@ namespace IncliSafe.Client.Services.Interfaces
         Task<List<KnowledgePattern>> GetPatterns();
         Task<KnowledgePattern> GetPattern(int id);
         Task<KnowledgePattern> CreatePattern(KnowledgePattern pattern);
-        Task<KnowledgePattern> UpdatePattern(KnowledgePattern pattern);
-        Task DeletePattern(int id);
+        Task<bool> UpdatePattern(KnowledgePattern pattern);
+        Task<bool> DeletePattern(int id);
         Task<KnowledgeStats> GetStats();
         Task<List<PatternDetection>> GetPatternDetections(int patternId);
         Task<PatternDetection> DetectPatternAsync(int patternId);
+        Task<List<PatternDistribution>> GetPatternDistribution();
     }
 } 

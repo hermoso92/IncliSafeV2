@@ -6,264 +6,30 @@
 @using IncliSafe.Shared.Models
 @using System.Text.Json
 @using System.Collections.Generic
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
 
 <MudGrid>
-    <!-- Panel de Control -->
     <MudItem xs="12">
-        <MudPaper Class="pa-4">
-            <MudGrid>
-                <MudItem xs="12" md="4">
-                    <MudSelect T="string" Label="Modo de Análisis" @bind-Value="_analysisMode">
-                        <MudSelectItem Value="@("realtime")">Tiempo Real</MudSelectItem>
-                        <MudSelectItem Value="@("historical")">Histórico</MudSelectItem>
-                        <MudSelectItem Value="@("predictive")">Predictivo</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="4">
-                    <MudSelect T="string" Label="Tipo de Visualización" @bind-Value="_visualizationType">
-                        <MudSelectItem Value="@("3d")">3D</MudSelectItem>
-                        <MudSelectItem Value="@("heatmap")">Mapa de Calor</MudSelectItem>
-                        <MudSelectItem Value="@("scatter")">Dispersión</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="4">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" 
-                             OnClick="ExportAnalysis" Class="mt-4">
-                        Exportar Análisis
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
+        <MudText>Análisis Avanzado</MudText>
     </MudItem>
 
-    <!-- Visualización 3D Principal -->
-    <MudItem xs="12">
-        <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">Análisis 3D de Movimiento</MudText>
-            <div id="motion3dChart" style="height: 500px;"></div>
-        </MudPaper>
-    </MudItem>
-
-    <!-- Análisis de Patrones -->
-    <MudItem xs="12" md="6">
-        <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">Patrones Detectados</MudText>
-            <MudTable T="DetectedPattern" Items="@_detectedPatterns" Dense="true" Hover="true">
-                <HeaderContent>
-                    <MudTh>Patrón</MudTh>
-                    <MudTh>Confianza</MudTh>
-                    <MudTh>Acción</MudTh>
-                </HeaderContent>
-                <RowTemplate Context="pattern">
-                    <MudTd>
-                        <MudChip Color="@GetPatternColor(pattern.Type)" Size="Size.Small">
-                            @pattern.Name
-                        </MudChip>
-                    </MudTd>
-                    <MudTd>
-                        <MudProgressLinear Color="@GetConfidenceColor(pattern.Confidence)" 
-                                         Value="@((double)pattern.Confidence * 100)"
-                                         Class="my-2">
-                            @pattern.Confidence.ToString("P0")
-                        </MudProgressLinear>
-                    </MudTd>
-                    <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.Info"
-                                     OnClick="@(() => ShowPatternDetails(pattern))" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
-    </MudItem>
-
-    <!-- Métricas Avanzadas -->
-    <MudItem xs="12" md="6">
-        <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">Métricas Avanzadas</MudText>
-            <MudGrid>
-                <MudItem xs="6">
-                    <MudNumericField Label="Índice de Estabilidad"
-                                   Value="@_metrics.StabilityIndex"
-                                   Format="P2" ReadOnly="true"/>
-                </MudItem>
-                <MudItem xs="6">
-                    <MudNumericField Label="Velocidad Media"
-                                   Value="@_metrics.AverageSpeed"
-                                   Adornment="Adornment.End"
-                                   AdornmentText="km/h"
-                                   ReadOnly="true"/>
-                </MudItem>
-                <MudItem xs="6">
-                    <MudNumericField Label="Aceleración Máxima"
-                                   Value="@_metrics.MaxAcceleration"
-                                   Adornment="Adornment.End"
-                                   AdornmentText="m/s²"
-                                   ReadOnly="true"/>
-                </MudItem>
-                <MudItem xs="6">
-                    <MudNumericField Label="Ángulo Máximo"
-                                   Value="@_metrics.MaxAngle"
-                                   Adornment="Adornment.End"
-                                   AdornmentText="°"
-                                   ReadOnly="true"/>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    </MudItem>
-
-    <!-- Predicciones -->
-    <MudItem xs="12">
-        <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">Predicciones</MudText>
-            <MudGrid>
-                @foreach (var prediction in _predictions)
-                {
-                    <MudItem xs="12" md="4">
-                        <MudCard>
-                            <MudCardHeader>
-                                <CardHeaderContent>
-                                    <MudText Typo="Typo.h6">@prediction.Type</MudText>
-                                </CardHeaderContent>
-                                <CardHeaderActions>
-                                    <MudChip Color="@GetPredictionColor(prediction.Risk)">
-                                        @prediction.Risk
-                                    </MudChip>
-                                </CardHeaderActions>
-                            </MudCardHeader>
-                            <MudCardContent>
-                                <MudText>@prediction.Description</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Primary">
-                                    Confianza: @prediction.Confidence.ToString("P0")
-                                </MudText>
-                            </MudCardContent>
-                            <MudCardActions>
-                                <MudButton Variant="Variant.Text" Color="Color.Primary"
-                                         OnClick="@(() => ShowPredictionDetails(prediction))">
-                                    Ver Detalles
-                                </MudButton>
-                            </MudCardActions>
-                        </MudCard>
-                    </MudItem>
-                }
-            </MudGrid>
-        </MudPaper>
-    </MudItem>
+    @if (Analysis != null)
+    {
+        <MudItem xs="6">
+            <MudCard>
+                <MudCardContent>
+                    <MudText>Estabilidad: @Analysis.GetStabilityIndex()</MudText>
+                    <MudText>Velocidad: @Analysis.GetSpeed()</MudText>
+                    <MudText>Roll: @Analysis.GetRoll()</MudText>
+                    <MudText>Pitch: @Analysis.GetPitch()</MudText>
+                    <MudText>Yaw: @Analysis.GetYaw()</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
 </MudGrid>
 
 @code {
     [Parameter] public DobackAnalysis? Analysis { get; set; }
-    private List<DetectedPattern> _detectedPatterns = new();
-    private AdvancedMetrics _metrics = new();
-    private List<Prediction> _predictions = new();
-    private string _analysisMode = "realtime";
-    private string _visualizationType = "3d";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-        if (Analysis != null)
-        {
-            await ProcessAnalysis();
-        }
-    }
-
-    private async Task ProcessAnalysis()
-    {
-        // Procesar patrones
-        _detectedPatterns = Analysis!.DetectedPatterns;
-
-        // Calcular métricas avanzadas
-        _metrics = CalculateAdvancedMetrics(Analysis);
-
-        // Generar predicciones
-        _predictions = await GeneratePredictions(Analysis);
-
-        // Inicializar visualizaciones
-        await InitializeVisualizations();
-    }
-
-    private AdvancedMetrics CalculateAdvancedMetrics(DobackAnalysis analysis)
-    {
-        return new AdvancedMetrics
-        {
-            StabilityIndex = analysis.Data.StabilityIndex,
-            AverageSpeed = analysis.Data.Speed,
-            MaxAcceleration = Math.Max(
-                Math.Max(analysis.Data.AccelerationX, analysis.Data.AccelerationY),
-                analysis.Data.AccelerationZ),
-            MaxAngle = Math.Max(Math.Abs(analysis.Data.Roll), Math.Abs(analysis.Data.Pitch))
-        };
-    }
-
-    private async Task<List<Prediction>> GeneratePredictions(DobackAnalysis analysis)
-    {
-        // Implementar lógica de predicción
-        return new List<Prediction>();
-    }
-
-    private async Task InitializeVisualizations()
-    {
-        if (_visualizationType == "3d")
-        {
-            await JS.InvokeVoidAsync("initMotion3DChart", "motion3dChart", new
-            {
-                Analysis.Data.AccelerationX,
-                Analysis.Data.AccelerationY,
-                Analysis.Data.AccelerationZ,
-                Analysis.Data.Roll,
-                Analysis.Data.Pitch,
-                Analysis.Data.Yaw
-            });
-        }
-    }
-
-    private Color GetPatternColor(string type) => type switch
-    {
-        "Stability" => Color.Primary,
-        "Safety" => Color.Error,
-        "Performance" => Color.Success,
-        _ => Color.Default
-    };
-
-    private Color GetConfidenceColor(decimal confidence) => confidence switch
-    {
-        >= 0.8M => Color.Success,
-        >= 0.6M => Color.Warning,
-        _ => Color.Error
-    };
-
-    private Color GetPredictionColor(string risk) => risk switch
-    {
-        "High" => Color.Error,
-        "Medium" => Color.Warning,
-        "Low" => Color.Success,
-        _ => Color.Default
-    };
-
-    private class AdvancedMetrics
-    {
-        public decimal StabilityIndex { get; set; }
-        public decimal AverageSpeed { get; set; }
-        public decimal MaxAcceleration { get; set; }
-        public decimal MaxAngle { get; set; }
-    }
-
-    private async Task ExportAnalysis()
-    {
-        // Implementar lógica de exportación
-    }
-
-    private async Task ShowPatternDetails(DetectedPattern pattern)
-    {
-        var parameters = new DialogParameters
-        {
-            ["Pattern"] = pattern
-        };
-        await DialogService.ShowAsync<PatternDetailsDialog>("Detalles del Patrón", parameters);
-    }
-
-    private async Task ShowPredictionDetails(Prediction prediction)
-    {
-        // Implementar lógica para mostrar detalles de predicción
-    }
 } 

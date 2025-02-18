@@ -139,14 +139,14 @@
 
     private async Task LoadPatternDetails()
     {
-        var details = await DobackService.GetPatternDetails(Pattern.PatternId, VehicleId);
+        var details = await DobackService.GetPatternDetails(Pattern.PatternId);
         _detectedValues = ParseDetectedValues(details.DetectedValues);
         _recommendations = GenerateRecommendations(details);
     }
 
     private async Task InitializeCharts()
     {
-        var historyData = await DobackService.GetPatternHistory(Pattern.PatternId, VehicleId);
+        var historyData = await DobackService.GetPatternHistory(Pattern.PatternId);
         await JS.InvokeVoidAsync("initDetectionHistoryChart", "detectionHistoryChart", historyData);
     }
 
@@ -225,7 +225,7 @@
         {
             ["PatternId"] = Pattern.PatternId,
             ["VehicleId"] = VehicleId,
-            ["CurrentSettings"] = await DobackService.GetAlertSettings(Pattern.PatternId, VehicleId)
+            ["CurrentSettings"] = await DobackService.GetAlertSettings(Pattern.PatternId)
         };
 
         var dialog = await DialogService.ShowAsync<AlertConfigDialog>("Configurar Alertas", parameters);

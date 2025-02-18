@@ -6,18 +6,39 @@ namespace IncliSafe.Shared.Models.Analysis
     public class Anomaly
     {
         public int Id { get; set; }
-        public DateTime Timestamp { get; set; }
-        public AnomalyType Type { get; set; }
-        public double Value { get; set; }
-        public double Threshold { get; set; }
-        public double Severity { get; set; }
+        public int VehicleId { get; set; }
+        public DateTime DetectedAt { get; set; }
         public string Description { get; set; } = string.Empty;
-        public bool IsResolved { get; set; }
-        public DateTime? ResolvedAt { get; set; }
-        public string Resolution { get; set; } = string.Empty;
-        public int CycleId { get; set; }
-        public virtual Cycle? Cycle { get; set; }
+        public double ExpectedValue { get; set; }
+        public double ActualValue { get; set; }
+        public double Deviation { get; set; }
+        public string Severity { get; set; } = string.Empty;
+        public AnomalyType Type { get; set; }
+        public List<string> PossibleCauses { get; set; } = new();
+        public List<string> RecommendedActions { get; set; } = new();
+        public virtual Vehiculo Vehicle { get; set; } = null!;
+        public DateTime Timestamp { get; set; }
+        public double Value { get; set; }
+        public NotificationSeverity NotificationSeverity { get; set; }
         public int? TrendAnalysisId { get; set; }
         public virtual TrendAnalysis? TrendAnalysis { get; set; }
+    }
+
+    public enum AnomalyType
+    {
+        Stability,
+        Safety,
+        Performance,
+        Maintenance,
+        Pattern,
+        Prediction,
+        System,
+        Acceleration,
+        Orientation,
+        Speed,
+        High,
+        Low,
+        Seasonal,
+        Trend
     }
 }

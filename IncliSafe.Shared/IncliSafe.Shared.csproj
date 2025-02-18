@@ -9,10 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.3" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.2" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <!-- Incluir archivos específicos -->
@@ -23,7 +23,9 @@
     <Compile Include="Models/Analysis/**/*.cs" />
     <Compile Include="Models/Knowledge/**/*.cs" />
     <Compile Include="Models/Patterns/**/*.cs" />
+    <Compile Include="Models/DTOs/**/*.cs" />
     <Compile Include="GlobalUsings.cs" />
+    <Compile Include="Exceptions\NotFoundException.cs" />
   </ItemGroup>
 
   <!-- Definir las carpetas del proyecto -->
@@ -34,6 +36,7 @@
     <Folder Include="Models\Knowledge\" />
     <Folder Include="Models\Notifications\" />
     <Folder Include="Models\Patterns\" />
+    <Folder Include="Models\DTOs\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,6 +46,16 @@
     <Compile Update="Models\Notifications\NotificationSeverity.cs">
       <DependentUpon>Notification.cs</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Notifications\NotificationType.cs" />
+    <Compile Remove="Models\Analysis\AnomalyType.cs" />
+    <Compile Remove="Models\Analysis\DobackAnalysis.cs" />
+    <Compile Remove="Models\Analysis\DobackData.cs" />
+    <Compile Remove="Models\Analysis\AnalysisResult.cs" />
+    <Compile Remove="Models\Analysis\PredictionRisk.cs" />
+    <Compile Remove="Models\Analysis\Prediction.cs" />
   </ItemGroup>
 
 </Project>

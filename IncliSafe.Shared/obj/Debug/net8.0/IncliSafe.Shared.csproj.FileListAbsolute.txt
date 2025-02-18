@@ -6,6 +6,7 @@ C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.AssemblyInfoInputs.cache
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.AssemblyInfo.cs
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.csproj.CoreCompileInputs.cache
+C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.sourcelink.json
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.dll
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\refint\IncliSafe.Shared.dll
 C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafe.Shared\obj\Debug\net8.0\IncliSafe.Shared.pdb
