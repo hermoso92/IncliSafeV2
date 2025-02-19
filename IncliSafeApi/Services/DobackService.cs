@@ -10,6 +10,8 @@ using System.Linq;
 using IncliSafe.Shared.Models;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Patterns;
+using IncliSafe.Shared.Models.Analysis.Core;
+using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
 
 namespace IncliSafeApi.Services
 {
@@ -72,13 +74,13 @@ namespace IncliSafeApi.Services
             return true;
         }
 
-        public async Task<List<DetectedPattern>> GetDetectedPatternsAsync(int analysisId)
+        public async Task<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>> GetDetectedPatternsAsync(int analysisId)
         {
             var analysis = await _context.DobackAnalyses
                 .Include(a => a.DetectedPatterns)
                 .FirstOrDefaultAsync(a => a.Id == analysisId);
                 
-            return analysis?.DetectedPatterns?.ToList() ?? new List<DetectedPattern>();
+            return analysis?.DetectedPatterns?.ToList() ?? new List<IncliSafe.Shared.Models.Patterns.DetectedPattern>();
         }
 
         public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId)
@@ -153,7 +155,7 @@ namespace IncliSafeApi.Services
                 Timestamp = DateTime.UtcNow,
                 VehicleId = data.First().CycleId,
                 StabilityIndex = Convert.ToDecimal(data.Average(d => d.StabilityIndex)),
-                DetectedPatterns = new List<DetectedPattern>()
+                DetectedPatterns = new List<IncliSafe.Shared.Models.Patterns.DetectedPattern>()
             };
 
             // Detectar patrones
@@ -182,14 +184,14 @@ namespace IncliSafeApi.Services
             };
         }
 
-        private async Task<List<DetectedPattern>> DetectPatternsAsync(List<DobackData> data)
+        private async Task<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>> DetectPatternsAsync(List<DobackData> data)
         {
-            var patterns = new List<DetectedPattern>();
+            var patterns = new List<IncliSafe.Shared.Models.Patterns.DetectedPattern>();
             
             // Detectar patrones de estabilidad
             if (data.Any(d => d.StabilityIndex < 0.5))
             {
-                patterns.Add(new DetectedPattern
+                patterns.Add(new IncliSafe.Shared.Models.Patterns.DetectedPattern
                 {
                     PatternName = "Baja Estabilidad",
                     Description = "Se detectó un patrón de baja estabilidad",
@@ -311,6 +313,11 @@ namespace IncliSafeApi.Services
             _context.AnalysisPredictions.Add(prediction);
             await _context.SaveChangesAsync();
             return prediction;
+        }
+
+        public CoreMetrics GetMetrics()
+        {
+            // ...
         }
     }
 } 

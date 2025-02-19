@@ -10,6 +10,9 @@ using IncliSafe.Client.Services.Interfaces;
 using MudBlazor;
 using Microsoft.Extensions.Logging;
 using IncliSafe.Shared.Models.Notifications;
+using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Exceptions;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Client.Services
 {
@@ -53,8 +56,17 @@ namespace IncliSafe.Client.Services
 
         public async Task<AnalysisResult> GetLatestAnalysis(int vehicleId)
         {
-            return await _httpClient.GetFromJsonAsync<AnalysisResult>($"{BaseUrl}/vehicle/{vehicleId}/latest")
-                ?? new AnalysisResult();
+            try
+            {
+                var response = await _httpClient.GetAsync($"{BaseUrl}/vehicle/{vehicleId}/latest");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<AnalysisResult>() ?? new AnalysisResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting latest analysis");
+                throw;
+            }
         }
 
         public async Task<Dictionary<string, double>> GetTrends(int vehicleId)
@@ -63,10 +75,19 @@ namespace IncliSafe.Client.Services
                 ?? new Dictionary<string, double>();
         }
 
-        public async Task<List<DetectedPattern>> GetDetectedPatterns(int vehicleId)
+        public async Task<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>> GetDetectedPatterns(int analysisId)
         {
-            return await _httpClient.GetFromJsonAsync<List<DetectedPattern>>($"{BaseUrl}/vehicle/{vehicleId}/patterns")
-                ?? new List<DetectedPattern>();
+            try
+            {
+                var response = await _httpClient.GetAsync($"{BaseUrl}/analysis/{analysisId}/patterns");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>>() ?? new();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting detected patterns");
+                throw;
+            }
         }
 
         public async Task<DobackAnalysis?> GetAnalysisAsync(int id)
@@ -303,6 +324,24 @@ namespace IncliSafe.Client.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting doback data");
+                throw;
+            }
+        }
+
+        public async Task<TrendAnalysisEntity> GetTrendAnalysis(int analysisId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/doback/analysis/{analysisId}/trends");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<TrendAnalysisEntity>() ?? new TrendAnalysisEntity();
+                }
+                throw new ApiException("Error al obtener análisis de tendencias", response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend analysis");
                 throw;
             }
         }

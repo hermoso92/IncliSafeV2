@@ -86,6 +86,9 @@ builder.Services.AddHostedService<TrendAnalysisBackgroundService>();
 builder.Services.AddScoped<IMaintenancePredictionService, MaintenancePredictionService>();
 builder.Services.AddHostedService<MaintenancePredictionBackgroundService>();
 
+// Registrar servicios
+builder.Services.AddScoped<IDobackAnalysisService, DobackAnalysisService>();
+
 // Configurar CORS con opciones más específicas
 builder.Services.AddCors(options =>
 {

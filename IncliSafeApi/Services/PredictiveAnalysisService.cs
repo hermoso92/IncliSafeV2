@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafeApi.Services.Interfaces;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services
 {
@@ -52,16 +53,22 @@ namespace IncliSafeApi.Services
             return await _dobackService.GetPredictions(analysisId);
         }
 
-        private IncliSafe.Shared.Models.Analysis.PredictionType GetPredictionType(decimal value)
+        private PredictionType GetPredictionType(decimal value)
         {
             return value switch
             {
-                > 0.8m => IncliSafe.Shared.Models.Analysis.PredictionType.Stability,
-                > 0.6m => IncliSafe.Shared.Models.Analysis.PredictionType.Safety,
-                > 0.4m => IncliSafe.Shared.Models.Analysis.PredictionType.Maintenance,
-                > 0.2m => IncliSafe.Shared.Models.Analysis.PredictionType.Performance,
-                _ => IncliSafe.Shared.Models.Analysis.PredictionType.Anomaly
+                > 0.8m => PredictionType.Stability,
+                > 0.6m => PredictionType.Safety,
+                > 0.4m => PredictionType.Maintenance,
+                > 0.2m => PredictionType.Performance,
+                _ => PredictionType.Anomaly
             };
+        }
+
+        public async Task<PredictionResult> GetPrediction(int id)
+        {
+            var type = PredictionType.Normal;
+            return new PredictionResult();
         }
 
         // Implementar los métodos de la interfaz...

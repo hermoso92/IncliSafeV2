@@ -7,6 +7,7 @@ using IncliSafeApi.Data;
 using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services
 {

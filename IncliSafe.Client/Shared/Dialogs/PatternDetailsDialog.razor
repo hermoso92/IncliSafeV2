@@ -4,6 +4,7 @@
 @using MudBlazor
 @using IncliSafe.Shared.Models
 @using System.Text.Json
+@using IncliSafe.Shared.Models.Analysis.Core;
 
 <MudDialog>
     <TitleContent>
@@ -16,19 +17,19 @@
                 <MudCard>
                     <MudCardHeader>
                         <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Pattern.Name</MudText>
+                            <MudText Typo="Typo.h6">@Pattern.PatternName</MudText>
                             <MudText Typo="Typo.body2">@Pattern.Description</MudText>
                         </CardHeaderContent>
                         <CardHeaderActions>
-                            <MudChip Color="@GetPatternColor(Pattern.Type)" Size="Size.Small">
-                                @Pattern.Type
+                            <MudChip Color="@GetPatternColor((PatternType)Enum.Parse(typeof(PatternType), Pattern.PatternType))" Size="Size.Small">
+                                @Pattern.PatternType
                             </MudChip>
                         </CardHeaderActions>
                     </MudCardHeader>
                     <MudCardContent>
                         <MudList Dense>
                             <MudListItem Icon="@Icons.Material.Filled.Timeline">
-                                Primera Detección: @Pattern.FirstDetected.ToLocalTime().ToString("g")
+                                Detección: @Pattern.DetectionTime.ToLocalTime().ToString("g")
                             </MudListItem>
                             <MudListItem Icon="@Icons.Material.Filled.Update">
                                 Última Detección: @Pattern.LastDetected.ToLocalTime().ToString("g")
@@ -37,7 +38,7 @@
                                 Total Detecciones: @Pattern.TimesDetected
                             </MudListItem>
                             <MudListItem Icon="@Icons.Material.Filled.Speed">
-                                Confianza: @Pattern.Confidence.ToString("P1")
+                                Confianza: @Pattern.ConfidenceScore.ToString("P1")
                             </MudListItem>
                         </MudList>
                     </MudCardContent>
@@ -125,7 +126,7 @@
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public DetectedPattern Pattern { get; set; } = null!;
+    [Parameter] public IncliSafe.Shared.Models.Patterns.DetectedPattern Pattern { get; set; } = null!;
     [Parameter] public int VehicleId { get; set; }
 
     private List<DetectedValue> _detectedValues = new();
@@ -146,8 +147,16 @@
 
     private async Task InitializeCharts()
     {
-        var historyData = await DobackService.GetPatternHistory(Pattern.PatternId);
-        await JS.InvokeVoidAsync("initDetectionHistoryChart", "detectionHistoryChart", historyData);
+        var historyData = await DobackService.GetPatternHistory(Pattern.Id);
+        var chartData = new
+        {
+            labels = historyData.Select(h => h.DetectedAt.ToString("g")).ToList(),
+            values = historyData.Select(h => Convert.ToDouble(h.Confidence)).ToList()
+        };
+        
+        await JS.InvokeVoidAsync("initDetectionHistoryChart", 
+            "detectionHistoryChart", 
+            JsonSerializer.Serialize(chartData));
     }
 
     private List<DetectedValue> ParseDetectedValues(string jsonValues)
@@ -182,7 +191,7 @@
         return recommendations;
     }
 
-    private Color GetPatternColor(string type) => type switch
+    private Color GetPatternColor(string patternType) => patternType switch
     {
         "Stability" => Color.Primary,
         "Safety" => Color.Error,

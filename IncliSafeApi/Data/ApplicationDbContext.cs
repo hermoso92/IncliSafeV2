@@ -3,6 +3,9 @@ using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Patterns;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 
 namespace IncliSafeApi.Data
 {
@@ -27,15 +30,15 @@ namespace IncliSafeApi.Data
         public DbSet<BlacklistedToken> BlacklistedTokens { get; set; } = null!;
         public DbSet<NotificationSettings> NotificationSettings { get; set; } = null!;
         public DbSet<Anomaly> Anomalies { get; set; } = null!;
-        public DbSet<TrendAnalysis> TrendAnalysis { get; set; } = null!;
+        public DbSet<TrendAnalysis> TrendAnalyses { get; set; } = null!;
         public DbSet<AnalysisResult> AnalysisResults { get; set; } = null!;
-        public DbSet<DetectedPattern> DetectedPatterns { get; set; } = null!;
+        public DbSet<IncliSafe.Shared.Models.Patterns.DetectedPattern> DetectedPatterns { get; set; } = null!;
         public DbSet<AnalysisPrediction> AnalysisPredictions { get; set; } = null!;
         public DbSet<IncliSafe.Shared.Models.Entities.Prediction> MaintenancePredictions { get; set; } = null!;
         public DbSet<VehicleAlert> VehicleAlerts { get; set; } = null!;
         public DbSet<VehicleMetrics> VehicleMetrics { get; set; } = null!;
         public DbSet<AlertSettings> AlertSettings { get; set; } = null!;
-        public DbSet<IncliSafe.Shared.Models.Analysis.Prediction> Predictions { get; set; } = null!;
+        public DbSet<IncliSafe.Shared.Models.Analysis.Core.Prediction> Predictions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -279,19 +282,55 @@ namespace IncliSafeApi.Data
                     .WithOne(p => p.DobackAnalysis)
                     .HasForeignKey(p => p.DobackAnalysisId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.Vehicle)
+                    .WithMany(v => v.DobackAnalyses)
+                    .HasForeignKey(a => a.VehicleId);
             });
 
             modelBuilder.Entity<TrendAnalysis>(entity =>
             {
-                entity.HasMany(t => t.Predictions)
-                    .WithOne(p => p.TrendAnalysis)
-                    .HasForeignKey(p => p.TrendAnalysisId)
+                entity.HasKey(e => e.Id);
+                
+                entity.Property(e => e.StabilityTrend)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.SafetyTrend)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.MaintenanceTrend)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.ShortTerm)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.MediumTerm)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.LongTerm)
+                    .HasColumnType("decimal(18,4)");
+                
+                entity.Property(e => e.Seasonality)
+                    .HasColumnType("decimal(18,4)");
+
+                entity.HasOne(t => t.Vehicle)
+                    .WithMany(v => v.TrendAnalyses)
+                    .HasForeignKey(t => t.VehicleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(t => t.Analysis)
+                    .WithOne(a => a.TrendAnalysis)
+                    .HasForeignKey<TrendAnalysis>(t => t.DobackAnalysisId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasMany(t => t.Predictions)
+                    .WithOne()
+                    .HasForeignKey("TrendAnalysisId")
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasMany(t => t.Anomalies)
-                    .WithOne(a => a.TrendAnalysis)
-                    .HasForeignKey(a => a.TrendAnalysisId)
-                    .IsRequired(false)
+                    .WithOne()
+                    .HasForeignKey("TrendAnalysisId")
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -314,6 +353,10 @@ namespace IncliSafeApi.Data
                     .WithMany()
                     .HasForeignKey(a => a.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(a => a.Analysis)
+                    .WithMany(t => t.Anomalies)
+                    .HasForeignKey(a => a.AnalysisId);
             });
 
             modelBuilder.Entity<AnalysisResult>(entity =>

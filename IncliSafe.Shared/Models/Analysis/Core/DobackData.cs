@@ -1,6 +1,6 @@
 using System;
 
-namespace IncliSafe.Shared.Models.Analysis
+namespace IncliSafe.Shared.Models.Analysis.Core
 {
     public class DobackData
     {
@@ -30,5 +30,19 @@ namespace IncliSafe.Shared.Models.Analysis
         public decimal MaintenanceScore { get; set; }
         
         public virtual DobackAnalysis Analysis { get; set; } = null!;
+
+        public decimal GetStabilityScore() =>
+            (Math.Abs(Roll) + Math.Abs(Pitch) + Math.Abs(Yaw)) / 3;
+
+        public decimal GetSafetyScore() =>
+            SafetyScore;
+
+        public decimal GetMaintenanceScore() =>
+            MaintenanceScore;
+
+        public bool IsStable() =>
+            Math.Abs(Roll) < 15M && 
+            Math.Abs(Pitch) < 15M && 
+            Math.Abs(Yaw) < 15M;
     }
 } 

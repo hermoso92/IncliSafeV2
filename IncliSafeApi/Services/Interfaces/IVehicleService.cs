@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.DTOs;
 
-namespace IncliSafe.Api.Services.Interfaces
+namespace IncliSafeApi.Services.Interfaces
 {
     public interface IVehicleService
     {
@@ -12,10 +12,10 @@ namespace IncliSafe.Api.Services.Interfaces
         Task<VehiculoDTO> CreateVehicleAsync(VehiculoDTO dto);
         Task<VehiculoDTO> UpdateVehicleAsync(int id, VehiculoDTO dto);
         Task<bool> DeleteVehicleAsync(int id);
+        Task<bool> ExistsAsync(int id);
         Task<bool> ValidateLicenseAsync(int vehicleId);
         Task<List<InspeccionDTO>> GetInspeccionesAsync(int vehicleId);
         Task<bool> AddInspeccionAsync(int vehicleId, InspeccionDTO inspeccion);
-        Task<bool> ExistsAsync(int id);
         Task<LicenseDTO?> GetLicenseAsync(int vehicleId);
         Task<bool> UpdateLicenseAsync(int vehicleId, LicenseDTO license);
         Task<LicenseDTO> CreateLicenseAsync(int vehicleId, LicenseType type);

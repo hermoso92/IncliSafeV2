@@ -1,4 +1,5 @@
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services.Interfaces
 {

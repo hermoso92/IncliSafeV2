@@ -6,11 +6,12 @@ namespace IncliSafe.Shared.Models.Analysis
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public decimal Slope { get; set; }
-        public decimal Intercept { get; set; }
-        public decimal R2 { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public string MetricType { get; set; } = string.Empty;
+        public decimal Value { get; set; }
+        public string Direction { get; set; } = string.Empty;
+        public string Period { get; set; } = string.Empty;
+        public decimal ChangeRate { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Confidence { get; set; }
     }
 } 

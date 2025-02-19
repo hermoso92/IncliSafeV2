@@ -8,6 +8,9 @@ using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Notifications;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 
 namespace IncliSafe.Client.Services
 {

@@ -10,6 +10,10 @@ using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Client.Services.Interfaces;
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Notifications;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 
 namespace IncliSafe.Client.Services
 {
@@ -18,6 +22,7 @@ namespace IncliSafe.Client.Services
         private readonly HttpClient _httpClient;
         private readonly AuthenticationStateProvider _authStateProvider;
         private new readonly ILogger<VehiculoService> _logger;
+        private const string BaseUrl = "api/vehiculos";
 
         public VehiculoService(
             HttpClient httpClient,
@@ -124,6 +129,74 @@ namespace IncliSafe.Client.Services
                 _logger.LogError(ex, "Error getting inspections");
                 return new();
             }
+        }
+
+        public async Task<VehiculoDTO> GetVehicleAsync(int id)
+        {
+            // Implementar
+            throw new NotImplementedException();
+        }
+
+        public async Task<List<VehiculoDTO>> GetVehiclesAsync()
+        {
+            // Implementar
+            throw new NotImplementedException();
+        }
+
+        public async Task<VehiculoDTO> CreateVehicleAsync(VehiculoDTO vehicle)
+        {
+            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}", vehicle);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<VehiculoDTO>() ?? vehicle;
+        }
+
+        public async Task<VehiculoDTO> UpdateVehicleAsync(VehiculoDTO vehicle)
+        {
+            var response = await _httpClient.PutAsJsonAsync($"{BaseUrl}/{vehicle.Id}", vehicle);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<VehiculoDTO>() ?? vehicle;
+        }
+
+        public async Task<bool> DeleteVehicleAsync(int id)
+        {
+            var response = await _httpClient.DeleteAsync($"{BaseUrl}/{id}");
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> ExistsAsync(int id)
+        {
+            var response = await _httpClient.GetAsync($"{BaseUrl}/{id}/exists");
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+
+        public async Task<List<Alert>> GetAlertsAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<Alert>>($"{BaseUrl}/{vehicleId}/alerts") ?? new();
+        }
+
+        public async Task<NotificationSettings> GetNotificationSettingsAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<NotificationSettings>($"{BaseUrl}/{vehicleId}/notifications") ?? new();
+        }
+
+        public async Task<List<DobackAnalysis>> GetAnalysesAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<DobackAnalysis>>($"{BaseUrl}/{vehicleId}/analyses") ?? new();
+        }
+
+        public async Task<TrendAnalysisEntity> GetTrendAnalysisAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<TrendAnalysisEntity>($"{BaseUrl}/{vehicleId}/trends") ?? new();
+        }
+
+        public async Task<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>> GetPredictionsAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>($"{BaseUrl}/{vehicleId}/predictions") ?? new();
+        }
+
+        public async Task<List<Anomaly>> GetAnomaliesAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<Anomaly>>($"{BaseUrl}/{vehicleId}/anomalies") ?? new();
         }
     }
 }

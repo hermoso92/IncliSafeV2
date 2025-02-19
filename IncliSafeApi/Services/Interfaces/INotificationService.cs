@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services.Interfaces
 {
@@ -18,5 +20,9 @@ namespace IncliSafeApi.Services.Interfaces
         Task NotifyAnomalyDetectedAsync(Anomaly anomaly);
         Task<NotificationSettings> GetNotificationSettings(int vehicleId);
         Task<NotificationSettings> UpdateNotificationSettings(NotificationSettings settings);
+        Task SendAlertAsync(Alert alert);
+        Task SendLicenseExpirationWarningAsync(int userId, LicenseDTO license);
+        Task SendInspectionReminderAsync(int userId, InspeccionDTO inspeccion);
+        Task SendMaintenanceAlertAsync(int userId, VehicleMaintenanceDTO maintenance);
     }
 } 

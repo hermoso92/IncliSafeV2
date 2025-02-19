@@ -1,12 +1,20 @@
-@page "/"
+@page "/dashboard"
 @inject IDobackService DobackService
 @inject IVehicleService VehicleService
 @inject IPredictiveAnalysisService PredictiveService
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@inject IDobackAnalysisService DobackAnalysisService
+@inject IAlertService AlertService
 @attribute [Authorize]
 @using IncliSafe.Client.Services.Extensions
 @using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Notifications
+@using IncliSafe.Client.Services.Interfaces
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.DTOs
+@using IncliSafe.Shared.Models.Analysis.Core
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
     <MudGrid>
@@ -34,7 +42,7 @@
             <MudPaper Class="pa-4">
                 <MudText>Estabilidad</MudText>
                 <MudText Typo="Typo.h3">
-                    @(Convert.ToDecimal(_metrics.StabilityScore).ToString("P0"))
+                    @(_metrics.StabilityScore.ToString("P0"))
                 </MudText>
             </MudPaper>
         </MudItem>
@@ -69,7 +77,7 @@
                             </MudChip>
                             <MudText Typo="Typo.body2">@alert.Message</MudText>
                             <MudText Typo="Typo.caption" Color="Color.Primary">
-                                @alert.Timestamp.ToLocalTime().ToString("g")
+                                @alert.CreatedAt.ToLocalTime().ToString("g")
                             </MudText>
                         </MudListItem>
                     }
@@ -90,7 +98,7 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>
-                            <MudChip Color="@GetAnomalyColor(context.Type)" Size="Size.Small">
+                            <MudChip Color="@GetAnomalyColor(context)" Size="Size.Small">
                                 @context.Type
                             </MudChip>
                         </MudTd>
@@ -114,8 +122,8 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText>Corto Plazo</MudText>
-                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.ShortTerm.Direction)">
-                                    @GetTrendIndicator(_trends.ShortTerm)
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_metrics.Trends.ShortTerm.Value)">
+                                    @GetTrendIndicator(_metrics.Trends.ShortTerm.Direction)
                                 </MudText>
                             </MudCardContent>
                         </MudCard>
@@ -124,8 +132,8 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText>Medio Plazo</MudText>
-                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.MediumTerm.Direction)">
-                                    @GetTrendIndicator(_trends.MediumTerm)
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_metrics.Trends.MediumTerm.Value)">
+                                    @GetTrendIndicator(_metrics.Trends.MediumTerm.Direction)
                                 </MudText>
                             </MudCardContent>
                         </MudCard>
@@ -134,8 +142,8 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText>Largo Plazo</MudText>
-                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_trends.LongTerm.Direction)">
-                                    @GetTrendIndicator(_trends.LongTerm)
+                                <MudText Typo="Typo.h4" Color="@GetTrendColor(_metrics.Trends.LongTerm.Value)">
+                                    @GetTrendIndicator(_metrics.Trends.LongTerm.Direction)
                                 </MudText>
                             </MudCardContent>
                         </MudCard>
@@ -147,10 +155,9 @@
 </MudContainer>
 
 @code {
-    private DashboardMetrics _metrics = new();
     private List<Alert> _recentAlerts = new();
     private List<Anomaly> _anomalies = new();
-    private TrendAnalysis _trends = new();
+    private DashboardMetrics _metrics = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,36 +166,8 @@
 
     private async Task LoadDashboardData()
     {
-        var tasks = new[]
-        {
-            LoadMetrics(),
-            LoadAlerts(),
-            LoadAnomalies(),
-            LoadTrends()
-        };
-
-        await Task.WhenAll(tasks);
+        _recentAlerts = (await AlertService.GetRecentAlertsAsync()).ToList();
         await UpdateCharts();
-    }
-
-    private async Task LoadMetrics()
-    {
-        _metrics = await DobackService.GetDashboardMetrics();
-    }
-
-    private async Task LoadAlerts()
-    {
-        _recentAlerts = await DobackService.GetRecentAlerts();
-    }
-
-    private async Task LoadAnomalies()
-    {
-        _anomalies = await PredictiveService.DetectAnomalies(0, DateTime.Now.AddDays(-7), DateTime.Now);
-    }
-
-    private async Task LoadTrends()
-    {
-        _trends = await PredictiveService.AnalyzeTrends(0, DateTime.Now.AddDays(-30), DateTime.Now);
     }
 
     private async Task UpdateCharts()
@@ -196,7 +175,7 @@
         await JS.InvokeVoidAsync("updateDashboardCharts", new
         {
             Metrics = _metrics,
-            Trends = _trends
+            Trends = _metrics.Trends
         });
     }
 
@@ -222,10 +201,10 @@
         _ => Color.Default
     };
 
-    private Color GetAnomalyColor(decimal severity) => severity switch
+    private Color GetAnomalyColor(Anomaly anomaly) => anomaly.Severity switch
     {
-        > 0.8m => Color.Error,
-        > 0.5m => Color.Warning,
+        > 0.8M => Color.Error,
+        > 0.5M => Color.Warning,
         _ => Color.Info
     };
 
@@ -236,12 +215,15 @@
         _ => Color.Warning
     };
 
-    private string GetTrendIndicator(decimal value) => value switch
+    private string GetTrendIndicator(string value)
     {
-        > 0m => "↑",
-        < 0m => "↓",
-        _ => "→"
-    };
+        return value switch
+        {
+            "Positivo" => "↑",
+            "Negativo" => "↓",
+            _ => "→"
+        };
+    }
 
     private async Task ShowAnomalyDetails(Anomaly anomaly)
     {
@@ -255,10 +237,23 @@
     private decimal ConvertToDecimal(double value) => Convert.ToDecimal(value);
     private string GetDirection(decimal value) => value > 0 ? "↑" : value < 0 ? "↓" : "→";
 
-    private string GetTrendDirection(decimal value) => value switch
+    private string GetTrendDirection(string value)
     {
-        > 0.7M => "Positiva",
-        > 0.3M => "Estable",
-        _ => "Negativa"
-    };
+        return value switch
+        {
+            "Positivo" => "↑",
+            "Negativo" => "↓",
+            _ => "→"
+        };
+    }
+
+    private string GetTrendValue(decimal value)
+    {
+        return value switch
+        {
+            > 0.7M => "Positivo",
+            < -0.7M => "Negativo",
+            _ => "Neutral"
+        };
+    }
 }

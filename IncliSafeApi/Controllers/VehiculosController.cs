@@ -14,7 +14,10 @@ using System.Security.Claims;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafeApi.Services.Interfaces;
 using System.Linq;
-
+using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Notifications;
+using IncliSafe.Shared.Exceptions;
+using IncliSafe.Shared.Models.Analysis.Core;
 namespace IncliSafeApi.Controllers
 {
     [Route("api/[controller]")]
@@ -23,15 +26,24 @@ namespace IncliSafeApi.Controllers
     public class VehiculosController : ControllerBase
     {
         private readonly IVehicleService _vehicleService;
+        private readonly IDobackAnalysisService _analysisService;
         private readonly ILogger<VehiculosController> _logger;
         private readonly IMeterService _metricsService;
         private readonly ITrendAnalysisService _trendAnalysisService;
         private readonly IMaintenancePredictionService _maintenancePredictionService;
         private readonly ApplicationDbContext _context;
 
-        public VehiculosController(IVehicleService vehicleService, ILogger<VehiculosController> logger, IMeterService metricsService, ITrendAnalysisService trendAnalysisService, IMaintenancePredictionService maintenancePredictionService, ApplicationDbContext context)
+        public VehiculosController(
+            IVehicleService vehicleService,
+            IDobackAnalysisService analysisService,
+            ILogger<VehiculosController> logger,
+            IMeterService metricsService,
+            ITrendAnalysisService trendAnalysisService,
+            IMaintenancePredictionService maintenancePredictionService,
+            ApplicationDbContext context)
         {
             _vehicleService = vehicleService;
+            _analysisService = analysisService;
             _logger = logger;
             _metricsService = metricsService;
             _trendAnalysisService = trendAnalysisService;
@@ -58,10 +70,15 @@ namespace IncliSafeApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<VehiculoDTO>> GetVehicle(int id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var vehicle = await _vehicleService.GetVehicleAsync(id);
+            
             if (vehicle == null)
                 return NotFound();
-
+            
+            if (vehicle.OwnerId != userId)
+                return Forbid();
+            
             return Ok(vehicle);
         }
 
@@ -503,6 +520,66 @@ namespace IncliSafeApi.Controllers
             {
                 _logger.LogError(ex, "Error getting maintenance prediction history for vehicle {VehicleId}", id);
                 return StatusCode(500, "Error interno al obtener historial de predicciones");
+            }
+        }
+
+        [HttpGet("{id}/analyses")]
+        public async Task<ActionResult<List<DobackAnalysis>>> GetAnalyses(int id)
+        {
+            try
+            {
+                var analyses = await _analysisService.GetAnalysesAsync(id);
+                return Ok(analyses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting analyses for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/trends")]
+        public async Task<ActionResult<TrendAnalysisEntity>> GetTrendAnalysis(int id)
+        {
+            try
+            {
+                var trends = await _analysisService.GetTrendAnalysis(id);
+                return Ok(trends);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend analysis for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/predictions")]
+        public async Task<ActionResult<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>> GetPredictions(int id)
+        {
+            try
+            {
+                var predictions = await _analysisService.GetPredictionsAsync(id);
+                return Ok(predictions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting predictions for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/anomalies")]
+        public async Task<ActionResult<List<Anomaly>>> GetAnomalies(int id)
+        {
+            try
+            {
+                var anomalies = await _analysisService.GetAnomaliesAsync(id);
+                return Ok(anomalies);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting anomalies for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 

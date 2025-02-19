@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Patterns;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services.Interfaces
 {
@@ -14,7 +15,7 @@ namespace IncliSafeApi.Services.Interfaces
         Task<DobackAnalysis> CreateAnalysisAsync(DobackAnalysis analysis);
         Task<bool> UpdateAnalysisAsync(DobackAnalysis analysis);
         Task<bool> DeleteAnalysisAsync(int id);
-        Task<List<DetectedPattern>> GetDetectedPatternsAsync(int analysisId);
+        Task<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>> GetDetectedPatternsAsync(int analysisId);
         Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId);
         Task<List<DobackData>> GetDobackDataAsync(int analysisId);
         Task<List<DobackData>> GetDobackData(int vehicleId, DateTime start, DateTime end);

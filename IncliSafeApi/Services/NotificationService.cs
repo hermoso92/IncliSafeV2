@@ -14,6 +14,9 @@ using IncliSafe.Shared.Models.Notifications;
 using System.Linq;
 using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Analysis.Core;
+using DetectedPattern = IncliSafe.Shared.Models.Patterns.DetectedPattern;
 
 namespace IncliSafeApi.Services
 {
@@ -428,6 +431,50 @@ namespace IncliSafeApi.Services
             {
                 return false;
             }
+        }
+
+        public async Task SendLicenseExpirationWarningAsync(int userId, LicenseDTO license)
+        {
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = "Licencia por expirar",
+                Message = $"La licencia expirará el {license.ExpirationDate:d}",
+                Type = NotificationType.Warning,
+                CreatedAt = DateTime.UtcNow
+            };
+            await CreateNotificationAsync(notification);
+        }
+
+        public async Task SendInspectionReminderAsync(int userId, InspeccionDTO inspeccion)
+        {
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = "Recordatorio de inspección",
+                Message = $"Inspección programada para {inspeccion.Fecha:d}",
+                Type = NotificationType.Info,
+                CreatedAt = DateTime.UtcNow
+            };
+            await CreateNotificationAsync(notification);
+        }
+
+        public async Task SendMaintenanceAlertAsync(int userId, VehicleMaintenanceDTO maintenance)
+        {
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = "Alerta de mantenimiento",
+                Message = $"Mantenimiento requerido: {maintenance.Description}",
+                Type = NotificationType.Warning,
+                CreatedAt = DateTime.UtcNow
+            };
+            await CreateNotificationAsync(notification);
+        }
+
+        public async Task ProcessPattern(DetectedPattern pattern)
+        {
+            // Implementation of the method
         }
     }
 } 

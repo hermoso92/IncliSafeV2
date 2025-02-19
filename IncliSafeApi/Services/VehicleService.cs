@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Exceptions;
-using IncliSafe.Api.Data;
-using IncliSafe.Api.Services.Interfaces;
+using IncliSafeApi.Data;
+using IncliSafeApi.Services.Interfaces;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 
-namespace IncliSafe.Api.Services
+namespace IncliSafeApi.Services
 {
     public class VehicleService : IVehicleService
     {
@@ -55,10 +55,10 @@ namespace IncliSafe.Api.Services
 
         public async Task<VehiculoDTO> CreateVehicleAsync(VehiculoDTO dto)
         {
-            var vehicle = VehicleDTOExtensions.ToEntity(dto);
+            var vehicle = _mapper.Map<Vehiculo>(dto);
             _context.Vehiculos.Add(vehicle);
             await _context.SaveChangesAsync();
-            return VehiculoDTO.FromEntity(vehicle);
+            return _mapper.Map<VehiculoDTO>(vehicle);
         }
 
         public async Task<VehiculoDTO> UpdateVehicleAsync(int id, VehiculoDTO dto)

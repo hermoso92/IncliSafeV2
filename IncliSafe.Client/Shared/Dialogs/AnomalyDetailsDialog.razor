@@ -1,4 +1,6 @@
 @inject IDobackAnalysisService DobackService
+@using MudBlazor
+@using IncliSafe.Shared.Models.Analysis.Core
 
 <MudDialog>
     <DialogContent>
@@ -86,7 +88,7 @@
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public Anomaly Anomaly { get; set; } = new();
+    [Parameter] public Anomaly Anomaly { get; set; } = null!;
     [Parameter] public int VehicleId { get; set; }
 
     private Color GetAnomalyColor(AnomalyType type) => type switch

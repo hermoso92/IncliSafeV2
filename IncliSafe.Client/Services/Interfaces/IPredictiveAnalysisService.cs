@@ -1,4 +1,7 @@
 using IncliSafe.Shared.Models.Analysis;
+using System;
+using System.Threading.Tasks;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Client.Services.Interfaces
 {

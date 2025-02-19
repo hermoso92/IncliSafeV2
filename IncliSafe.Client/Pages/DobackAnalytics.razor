@@ -4,6 +4,9 @@
 @inject IDialogService DialogService
 @attribute [Authorize]
 @using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
+@using SharedDialogs = IncliSafe.Client.Shared.Dialogs
+@using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
     <MudGrid>
@@ -79,11 +82,7 @@
                         <MudCard Elevation="0">
                             <MudCardContent>
                                 <MudText Typo="Typo.h6">Índice de Estabilidad</MudText>
-                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result?.GetStabilityScore() ?? 0) * 100)"
-                                                   Color="@GetStabilityColor(_currentAnalysis?.Result?.GetStabilityScore() ?? 0)"
-                                                   Size="Size.Large">
-                                    @((_currentAnalysis?.Result?.GetStabilityScore() ?? 0).ToString("P0"))
-                                </MudProgressCircular>
+                                @GetStabilityProgress()
                             </MudCardContent>
                         </MudCard>
                     </MudItem>
@@ -189,7 +188,7 @@
             ["Analysis"] = _currentAnalysis
         };
 
-        await DialogService.ShowAsync<AnalysisDetailsDialog>("Detalles del Análisis", parameters);
+        await DialogService.ShowAsync<SharedDialogs.AnalysisDetailsDialog>("Detalles del Análisis", parameters);
     }
 
     private async Task CompareFiles()
@@ -200,7 +199,7 @@
             ["CurrentFileId"] = _selectedFileId
         };
 
-        var dialog = await DialogService.ShowAsync<CompareFilesDialog>("Comparar Archivos", parameters);
+        var dialog = await DialogService.ShowAsync<SharedDialogs.CompareFilesDialog>("Comparar Archivos", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled && result.Data is int comparisonFileId)
@@ -220,7 +219,7 @@
     private string GetOverallStatus()
     {
         if (_currentAnalysis?.Result == null) return "Sin datos";
-
+        
         return (_currentAnalysis.Result.StabilityScore, _currentAnalysis.Result.SafetyScore) switch
         {
             ( >= 0.8M, >= 0.8M) => "Excelente",
@@ -237,4 +236,14 @@
         "Regular" => Color.Warning,
         _ => Color.Error
     };
+
+    private RenderFragment GetStabilityProgress()
+    {
+        var value = _currentAnalysis?.Result?.StabilityScore ?? 0;
+        return @<MudProgressCircular Value="@(Convert.ToDouble(value * 100))"
+                                   Color="@GetStabilityColor(value)"
+                                   Size="Size.Large">
+                    @value.ToString("P0")
+                </MudProgressCircular>;
+    }
 } 

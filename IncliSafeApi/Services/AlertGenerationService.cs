@@ -11,19 +11,29 @@ namespace IncliSafeApi.Services
 {
     public class AlertGenerationService : IAlertGenerationService
     {
+        private readonly IVehicleService _vehicleService;
+        private readonly INotificationService _notificationService;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AlertGenerationService> _logger;
 
-        public AlertGenerationService(ApplicationDbContext context, ILogger<AlertGenerationService> logger)
+        public AlertGenerationService(
+            IVehicleService vehicleService,
+            INotificationService notificationService,
+            ApplicationDbContext context,
+            ILogger<AlertGenerationService> logger)
         {
+            _vehicleService = vehicleService;
+            _notificationService = notificationService;
             _context = context;
             _logger = logger;
         }
 
         public async Task<Alert> SendAlertAsync(Alert alert)
         {
+            alert.CreatedAt = DateTime.UtcNow;
             _context.Alerts.Add(alert);
             await _context.SaveChangesAsync();
+            await _notificationService.SendAlertAsync(alert);
             return alert;
         }
 

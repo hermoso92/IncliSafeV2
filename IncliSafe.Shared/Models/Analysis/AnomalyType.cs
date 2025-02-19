@@ -1,1 +1,0 @@
-// Este archivo debe ser eliminado ya que el enum AnomalyType está definido en Anomaly.cs 

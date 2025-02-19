@@ -1,5 +1,11 @@
 @namespace IncliSafe.Client.Shared.DobackViews
+@inject IDobackAnalysisService DobackService
 @inject IJSRuntime JS
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
 
 <MudGrid>
     <!-- Gráficas de Aceleración -->

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using IncliSafe.Shared.Models.Notifications;
 using System.Linq;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Shared.Models.Entities
 {
@@ -49,5 +50,6 @@ namespace IncliSafe.Shared.Models.Entities
         public virtual ICollection<VehicleMetrics> Metrics { get; set; } = new List<VehicleMetrics>();
         public virtual NotificationSettings NotificationSettings { get; set; } = new();
         public virtual AlertSettings AlertSettings { get; set; } = null!;
+        public virtual ICollection<TrendAnalysis> TrendAnalyses { get; set; } = new List<TrendAnalysis>();
     }
 } 

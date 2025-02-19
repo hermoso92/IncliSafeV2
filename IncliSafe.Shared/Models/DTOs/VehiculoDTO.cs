@@ -37,6 +37,7 @@ namespace IncliSafe.Shared.Models.DTOs
         public bool Activo { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UltimaInspeccion { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         public static VehiculoDTO FromEntity(Vehiculo entity) => new()
         {
@@ -52,7 +53,53 @@ namespace IncliSafe.Shared.Models.DTOs
             Estado = entity.Estado,
             Activo = entity.Activo,
             CreatedAt = entity.CreatedAt,
-            UltimaInspeccion = entity.UltimaInspeccion
+            UltimaInspeccion = entity.UltimaInspeccion,
+            UserId = entity.UserId
         };
+    }
+
+    public static class VehiculoDTOExtensions
+    {
+        public static VehiculoDTO ToDTO(this Vehiculo vehiculo)
+        {
+            return new VehiculoDTO
+            {
+                Id = vehiculo.Id,
+                OwnerId = vehiculo.OwnerId,
+                Nombre = vehiculo.Nombre,
+                Placa = vehiculo.Placa,
+                Marca = vehiculo.Marca,
+                Modelo = vehiculo.Modelo,
+                Color = vehiculo.Color,
+                Año = vehiculo.Año,
+                Tipo = vehiculo.Tipo,
+                Estado = vehiculo.Estado,
+                Activo = vehiculo.Activo,
+                CreatedAt = vehiculo.CreatedAt,
+                UltimaInspeccion = vehiculo.UltimaInspeccion,
+                UserId = vehiculo.UserId
+            };
+        }
+
+        public static Vehiculo ToEntity(this VehiculoDTO dto)
+        {
+            return new Vehiculo
+            {
+                Id = dto.Id,
+                OwnerId = dto.OwnerId,
+                Nombre = dto.Nombre,
+                Placa = dto.Placa,
+                Marca = dto.Marca,
+                Modelo = dto.Modelo,
+                Color = dto.Color,
+                Año = dto.Año,
+                Tipo = dto.Tipo,
+                Estado = dto.Estado,
+                Activo = dto.Activo,
+                CreatedAt = dto.CreatedAt,
+                UltimaInspeccion = dto.UltimaInspeccion,
+                UserId = dto.UserId
+            };
+        }
     }
 } 

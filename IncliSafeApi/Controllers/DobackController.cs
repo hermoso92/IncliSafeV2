@@ -13,7 +13,9 @@ using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Patterns;
 using System.Text.Json;
 using IncliSafe.Shared.Models.DTOs;
-
+using IncliSafe.Shared.Models.Analysis.Core;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
+using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
 namespace IncliSafeApi.Controllers
 {
     [ApiController]
@@ -112,18 +114,16 @@ namespace IncliSafeApi.Controllers
         [HttpGet("vehicle/{vehicleId}/latest")]
         public async Task<ActionResult<AnalysisResult>> GetLatestAnalysis(int vehicleId)
         {
-            var vehicle = await _context.Vehiculos
-                .FirstOrDefaultAsync(v => v.Id == vehicleId && v.UserId == GetCurrentUserId());
-            
-            if (vehicle == null)
-                return NotFound();
-
-            var latest = await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.Timestamp)
-                .FirstOrDefaultAsync();
-
-            return latest?.Result ?? new AnalysisResult();
+            try
+            {
+                var result = await _dobackService.GetLatestAnalysisAsync(vehicleId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting latest analysis");
+                return StatusCode(500, "Error interno del servidor");
+            }
         }
 
         [HttpGet("vehicle/{vehicleId}/trends")]
@@ -145,11 +145,11 @@ namespace IncliSafeApi.Controllers
         }
 
         [HttpGet("metrics")]
-        public async Task<ActionResult<DashboardMetrics>> GetDashboardMetrics()
+        public async Task<ActionResult<CoreMetrics>> GetDashboardMetrics()
         {
             try
             {
-                var metrics = await _dobackService.GetDashboardMetrics();
+                var metrics = await _dobackService.GetMetrics();
                 return Ok(metrics);
             }
             catch (Exception ex)
@@ -228,9 +228,12 @@ namespace IncliSafeApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<DobackAnalysis>> GetAnalysis(int id)
         {
-            var analysis = await _dobackService.GetAnalysis(id);
+            var analysis = await _dobackService.GetAnalysisAsync(id);
             if (analysis == null)
                 return NotFound();
+
+            if (analysis.VehicleId.ToString() != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                return Forbid();
 
             return Ok(analysis);
         }
@@ -309,7 +312,7 @@ namespace IncliSafeApi.Controllers
         }
 
         [HttpGet("{id}/patterns")]
-        public async Task<ActionResult<List<DetectedPattern>>> GetDetectedPatterns(int id)
+        public async Task<ActionResult<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>>> GetDetectedPatterns(int id)
         {
             try
             {
@@ -396,7 +399,7 @@ namespace IncliSafeApi.Controllers
             return 0.85M; // Ahora devolvemos un decimal literal
         }
 
-        private async Task<AnalysisResult> CreateAnalysisResult(List<DobackData> data, List<DetectedPattern> patterns)
+        private async Task<AnalysisResult> CreateAnalysisResult(List<DobackData> data, List<IncliSafe.Shared.Models.Patterns.DetectedPattern> patterns)
         {
             var cycle = await _context.Cycles.FindAsync(data.First().CycleId);
             if (cycle == null)
@@ -429,9 +432,9 @@ namespace IncliSafeApi.Controllers
             return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
 
-        private DetectedPattern CreatePattern(KnowledgePattern pattern, decimal confidence)
+        private IncliSafe.Shared.Models.Patterns.DetectedPattern CreatePattern(KnowledgePattern pattern, decimal confidence)
         {
-            return new DetectedPattern
+            return new IncliSafe.Shared.Models.Patterns.DetectedPattern
             {
                 PatternName = pattern.Name,
                 Description = pattern.Description,

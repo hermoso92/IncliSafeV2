@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Client.Services.Interfaces;
+using IncliSafe.Shared.Models.Analysis.Core;
+using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
 
 namespace IncliSafe.Client.Services
 {
@@ -23,12 +25,13 @@ namespace IncliSafe.Client.Services
 
         public async Task<List<Anomaly>> DetectAnomalies(int vehicleId, DateTime startDate, DateTime endDate)
         {
-            return new List<Anomaly>();
+            return new List<Anomaly>();  // Implementar lógica real
         }
 
-        public async Task<TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate)
+        public async Task<IncliSafe.Shared.Models.Analysis.Core.TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate)
         {
-            return new TrendAnalysis();
+            var data = await _dobackService.GetDobackDataAsync(vehicleId);
+            return new IncliSafe.Shared.Models.Analysis.Core.TrendAnalysis();
         }
 
         public async Task<List<Pattern>> DetectPatterns(int vehicleId, DateTime startDate, DateTime endDate)
@@ -41,15 +44,15 @@ namespace IncliSafe.Client.Services
             return await _dobackService.GetPredictionsAsync(analysisId);
         }
 
-        private IncliSafe.Shared.Models.Analysis.PredictionType GetPredictionType(decimal value)
+        private CorePredictionType GetPredictionType(decimal value)
         {
             return value switch
             {
-                > 0.8m => IncliSafe.Shared.Models.Analysis.PredictionType.Stability,
-                > 0.6m => IncliSafe.Shared.Models.Analysis.PredictionType.Safety,
-                > 0.4m => IncliSafe.Shared.Models.Analysis.PredictionType.Maintenance,
-                > 0.2m => IncliSafe.Shared.Models.Analysis.PredictionType.Performance,
-                _ => IncliSafe.Shared.Models.Analysis.PredictionType.Anomaly
+                > 0.8m => CorePredictionType.Stability,
+                > 0.6m => CorePredictionType.Safety,
+                > 0.4m => CorePredictionType.Maintenance,
+                > 0.2m => CorePredictionType.Performance,
+                _ => CorePredictionType.Anomaly
             };
         }
     }

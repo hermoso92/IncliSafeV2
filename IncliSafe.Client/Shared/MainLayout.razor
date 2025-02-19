@@ -86,10 +86,11 @@
         NavigationManager.NavigateTo("/login");
     }
 
-    private async Task LoadThemePreference()
+    private async Task<bool> LoadThemePreference()
     {
         var theme = await localStorage.GetItemAsync<string>("theme");
         _darkMode = theme == "dark";
+        return _darkMode;
     }
 
     private async Task SaveThemePreference()

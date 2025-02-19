@@ -2,6 +2,8 @@
 @inject IJSRuntime JS
 @inject IDialogService DialogService
 @using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
+@using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType
 @inject IDobackAnalysisService DobackService
 
 <MudGrid>
@@ -44,8 +46,12 @@
                     {
                         <MudPaper Class="pa-4 my-2">
                             <MudText>@prediction.Description</MudText>
-                            <MudText>Confianza: @prediction.Confidence.ToString("P0")</MudText>
-                            <MudText>Tipo: @prediction.Type.ToString()</MudText>
+                            <MudProgressCircular Value="@(Convert.ToDecimal(prediction.Confidence * 100))"
+                                                 Color="@GetConfidenceColor(Convert.ToDecimal(prediction.Confidence))"
+                                                 Size="Size.Small">
+                                @prediction.Confidence.ToString("P0")
+                            </MudProgressCircular>
+                            <MudText>@prediction.Timestamp.ToString("g")</MudText>
                         </MudPaper>
                     }
                 }
@@ -67,7 +73,7 @@
                         <MudCardContent>
                             <MudText>Confianza</MudText>
                             <MudText Typo="Typo.h4" Color="@GetConfidenceColor(_predictionResult?.Confidence ?? 0)">
-                                @((_predictionResult?.Confidence ?? 0).ToString("P1"))
+                                @GetValueDisplay(_predictionResult?.Confidence)
                             </MudText>
                         </MudCardContent>
                     </MudCard>
@@ -239,4 +245,7 @@
 
         await DialogService.ShowAsync<AnomalyDetailsDialog>("Detalles de Anomalía", parameters);
     }
+
+    private string GetTimeDisplay(DateTime? time) => time?.ToString("g") ?? "N/A";
+    private string GetValueDisplay(decimal? value) => value?.ToString("P0") ?? "N/A";
 } 

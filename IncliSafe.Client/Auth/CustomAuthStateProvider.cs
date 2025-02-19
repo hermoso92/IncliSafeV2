@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Blazored.LocalStorage;
 using Microsoft.Extensions.Logging;
 using IncliSafe.Shared.Models.Auth;
+using System.Collections.Generic;
 
 namespace IncliSafe.Client.Auth
 {
@@ -31,13 +32,7 @@ namespace IncliSafe.Client.Auth
             if (userSession == null)
                 return _anonymous;
 
-            var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, userSession.Id.ToString()),
-                new Claim(ClaimTypes.Name, userSession.Nombre),
-                new Claim(ClaimTypes.Role, userSession.Rol)
-            }, "JwtAuth"));
-
+            var claimsPrincipal = GetClaimsPrincipal(userSession);
             return new AuthenticationState(claimsPrincipal);
         }
 
@@ -67,6 +62,20 @@ namespace IncliSafe.Client.Auth
             await _localStorage.RemoveItemAsync("authToken");
             _http.DefaultRequestHeaders.Authorization = null;
             NotifyAuthenticationStateChanged(Task.FromResult(_anonymous));
+        }
+
+        private ClaimsPrincipal GetClaimsPrincipal(UserSession userSession)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, userSession.Name),
+                new Claim(ClaimTypes.Role, userSession.Role),
+                new Claim(ClaimTypes.NameIdentifier, userSession.Id.ToString()),
+                new Claim("IsActive", userSession.IsActive.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, "JwtAuth");
+            return new ClaimsPrincipal(identity);
         }
     }
 } 
