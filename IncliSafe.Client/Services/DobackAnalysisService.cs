@@ -195,19 +195,19 @@ namespace IncliSafe.Client.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IncliSafe.Shared.Models.Analysis.TrendData> GetTrendData(int vehicleId, DateTime start, DateTime end)
+        public async Task<TrendData> GetTrendData(int vehicleId, DateTime start, DateTime end)
         {
-            // Implementation needed
-            throw new NotImplementedException();
+            return await _httpClient.GetFromJsonAsync<TrendData>($"{BaseUrl}/trends/{vehicleId}?start={start:s}&end={end:s}")
+                ?? new TrendData();
         }
 
-        public async Task<IncliSafe.Shared.Models.Analysis.Core.PatternDetails> GetPatternDetails(int patternId)
+        public async Task<PatternDetails> GetPatternDetails(int patternId)
         {
             try
             {
                 var response = await _httpClient.GetAsync($"api/doback/pattern/{patternId}");
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<IncliSafe.Shared.Models.Analysis.Core.PatternDetails>() ?? new IncliSafe.Shared.Models.Analysis.Core.PatternDetails();
+                return await response.Content.ReadFromJsonAsync<PatternDetails>() ?? new PatternDetails();
             }
             catch (Exception ex)
             {
@@ -216,13 +216,13 @@ namespace IncliSafe.Client.Services
             }
         }
 
-        public async Task<IncliSafe.Shared.Models.Analysis.Core.PatternHistory> GetPatternHistory(int patternId, DateTime start, DateTime end)
+        public async Task<List<PatternHistory>> GetPatternHistory(int patternId)
         {
             try
             {
                 var response = await _httpClient.GetAsync($"api/doback/pattern/{patternId}/history");
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<IncliSafe.Shared.Models.Analysis.Core.PatternHistory>() ?? new IncliSafe.Shared.Models.Analysis.Core.PatternHistory();
+                return await response.Content.ReadFromJsonAsync<List<PatternHistory>>() ?? new List<PatternHistory>();
             }
             catch (Exception ex)
             {

@@ -1,8 +1,0 @@
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.csproj.AssemblyReference.cache
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.AssemblyInfoInputs.cache
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.AssemblyInfo.cs
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.csproj.CoreCompileInputs.cache
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\Hermoso\Desktop\IncliSafeV2\IncliSafeApi\obj\Debug\net8.0\IncliSafeApi.sourcelink.json
