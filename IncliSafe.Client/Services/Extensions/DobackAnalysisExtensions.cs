@@ -1,7 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using IncliSafe.Shared.Models.Analysis;
-using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Client.Services.Extensions
 {
@@ -67,5 +67,67 @@ namespace IncliSafe.Client.Services.Extensions
             analysis.Data.Average(d => d.AccelerationY);
         public static decimal GetAverageAccelerationZ(this DobackAnalysis analysis) => 
             analysis.Data.Average(d => d.AccelerationZ);
+
+        public static decimal GetAverageScore(this DobackAnalysis analysis)
+        {
+            return (analysis.StabilityScore + analysis.SafetyScore + analysis.MaintenanceScore) / 3;
+        }
+
+        public static decimal GetAverageIndex(this DobackAnalysis analysis)
+        {
+            return (analysis.StabilityIndex + analysis.SafetyIndex + analysis.MaintenanceIndex) / 3;
+        }
+
+        public static List<TrendData> GetTrendData(this DobackAnalysis analysis)
+        {
+            return analysis.Data.Select(d => new TrendData
+            {
+                Timestamp = d.Timestamp,
+                Value = (d.StabilityIndex + d.SafetyIndex + d.MaintenanceIndex) / 3
+            }).ToList();
+        }
+
+        public static List<TrendData> GetStabilityTrend(this DobackAnalysis analysis)
+        {
+            return analysis.Data.Select(d => new TrendData
+            {
+                Timestamp = d.Timestamp,
+                Value = d.StabilityIndex
+            }).ToList();
+        }
+
+        public static List<TrendData> GetSafetyTrend(this DobackAnalysis analysis)
+        {
+            return analysis.Data.Select(d => new TrendData
+            {
+                Timestamp = d.Timestamp,
+                Value = d.SafetyIndex
+            }).ToList();
+        }
+
+        public static List<TrendData> GetMaintenanceTrend(this DobackAnalysis analysis)
+        {
+            return analysis.Data.Select(d => new TrendData
+            {
+                Timestamp = d.Timestamp,
+                Value = d.MaintenanceIndex
+            }).ToList();
+        }
+
+        public static List<Anomaly> GetCriticalAnomalies(this DobackAnalysis analysis)
+        {
+            return analysis.Anomalies
+                .Where(a => a.Severity > 0.7m)
+                .OrderByDescending(a => a.Severity)
+                .ToList();
+        }
+
+        public static List<AnalysisPrediction> GetHighProbabilityPredictions(this DobackAnalysis analysis)
+        {
+            return analysis.Predictions
+                .Where(p => p.Probability > 0.8m)
+                .OrderByDescending(p => p.Probability)
+                .ToList();
+        }
     }
 } 

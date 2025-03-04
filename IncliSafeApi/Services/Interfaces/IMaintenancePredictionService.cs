@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Analysis;
 
 namespace IncliSafeApi.Services.Interfaces
 {
     public interface IMaintenancePredictionService
     {
-        Task<MaintenancePredictionDTO> PredictMaintenanceAsync(int vehicleId);
+        Task<List<AnalysisPrediction>> PredictMaintenanceAsync(int vehicleId);
     }
 } 

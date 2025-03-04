@@ -1,22 +1,24 @@
 using System;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Shared.Models.Analysis
 {
     public class Cycle
     {
         public int Id { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
-        public double Duration { get; set; }
-        public double AverageSpeed { get; set; }
-        public double MaxSpeed { get; set; }
-        public decimal StabilityIndex { get; set; }
-        public decimal SafetyScore { get; set; }
-        public List<Anomaly> Anomalies { get; set; } = new();
         public int VehicleId { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public virtual ICollection<DobackData> DobackData { get; set; } = new List<DobackData>();
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public decimal Duration { get; set; }
+        public decimal Distance { get; set; }
+        public decimal AverageSpeed { get; set; }
+        public decimal MaxSpeed { get; set; }
+        public decimal StabilityScore { get; set; }
+        public decimal SafetyScore { get; set; }
+        public decimal MaintenanceScore { get; set; }
+        public virtual Vehiculo Vehicle { get; set; } = null!;
+        public virtual List<DobackData> Data { get; set; } = new();
     }
 } 

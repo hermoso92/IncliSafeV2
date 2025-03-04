@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Shared.Models.Analysis
 {
@@ -8,12 +8,12 @@ namespace IncliSafe.Shared.Models.Analysis
     {
         public int Id { get; set; }
         public int VehicleId { get; set; }
-        public int DobackAnalysisId { get; set; }
-        public decimal StabilityTrend { get; set; }
-        public decimal SafetyTrend { get; set; }
-        public decimal MaintenanceTrend { get; set; }
-        public List<string> Recommendations { get; set; } = new();
-        public DateTime AnalysisDate { get; set; }
-        public virtual DobackAnalysis Analysis { get; set; } = null!;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal TrendValue { get; set; }
+        public decimal Seasonality { get; set; }
+        public decimal Correlation { get; set; }
+        public List<TrendData> Data { get; set; } = new();
+        public virtual Vehiculo Vehicle { get; set; } = null!;
     }
 } 

@@ -17,6 +17,7 @@ using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Analysis.Core;
 using DetectedPattern = IncliSafe.Shared.Models.Patterns.DetectedPattern;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafeApi.Services
 {
@@ -512,6 +513,146 @@ namespace IncliSafeApi.Services
                 NotificationSeverity.Warning => AlertPriority.Medium,
                 _ => AlertPriority.Low
             };
+        }
+
+        public async Task<bool> GenerateMaintenanceAlertAsync(int vehicleId, VehicleMaintenanceDTO maintenance)
+        {
+            try
+            {
+                var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                    ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
+
+                var alert = new Alert
+                {
+                    VehicleId = vehicleId,
+                    Type = AlertType.Maintenance,
+                    Severity = AlertSeverity.Warning,
+                    Title = $"Mantenimiento programado para {vehicle.Placa}",
+                    Message = $"El vehículo {vehicle.Placa} tiene un mantenimiento programado para {maintenance.FechaProgramada:d}",
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false,
+                    IsActive = true
+                };
+
+                _context.Alerts.Add(alert);
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating maintenance alert for vehicle {Id}", vehicleId);
+                return false;
+            }
+        }
+
+        public async Task<bool> GenerateLicenseExpirationAlertAsync(int vehicleId)
+        {
+            try
+            {
+                var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                    ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
+
+                if (vehicle.FechaVencimientoLicencia <= DateTime.Now.AddDays(30))
+                {
+                    var alert = new Alert
+                    {
+                        VehicleId = vehicleId,
+                        Type = AlertType.License,
+                        Severity = AlertSeverity.Warning,
+                        Title = $"Licencia próxima a vencer para {vehicle.Placa}",
+                        Message = $"La licencia del vehículo {vehicle.Placa} vence el {vehicle.FechaVencimientoLicencia:d}",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false,
+                        IsActive = true
+                    };
+
+                    _context.Alerts.Add(alert);
+                    await _context.SaveChangesAsync();
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating license expiration alert for vehicle {Id}", vehicleId);
+                return false;
+            }
+        }
+
+        public async Task CheckThresholdsAsync(int vehicleId)
+        {
+            try
+            {
+                var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                    ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
+
+                var latestAnalysis = await _context.DobackAnalyses
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.AnalysisDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestAnalysis != null)
+                {
+                    if (latestAnalysis.StabilityScore < 0.6m)
+                    {
+                        await CreateThresholdAlert(vehicle, "Estabilidad", latestAnalysis.StabilityScore);
+                    }
+
+                    if (latestAnalysis.SafetyScore < 0.7m)
+                    {
+                        await CreateThresholdAlert(vehicle, "Seguridad", latestAnalysis.SafetyScore);
+                    }
+
+                    if (latestAnalysis.MaintenanceScore < 0.65m)
+                    {
+                        await CreateThresholdAlert(vehicle, "Mantenimiento", latestAnalysis.MaintenanceScore);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking thresholds for vehicle {Id}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task ProcessAlertsAsync()
+        {
+            try
+            {
+                var vehicles = await _context.Vehiculos.ToListAsync();
+                foreach (var vehicle in vehicles)
+                {
+                    await CheckThresholdsAsync(vehicle.Id);
+                    await GenerateLicenseExpirationAlertAsync(vehicle.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing alerts");
+                throw;
+            }
+        }
+
+        private async Task CreateThresholdAlert(Vehiculo vehicle, string metricName, decimal value)
+        {
+            var alert = new Alert
+            {
+                VehicleId = vehicle.Id,
+                Type = AlertType.Vehicle,
+                Severity = AlertSeverity.Warning,
+                Title = $"Métrica baja de {metricName} para {vehicle.Placa}",
+                Message = $"El índice de {metricName.ToLower()} del vehículo {vehicle.Placa} es {value:P0}, por debajo del umbral recomendado.",
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false,
+                IsActive = true
+            };
+
+            _context.Alerts.Add(alert);
+            await _context.SaveChangesAsync();
         }
     }
 } 

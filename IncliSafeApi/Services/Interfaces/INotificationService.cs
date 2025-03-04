@@ -5,7 +5,6 @@ using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis;
-using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services.Interfaces
 {
@@ -24,5 +23,9 @@ namespace IncliSafeApi.Services.Interfaces
         Task SendLicenseExpirationWarningAsync(int userId, LicenseDTO license);
         Task SendInspectionReminderAsync(int userId, InspeccionDTO inspeccion);
         Task SendMaintenanceAlertAsync(int userId, VehicleMaintenanceDTO maintenance);
+        Task<bool> GenerateMaintenanceAlertAsync(int vehicleId, VehicleMaintenanceDTO maintenance);
+        Task<bool> GenerateLicenseExpirationAlertAsync(int vehicleId);
+        Task CheckThresholdsAsync(int vehicleId);
+        Task ProcessAlertsAsync();
     }
 } 

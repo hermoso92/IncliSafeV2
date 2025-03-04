@@ -1,4 +1,5 @@
 using System;
+using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Shared.Models.Notifications
@@ -25,9 +26,9 @@ namespace IncliSafe.Shared.Models.Notifications
         public string? EntityId { get; set; }
         public string? EntityType { get; set; }
         public string? ActionUrl { get; set; }
-        public AlertType Type { get; set; }
+        public Analysis.AlertType Type { get; set; }
         public AlertPriority Priority { get; set; }
-        public AlertSeverity Severity { get; set; }
+        public Analysis.AlertSeverity Severity { get; set; }
         public bool IsActive { get; set; }
         public string Category { get; set; } = string.Empty;
         

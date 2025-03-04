@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -18,196 +19,96 @@ namespace IncliSafeApi.Services
     public class MaintenancePredictionService : IMaintenancePredictionService
     {
         private readonly ApplicationDbContext _context;
-        private readonly ITrendAnalysisService _trendService;
-        private readonly IAlertGenerationService _alertService;
         private readonly ILogger<MaintenancePredictionService> _logger;
 
         public MaintenancePredictionService(
             ApplicationDbContext context,
-            ITrendAnalysisService trendService,
-            IAlertGenerationService alertService,
             ILogger<MaintenancePredictionService> logger)
         {
             _context = context;
-            _trendService = trendService;
-            _alertService = alertService;
             _logger = logger;
         }
 
-        public async Task<MaintenancePredictionDTO> PredictMaintenanceAsync(int vehicleId)
+        public async Task<List<AnalysisPrediction>> PredictMaintenanceAsync(int vehicleId)
         {
             try
             {
-                var trends = await _trendService.AnalyzeVehicleTrendsAsync(vehicleId);
-                var recentAnalyses = await GetRecentAnalyses(vehicleId);
-                var lastInspection = await GetLastInspection(vehicleId);
+                var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                    ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
 
-                var prediction = new MaintenancePredictionDTO
+                var latestAnalysis = await _context.DobackAnalyses
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.AnalysisDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestAnalysis == null)
+                    return new List<AnalysisPrediction>();
+
+                var predictions = new List<AnalysisPrediction>();
+
+                // Predict maintenance based on current scores
+                if (latestAnalysis.MaintenanceScore < 0.7m)
                 {
-                    VehicleId = vehicleId,
-                    LastInspectionDate = lastInspection?.Fecha,
-                    PredictedMaintenanceDate = PredictNextMaintenanceDate(recentAnalyses, lastInspection),
-                    MaintenanceProbability = CalculateMaintenanceProbability(trends, recentAnalyses),
-                    RiskLevel = CalculateRiskLevel(trends, recentAnalyses),
-                    Recommendations = GenerateRecommendations(trends, recentAnalyses, lastInspection)
-                };
+                    predictions.Add(new AnalysisPrediction
+                    {
+                        VehicleId = vehicleId,
+                        Vehicle = vehicle,
+                        PredictedAt = DateTime.UtcNow,
+                        Type = PredictionType.Maintenance,
+                        Probability = 0.8m,
+                        Description = "Se recomienda mantenimiento preventivo basado en el índice de mantenimiento actual.",
+                        PredictedValue = latestAnalysis.MaintenanceScore,
+                        AnalysisId = latestAnalysis.Id,
+                        Analysis = latestAnalysis
+                    });
+                }
 
-                await SavePrediction(prediction);
-                await GenerateAlertIfNeeded(prediction);
+                // Predict stability issues
+                if (latestAnalysis.StabilityScore < 0.65m)
+                {
+                    predictions.Add(new AnalysisPrediction
+                    {
+                        VehicleId = vehicleId,
+                        Vehicle = vehicle,
+                        PredictedAt = DateTime.UtcNow,
+                        Type = PredictionType.Stability,
+                        Probability = 0.75m,
+                        Description = "Posibles problemas de estabilidad detectados. Se recomienda revisión.",
+                        PredictedValue = latestAnalysis.StabilityScore,
+                        AnalysisId = latestAnalysis.Id,
+                        Analysis = latestAnalysis
+                    });
+                }
 
-                return prediction;
+                // Predict safety issues
+                if (latestAnalysis.SafetyScore < 0.75m)
+                {
+                    predictions.Add(new AnalysisPrediction
+                    {
+                        VehicleId = vehicleId,
+                        Vehicle = vehicle,
+                        PredictedAt = DateTime.UtcNow,
+                        Type = PredictionType.Safety,
+                        Probability = 0.85m,
+                        Description = "Indicadores de seguridad por debajo del umbral. Se requiere atención.",
+                        PredictedValue = latestAnalysis.SafetyScore,
+                        AnalysisId = latestAnalysis.Id,
+                        Analysis = latestAnalysis
+                    });
+                }
+
+                if (predictions.Any())
+                {
+                    _context.AnalysisPredictions.AddRange(predictions);
+                    await _context.SaveChangesAsync();
+                }
+
+                return predictions;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error predicting maintenance for vehicle {VehicleId}", vehicleId);
+                _logger.LogError(ex, "Error predicting maintenance for vehicle {Id}", vehicleId);
                 throw;
-            }
-        }
-
-        private async Task<List<DobackAnalysis>> GetRecentAnalyses(int vehicleId)
-        {
-            return await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.Timestamp)
-                .Take(30)
-                .ToListAsync();
-        }
-
-        private async Task<Inspeccion?> GetLastInspection(int vehicleId)
-        {
-            return await _context.Inspecciones
-                .Where(i => i.VehiculoId == vehicleId)
-                .OrderByDescending(i => i.Fecha)
-                .FirstOrDefaultAsync();
-        }
-
-        private DateTime PredictNextMaintenanceDate(List<DobackAnalysis> analyses, Inspeccion? lastInspection)
-        {
-            if (!analyses.Any())
-                return DateTime.UtcNow.AddMonths(3);
-
-            var degradationRate = CalculateDegradationRate(analyses);
-            var baseInterval = TimeSpan.FromDays(90); // 3 meses por defecto
-
-            if (degradationRate > 0.1M)
-                baseInterval = TimeSpan.FromDays(60);
-            else if (degradationRate > 0.05M)
-                baseInterval = TimeSpan.FromDays(75);
-
-            var lastDate = lastInspection?.Fecha ?? DateTime.UtcNow;
-            return lastDate.Add(baseInterval);
-        }
-
-        private decimal CalculateDegradationRate(List<DobackAnalysis> analyses)
-        {
-            if (analyses.Count < 2)
-                return 0;
-
-            var recentScores = analyses.Take(5).Select(a => a.StabilityScore).ToList();
-            var oldScores = analyses.Skip(5).Take(5).Select(a => a.StabilityScore).ToList();
-
-            if (!recentScores.Any() || !oldScores.Any())
-                return 0;
-
-            return (oldScores.Average() - recentScores.Average()) / oldScores.Average();
-        }
-
-        private decimal CalculateMaintenanceProbability(TrendAnalysisDTO trends, List<DobackAnalysis> analyses)
-        {
-            if (!analyses.Any())
-                return 0.5M;
-
-            var factors = new List<decimal>();
-
-            // Factor de tendencia
-            if (trends.StabilityTrend == TrendDirection.Declining)
-                factors.Add(0.7M);
-            else if (trends.StabilityTrend == TrendDirection.Improving)
-                factors.Add(0.3M);
-            else
-                factors.Add(0.5M);
-
-            // Factor de puntuación reciente
-            var recentScore = analyses.First().StabilityScore;
-            factors.Add(1 - recentScore);
-
-            // Factor de tiempo desde última inspección
-            if (trends.LastAnalysisDate.HasValue)
-            {
-                var daysSinceAnalysis = (DateTime.UtcNow - trends.LastAnalysisDate.Value).Days;
-                factors.Add(Math.Min(1, daysSinceAnalysis / 90M));
-            }
-
-            return factors.Average();
-        }
-
-        private RiskLevel CalculateRiskLevel(TrendAnalysisDTO trends, List<DobackAnalysis> analyses)
-        {
-            var probability = CalculateMaintenanceProbability(trends, analyses);
-            return probability switch
-            {
-                > 0.7M => RiskLevel.High,
-                > 0.4M => RiskLevel.Medium,
-                _ => RiskLevel.Low
-            };
-        }
-
-        private List<string> GenerateRecommendations(
-            TrendAnalysisDTO trends,
-            List<DobackAnalysis> analyses,
-            Inspeccion? lastInspection)
-        {
-            var recommendations = new List<string>();
-
-            if (lastInspection == null || (DateTime.UtcNow - lastInspection.Fecha).Days > 90)
-            {
-                recommendations.Add("Se recomienda programar una inspección general.");
-            }
-
-            if (trends.StabilityTrend == TrendDirection.Declining)
-            {
-                recommendations.Add("Los indicadores de estabilidad muestran una tendencia negativa. Se sugiere revisión preventiva.");
-            }
-
-            if (analyses.Any() && analyses.First().StabilityScore < 0.7M)
-            {
-                recommendations.Add("El último análisis muestra valores subóptimos. Considerar mantenimiento próximo.");
-            }
-
-            return recommendations;
-        }
-
-        private async Task SavePrediction(MaintenancePredictionDTO prediction)
-        {
-            var entity = new EntityPrediction
-            {
-                VehicleId = prediction.VehicleId,
-                PredictionType = CorePredictionType.Maintenance,
-                PredictedDate = prediction.PredictedMaintenanceDate,
-                Probability = prediction.MaintenanceProbability,
-                RiskLevel = prediction.RiskLevel,
-                CreatedAt = DateTime.UtcNow,
-                Recommendations = string.Join("|", prediction.Recommendations)
-            };
-
-            _context.Predictions.Add(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task GenerateAlertIfNeeded(MaintenancePredictionDTO prediction)
-        {
-            if (prediction.RiskLevel == RiskLevel.High || prediction.MaintenanceProbability > 0.8M)
-            {
-                var alert = new VehicleAlertDTO
-                {
-                    VehicleId = prediction.VehicleId,
-                    Title = "Mantenimiento Preventivo Recomendado",
-                    Message = $"Alta probabilidad de requerir mantenimiento. Fecha sugerida: {prediction.PredictedMaintenanceDate:d}",
-                    Type = AlertType.Maintenance,
-                    Severity = AlertSeverity.Warning
-                };
-
-                await _alertService.CreateAlertAsync(prediction.VehicleId, alert);
             }
         }
     }

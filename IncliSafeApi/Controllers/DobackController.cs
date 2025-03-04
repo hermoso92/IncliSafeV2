@@ -16,6 +16,9 @@ using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Analysis.Core;
 using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
+using IncliSafe.Shared.Models.Notifications;
+using IncliSafe.Shared.Models.Entities;
+
 namespace IncliSafeApi.Controllers
 {
     [ApiController]
@@ -27,17 +30,23 @@ namespace IncliSafeApi.Controllers
         private readonly ILogger<DobackController> _logger;
         private readonly IKnowledgeBaseService _knowledgeService;
         private readonly IDobackService _dobackService;
+        private readonly IDobackAnalysisService _analysisService;
+        private readonly IPredictiveAnalysisService _predictiveService;
 
         public DobackController(
             ApplicationDbContext context,
             ILogger<DobackController> logger,
             IKnowledgeBaseService knowledgeService,
-            IDobackService dobackService)
+            IDobackService dobackService,
+            IDobackAnalysisService analysisService,
+            IPredictiveAnalysisService predictiveService)
         {
             _context = context;
             _logger = logger;
             _knowledgeService = knowledgeService;
             _dobackService = dobackService;
+            _analysisService = analysisService;
+            _predictiveService = predictiveService;
         }
 
         [HttpPost("analyze")]
@@ -145,17 +154,17 @@ namespace IncliSafeApi.Controllers
         }
 
         [HttpGet("metrics")]
-        public async Task<ActionResult<CoreMetrics>> GetDashboardMetrics()
+        public async Task<ActionResult<DashboardMetrics>> GetDashboardMetrics()
         {
             try
             {
-                var metrics = await _dobackService.GetMetrics();
+                var metrics = await _dobackService.GetDashboardMetrics();
                 return Ok(metrics);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener métricas del dashboard");
-                return StatusCode(500, "Error interno al obtener métricas");
+                _logger.LogError(ex, "Error getting dashboard metrics");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -228,14 +237,20 @@ namespace IncliSafeApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<DobackAnalysis>> GetAnalysis(int id)
         {
-            var analysis = await _dobackService.GetAnalysisAsync(id);
-            if (analysis == null)
-                return NotFound();
-
-            if (analysis.VehicleId.ToString() != User.FindFirstValue(ClaimTypes.NameIdentifier))
-                return Forbid();
-
-            return Ok(analysis);
+            try
+            {
+                var analysis = await _dobackService.GetAnalysis(id);
+                if (analysis == null)
+                {
+                    return NotFound();
+                }
+                return Ok(analysis);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting analysis {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
         }
 
         [HttpGet("{id}/data")]
@@ -478,6 +493,20 @@ namespace IncliSafeApi.Controllers
                 DetectionTime = DateTime.UtcNow,
                 VehicleId = GetCurrentUserId()
             };
+        }
+
+        [HttpPost("analyze/{vehicleId}")]
+        public async Task<ActionResult<DobackAnalysis>> AnalyzeDoback(int vehicleId, [FromBody] DobackAnalysisDTO analysisDto)
+        {
+            var analysis = await _dobackService.AnalyzeDobackAsync(vehicleId, analysisDto);
+            return Ok(analysis);
+        }
+
+        [HttpPost("trends/{vehicleId}")]
+        public async Task<ActionResult<TrendAnalysis>> AnalyzeTrends(int vehicleId, [FromBody] TrendAnalysisDTO trendDto)
+        {
+            var analysis = await _predictiveService.AnalyzeTrends(vehicleId, trendDto.StartDate, trendDto.EndDate);
+            return Ok(analysis);
         }
     }
 } 

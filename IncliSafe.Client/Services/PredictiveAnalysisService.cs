@@ -7,6 +7,7 @@ using IncliSafe.Shared.Models.Analysis.Core;
 using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
 using System.Net.Http;
 using System.Net.Http.Json;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafe.Client.Services
 {
@@ -33,10 +34,12 @@ namespace IncliSafe.Client.Services
             return new List<Anomaly>();  // Implementar lógica real
         }
 
-        public async Task<IncliSafe.Shared.Models.Analysis.Core.TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate)
+        public async Task<TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate)
         {
-            var data = await _dobackService.GetDobackDataAsync(vehicleId);
-            return new IncliSafe.Shared.Models.Analysis.Core.TrendAnalysis();
+            var trendDto = new TrendAnalysisDTO { StartDate = startDate, EndDate = endDate };
+            var response = await _http.PostAsJsonAsync($"{BaseUrl}/trends/{vehicleId}", trendDto);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<TrendAnalysis>() ?? new();
         }
 
         public async Task<List<Pattern>> DetectPatterns(int vehicleId, DateTime startDate, DateTime endDate)
@@ -44,9 +47,9 @@ namespace IncliSafe.Client.Services
             return new List<Pattern>();
         }
 
-        public async Task<List<AnalysisPrediction>> GetPredictions(int analysisId)
+        public async Task<List<AnalysisPrediction>> GetPredictions(int vehicleId)
         {
-            return await _dobackService.GetPredictionsAsync(analysisId);
+            return await _http.GetFromJsonAsync<List<AnalysisPrediction>>($"{BaseUrl}/predictions/{vehicleId}") ?? new();
         }
 
         public async Task<AnalysisPrediction> GetPredictionAsync(int vehicleId)

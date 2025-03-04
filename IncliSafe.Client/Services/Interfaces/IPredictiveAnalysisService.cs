@@ -1,7 +1,7 @@
-using IncliSafe.Shared.Models.Analysis;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis;
 
 namespace IncliSafe.Client.Services.Interfaces
 {
@@ -11,6 +11,6 @@ namespace IncliSafe.Client.Services.Interfaces
         Task<List<Anomaly>> DetectAnomalies(int vehicleId, DateTime startDate, DateTime endDate);
         Task<TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate);
         Task<List<Pattern>> DetectPatterns(int vehicleId, DateTime startDate, DateTime endDate);
-        Task<List<AnalysisPrediction>> GetPredictions(int analysisId);
+        Task<List<AnalysisPrediction>> GetPredictions(int vehicleId);
     }
 } 

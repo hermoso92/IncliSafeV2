@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using IncliSafeApi.Data;
 using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Analysis;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafeApi.Services
 {

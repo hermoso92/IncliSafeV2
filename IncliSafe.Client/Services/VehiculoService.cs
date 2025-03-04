@@ -11,7 +11,7 @@ using System.Security.Claims;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Client.Services.Interfaces;
 using IncliSafe.Shared.Models.DTOs;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Notifications;
 using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 
@@ -184,14 +184,14 @@ namespace IncliSafe.Client.Services
             return await _httpClient.GetFromJsonAsync<List<DobackAnalysis>>($"{BaseUrl}/{vehicleId}/analyses") ?? new();
         }
 
-        public async Task<TrendAnalysisEntity> GetTrendAnalysisAsync(int vehicleId)
+        public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId)
         {
-            return await _httpClient.GetFromJsonAsync<TrendAnalysisEntity>($"{BaseUrl}/{vehicleId}/trends") ?? new();
+            return await _httpClient.GetFromJsonAsync<TrendAnalysis>($"{BaseUrl}/{vehicleId}/trends") ?? new();
         }
 
-        public async Task<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>> GetPredictionsAsync(int vehicleId)
+        public async Task<List<AnalysisPrediction>> GetPredictionsAsync(int vehicleId)
         {
-            return await _httpClient.GetFromJsonAsync<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>($"{BaseUrl}/{vehicleId}/predictions") ?? new();
+            return await _httpClient.GetFromJsonAsync<List<AnalysisPrediction>>($"{BaseUrl}/{vehicleId}/predictions") ?? new();
         }
 
         public async Task<List<Anomaly>> GetAnomaliesAsync(int vehicleId)

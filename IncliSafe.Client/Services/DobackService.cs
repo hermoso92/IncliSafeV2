@@ -11,6 +11,7 @@ using MudBlazor;
 using IncliSafe.Shared.Models.Analysis.Core;
 using IncliSafe.Shared.Models;
 using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafe.Client.Services
 {
@@ -122,6 +123,39 @@ namespace IncliSafe.Client.Services
             return series.Any() ? series.Average() : 0;
         }
 
-        // ... resto de la implementación de los métodos
+        public async Task<DobackAnalysis?> GetAnalysis(int id)
+        {
+            return await _httpClient.GetFromJsonAsync<DobackAnalysis>($"{BaseUrl}/{id}");
+        }
+
+        public async Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<DobackAnalysis>($"{BaseUrl}/vehicle/{vehicleId}/latest");
+        }
+
+        public async Task<List<AnalysisPrediction>> GetPredictions(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<AnalysisPrediction>>($"{BaseUrl}/vehicle/{vehicleId}/predictions") ?? new();
+        }
+
+        public async Task<CoreMetrics> GetMetricsAsync()
+        {
+            return await _httpClient.GetFromJsonAsync<CoreMetrics>($"{BaseUrl}/metrics") ?? new();
+        }
+
+        public async Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysisDto)
+        {
+            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/analyze/{vehicleId}", analysisDto);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<DobackAnalysis>() ?? new();
+        }
+
+        public async Task<TrendAnalysis> AnalyzeTrendsAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            var trendDto = new TrendAnalysisDTO { StartDate = startDate, EndDate = endDate };
+            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/trends/{vehicleId}", trendDto);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<TrendAnalysis>() ?? new();
+        }
     }
 } 

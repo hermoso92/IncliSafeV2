@@ -9,7 +9,7 @@ using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Notifications;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis;
 
 namespace IncliSafe.Client.Services
 {
@@ -229,12 +229,12 @@ namespace IncliSafe.Client.Services
             return await _httpClient.GetFromJsonAsync<List<DobackAnalysis>>($"{BaseUrl}/{vehicleId}/analyses") ?? new();
         }
 
-        public async Task<TrendAnalysisEntity> GetTrendAnalysisAsync(int vehicleId)
+        public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId)
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<TrendAnalysisEntity>($"{BaseUrl}/{vehicleId}/trends") 
-                    ?? new TrendAnalysisEntity();
+                return await _httpClient.GetFromJsonAsync<TrendAnalysis>($"{BaseUrl}/{vehicleId}/trends") 
+                    ?? new TrendAnalysis();
             }
             catch (Exception ex)
             {
@@ -243,11 +243,11 @@ namespace IncliSafe.Client.Services
             }
         }
 
-        public async Task<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>> GetPredictionsAsync(int vehicleId)
+        public async Task<List<AnalysisPrediction>> GetPredictionsAsync(int vehicleId)
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>($"{BaseUrl}/{vehicleId}/predictions") ?? new();
+                return await _httpClient.GetFromJsonAsync<List<AnalysisPrediction>>($"{BaseUrl}/{vehicleId}/predictions") ?? new();
             }
             catch (Exception ex)
             {

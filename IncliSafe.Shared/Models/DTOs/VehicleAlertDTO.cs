@@ -1,5 +1,5 @@
 using System;
-using IncliSafe.Shared.Models.Entities;
+using IncliSafe.Shared.Models.Analysis;
 
 namespace IncliSafe.Shared.Models.DTOs
 {
@@ -9,8 +9,8 @@ namespace IncliSafe.Shared.Models.DTOs
         public int VehicleId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public AlertType Type { get; set; }
-        public AlertSeverity Severity { get; set; }
+        public Analysis.AlertType Type { get; set; }
+        public Analysis.AlertSeverity Severity { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
         public DateTime? ReadAt { get; set; }

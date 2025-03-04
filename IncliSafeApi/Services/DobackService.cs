@@ -14,6 +14,8 @@ using IncliSafe.Shared.Models.Analysis.Core;
 using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
 using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
 using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
+using IncliSafe.Shared.Models.Notifications;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafeApi.Services
 {
@@ -21,17 +23,35 @@ namespace IncliSafeApi.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<DobackService> _logger;
+        private readonly IDobackAnalysisService _analysisService;
+        private readonly IPredictiveAnalysisService _predictiveService;
 
-        public DobackService(ApplicationDbContext context, ILogger<DobackService> logger)
+        public DobackService(
+            ApplicationDbContext context,
+            ILogger<DobackService> logger,
+            IDobackAnalysisService analysisService,
+            IPredictiveAnalysisService predictiveService)
         {
             _context = context;
             _logger = logger;
+            _analysisService = analysisService;
+            _predictiveService = predictiveService;
         }
 
         // Implementación de los métodos de la interfaz
         public async Task<DashboardMetrics> GetDashboardMetrics()
         {
-            return new DashboardMetrics();
+            try
+            {
+                var metrics = new DashboardMetrics();
+                // Implementar lógica para obtener métricas
+                return metrics;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dashboard metrics");
+                throw;
+            }
         }
 
         public async Task<List<DobackAnalysis>> GetAnalysisHistoryAsync(int vehicleId)
@@ -45,10 +65,11 @@ namespace IncliSafeApi.Services
         public async Task<DobackAnalysis?> GetAnalysis(int id)
         {
             return await _context.DobackAnalyses
+                .Include(a => a.Vehicle)
                 .Include(a => a.Data)
-                .Include(a => a.DetectedPatterns)
+                .Include(a => a.Anomalies)
                 .Include(a => a.Predictions)
-                .Include(a => a.Result)
+                .Include(a => a.Patterns)
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
 
@@ -144,8 +165,10 @@ namespace IncliSafeApi.Services
         public async Task<List<CoreAnalysisPrediction>> GetPredictions(int vehicleId)
         {
             return await _context.AnalysisPredictions
+                .Include(p => p.Vehicle)
+                .Include(p => p.Analysis)
                 .Where(p => p.VehicleId == vehicleId)
-                .OrderByDescending(p => p.Timestamp)
+                .OrderByDescending(p => p.PredictedAt)
                 .ToListAsync();
         }
 
@@ -316,12 +339,43 @@ namespace IncliSafeApi.Services
 
         public async Task<CoreMetrics> GetMetricsAsync()
         {
-            return new CoreMetrics
+            var metrics = new CoreMetrics
             {
-                StabilityScore = await CalculateAverageStabilityScore(),
-                SafetyScore = await CalculateAverageSafetyScore(),
-                Trends = await CalculateTrendMetrics()
+                TotalAnalyses = await _context.DobackAnalyses.CountAsync(),
+                TotalAnomalies = await _context.Anomalies.CountAsync(),
+                TotalPredictions = await _context.AnalysisPredictions.CountAsync(),
+                TotalPatterns = await _context.PatternDetails.CountAsync(),
+                AverageStabilityScore = await _context.DobackAnalyses.AverageAsync(a => a.StabilityScore),
+                AverageSafetyScore = await _context.DobackAnalyses.AverageAsync(a => a.SafetyScore),
+                AverageMaintenanceScore = await _context.DobackAnalyses.AverageAsync(a => a.MaintenanceScore)
             };
+
+            // Get trend data for the last 30 days
+            var startDate = DateTime.UtcNow.AddDays(-30);
+            var analyses = await _context.DobackAnalyses
+                .Where(a => a.AnalysisDate >= startDate)
+                .OrderBy(a => a.AnalysisDate)
+                .ToListAsync();
+
+            metrics.StabilityTrend = analyses.Select(a => new TrendData
+            {
+                Timestamp = a.AnalysisDate,
+                Value = a.StabilityScore
+            }).ToList();
+
+            metrics.SafetyTrend = analyses.Select(a => new TrendData
+            {
+                Timestamp = a.AnalysisDate,
+                Value = a.SafetyScore
+            }).ToList();
+
+            metrics.MaintenanceTrend = analyses.Select(a => new TrendData
+            {
+                Timestamp = a.AnalysisDate,
+                Value = a.MaintenanceScore
+            }).ToList();
+
+            return metrics;
         }
 
         public async Task<DobackAnalysis> GetLatestAnalysisAsync(int vehicleId)
@@ -330,6 +384,184 @@ namespace IncliSafeApi.Services
                 .Where(a => a.VehicleId == vehicleId)
                 .OrderByDescending(a => a.Timestamp)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<DobackAnalysis>> GetAnalyses(int vehicleId)
+        {
+            return await _context.DobackAnalyses
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.Timestamp)
+                .ToListAsync();
+        }
+
+        public async Task<TrendAnalysis> GetTrendAnalysis(int analysisId)
+        {
+            var analysis = await _context.TrendAnalyses
+                .FirstOrDefaultAsync(t => t.DobackAnalysisId == analysisId);
+
+            if (analysis == null)
+                throw new KeyNotFoundException($"Trend analysis not found for analysis {analysisId}");
+
+            return analysis;
+        }
+
+        public async Task<List<Anomaly>> GetAnomalies(int vehicleId)
+        {
+            return await _context.Anomalies
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.DetectedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Pattern>> GetPatterns(int vehicleId)
+        {
+            return await _context.Patterns
+                .Where(p => p.VehicleId == vehicleId)
+                .OrderByDescending(p => p.DetectedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<AnalysisPrediction>> GetAnalysisPredictions(int vehicleId)
+        {
+            return await _context.Predictions
+                .Where(p => p.VehicleId == vehicleId)
+                .OrderByDescending(p => p.Timestamp)
+                .ToListAsync();
+        }
+
+        public async Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId)
+        {
+            return await _context.DobackAnalyses
+                .Include(a => a.Vehicle)
+                .Include(a => a.Data)
+                .Include(a => a.Anomalies)
+                .Include(a => a.Predictions)
+                .Include(a => a.Patterns)
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.AnalysisDate)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysisDto)
+        {
+            var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
+
+            var analysis = new DobackAnalysis
+            {
+                VehicleId = vehicleId,
+                Vehicle = vehicle,
+                AnalysisDate = DateTime.UtcNow,
+                Type = AnalysisType.Doback,
+                DobackId = analysisDto.DobackId,
+                Name = analysisDto.Name,
+                Description = analysisDto.Description,
+                StabilityIndex = analysisDto.StabilityIndex,
+                SafetyIndex = analysisDto.SafetyIndex,
+                MaintenanceIndex = analysisDto.MaintenanceIndex,
+                StabilityScore = analysisDto.StabilityScore,
+                SafetyScore = analysisDto.SafetyScore,
+                MaintenanceScore = analysisDto.MaintenanceScore,
+                Notes = analysisDto.Notes
+            };
+
+            _context.DobackAnalyses.Add(analysis);
+            await _context.SaveChangesAsync();
+
+            return analysis;
+        }
+
+        public async Task<TrendAnalysis> AnalyzeTrendsAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
+                ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
+
+            var analyses = await _context.DobackAnalyses
+                .Where(a => a.VehicleId == vehicleId && a.AnalysisDate >= startDate && a.AnalysisDate <= endDate)
+                .OrderBy(a => a.AnalysisDate)
+                .ToListAsync();
+
+            if (!analyses.Any())
+                throw new InvalidOperationException("No analyses found for the specified period.");
+
+            var trendAnalysis = new TrendAnalysis
+            {
+                VehicleId = vehicleId,
+                Vehicle = vehicle,
+                AnalysisDate = DateTime.UtcNow,
+                Type = AnalysisType.Trend,
+                StartDate = startDate,
+                EndDate = endDate,
+                StabilityScore = analyses.Average(a => a.StabilityScore),
+                SafetyScore = analyses.Average(a => a.SafetyScore),
+                MaintenanceScore = analyses.Average(a => a.MaintenanceScore),
+                TrendValue = CalculateTrendValue(analyses),
+                Seasonality = CalculateSeasonality(analyses),
+                Correlation = CalculateCorrelation(analyses),
+                Data = analyses.Select(a => new TrendData
+                {
+                    Timestamp = a.AnalysisDate,
+                    Value = (a.StabilityScore + a.SafetyScore + a.MaintenanceScore) / 3
+                }).ToList()
+            };
+
+            _context.TrendAnalyses.Add(trendAnalysis);
+            await _context.SaveChangesAsync();
+
+            return trendAnalysis;
+        }
+
+        private decimal CalculateTrendValue(List<DobackAnalysis> analyses)
+        {
+            // Simple linear regression for trend
+            var n = analyses.Count;
+            var sumX = 0.0m;
+            var sumY = 0.0m;
+            var sumXY = 0.0m;
+            var sumX2 = 0.0m;
+
+            for (var i = 0; i < n; i++)
+            {
+                var x = i;
+                var y = (analyses[i].StabilityScore + analyses[i].SafetyScore + analyses[i].MaintenanceScore) / 3;
+                sumX += x;
+                sumY += y;
+                sumXY += x * y;
+                sumX2 += x * x;
+            }
+
+            var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            return slope;
+        }
+
+        private decimal CalculateSeasonality(List<DobackAnalysis> analyses)
+        {
+            // Simple seasonality calculation based on weekly patterns
+            var weeklyAverages = analyses
+                .GroupBy(a => a.AnalysisDate.DayOfWeek)
+                .Select(g => g.Average(a => (a.StabilityScore + a.SafetyScore + a.MaintenanceScore) / 3))
+                .ToList();
+
+            var overallAverage = weeklyAverages.Average();
+            var seasonalityIndex = weeklyAverages.Max(w => Math.Abs((decimal)(w - overallAverage)));
+
+            return seasonalityIndex;
+        }
+
+        private decimal CalculateCorrelation(List<DobackAnalysis> analyses)
+        {
+            // Calculate correlation between stability and safety scores
+            var n = analyses.Count;
+            var sumX = analyses.Sum(a => a.StabilityScore);
+            var sumY = analyses.Sum(a => a.SafetyScore);
+            var sumXY = analyses.Sum(a => a.StabilityScore * a.SafetyScore);
+            var sumX2 = analyses.Sum(a => a.StabilityScore * a.StabilityScore);
+            var sumY2 = analyses.Sum(a => a.SafetyScore * a.SafetyScore);
+
+            var correlation = (n * sumXY - sumX * sumY) /
+                (decimal)Math.Sqrt((double)((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)));
+
+            return correlation;
         }
     }
 } 

@@ -9,6 +9,8 @@ using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Exceptions;
 using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafeApi.Services
 {
@@ -62,13 +64,15 @@ namespace IncliSafeApi.Services
             }
         }
 
-        public async Task<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>> GetPredictionsAsync(int analysisId)
+        public async Task<List<AnalysisPrediction>> GetPredictionsAsync(int analysisId)
         {
             try
             {
-                return await _context.Predictions
+                return await _context.AnalysisPredictions
+                    .Include(p => p.Vehicle)
+                    .Include(p => p.Analysis)
                     .Where(p => p.AnalysisId == analysisId)
-                    .OrderByDescending(p => p.CreatedAt)
+                    .OrderByDescending(p => p.PredictedAt)
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -78,18 +82,20 @@ namespace IncliSafeApi.Services
             }
         }
 
-        public async Task<List<Anomaly>> GetAnomaliesAsync(int vehicleId)
+        public async Task<List<Anomaly>> GetAnomaliesAsync(int analysisId)
         {
             try
             {
                 return await _context.Anomalies
-                    .Where(a => a.VehicleId == vehicleId)
+                    .Include(a => a.Vehicle)
+                    .Include(a => a.Analysis)
+                    .Where(a => a.AnalysisId == analysisId)
                     .OrderByDescending(a => a.DetectedAt)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting anomalies for vehicle {Id}", vehicleId);
+                _logger.LogError(ex, "Error getting anomalies for analysis {Id}", analysisId);
                 throw;
             }
         }
@@ -132,7 +138,7 @@ namespace IncliSafeApi.Services
             try
             {
                 return await _context.DobackData
-                    .Where(d => d.AnalysisId == analysisId)
+                    .Where(d => d.DobackAnalysisId == analysisId)
                     .OrderBy(d => d.Timestamp)
                     .ToListAsync();
             }
@@ -156,6 +162,39 @@ namespace IncliSafeApi.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting analysis result for {Id}", analysisId);
+                throw;
+            }
+        }
+
+        public async Task<List<PatternDetails>> GetPatternsAsync(int analysisId)
+        {
+            try
+            {
+                return await _context.PatternDetails
+                    .Include(p => p.DobackAnalysis)
+                    .Where(p => p.DobackAnalysisId == analysisId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting patterns for analysis {Id}", analysisId);
+                throw;
+            }
+        }
+
+        public async Task<List<DobackData>> GetHistoricalData(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                return await _context.DobackData
+                    .Include(d => d.DobackAnalysis)
+                    .Where(d => d.DobackAnalysis.VehicleId == vehicleId && d.Timestamp >= startDate && d.Timestamp <= endDate)
+                    .OrderBy(d => d.Timestamp)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting historical data for vehicle {Id} from {StartDate} to {EndDate}", vehicleId, startDate, endDate);
                 throw;
             }
         }

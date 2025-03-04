@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Patterns;
-using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Client.Services.Interfaces
@@ -14,13 +14,12 @@ namespace IncliSafe.Client.Services.Interfaces
     {
         Task<DashboardMetrics> GetDashboardMetrics();
         Task<List<DobackData>> GetHistoricalData(int vehicleId, DateTime startDate, DateTime endDate);
-        Task<DobackAnalysis?> GetAnalysisAsync(int analysisId);
-        Task<DobackData> GetDobackDataAsync(int vehicleId);
+        Task<DobackAnalysis?> GetAnalysis(int id);
+        Task<List<DobackData>> GetDobackDataAsync(int analysisId);
+        Task<List<Anomaly>> GetAnomaliesAsync(int analysisId);
         Task<List<AnalysisPrediction>> GetPredictionsAsync(int analysisId);
+        Task<List<PatternDetails>> GetPatternsAsync(int analysisId);
         Task<TrendAnalysis> GetTrendAnalysis(int analysisId);
-        Task<List<Pattern>> GetDetectedPatterns(int analysisId);
-        Task<List<PatternDetails>> GetPatternDetails(int patternId);
-        Task<List<PatternHistory>> GetPatternHistory(int patternId);
         Task<AlertSettings> GetAlertSettings(int patternId);
         Task<bool> ExportAnalysis(int fileId, string format);
         Task<NotificationSettings> GetNotificationSettings(int vehicleId);

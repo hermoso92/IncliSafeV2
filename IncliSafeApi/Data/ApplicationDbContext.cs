@@ -18,28 +18,30 @@ namespace IncliSafeApi.Data
         }
 
         public DbSet<Usuario> Usuarios { get; set; } = null!;
-        public DbSet<DobackData> DobackData { get; set; } = null!;
-        public DbSet<Cycle> Cycles { get; set; } = null!;
-        public DbSet<Alert> Alerts { get; set; } = null!;
         public DbSet<Vehiculo> Vehiculos { get; set; } = null!;
+        public DbSet<VehicleAlert> VehicleAlerts { get; set; } = null!;
+        public DbSet<Alert> Alerts { get; set; } = null!;
+        public DbSet<AlertSettings> AlertSettings { get; set; } = null!;
+        public DbSet<NotificationSettings> NotificationSettings { get; set; } = null!;
         public DbSet<DobackAnalysis> DobackAnalyses { get; set; } = null!;
+        public DbSet<DobackData> DobackData { get; set; } = null!;
+        public DbSet<PatternDetails> PatternDetails { get; set; } = null!;
+        public DbSet<TrendAnalysis> TrendAnalyses { get; set; } = null!;
+        public DbSet<AnalysisResult> AnalysisResults { get; set; } = null!;
+        public DbSet<Anomaly> Anomalies { get; set; } = null!;
+        public DbSet<Cycle> Cycles { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<PatternDetection> PatternDetections { get; set; } = null!;
         public DbSet<License> Licenses { get; set; } = null!;
         public DbSet<KnowledgePattern> KnowledgePatterns { get; set; } = null!;
         public DbSet<Inspeccion> Inspecciones { get; set; } = null!;
         public DbSet<BlacklistedToken> BlacklistedTokens { get; set; } = null!;
-        public DbSet<NotificationSettings> NotificationSettings { get; set; } = null!;
-        public DbSet<Anomaly> Anomalies { get; set; } = null!;
-        public DbSet<TrendAnalysis> TrendAnalyses { get; set; } = null!;
-        public DbSet<AnalysisResult> AnalysisResults { get; set; } = null!;
         public DbSet<IncliSafe.Shared.Models.Patterns.DetectedPattern> DetectedPatterns { get; set; } = null!;
         public DbSet<CoreAnalysisPrediction> AnalysisPredictions { get; set; } = null!;
         public DbSet<IncliSafe.Shared.Models.Entities.Prediction> MaintenancePredictions { get; set; } = null!;
-        public DbSet<VehicleAlert> VehicleAlerts { get; set; } = null!;
         public DbSet<VehicleMetrics> VehicleMetrics { get; set; } = null!;
-        public DbSet<AlertSettings> AlertSettings { get; set; } = null!;
-        public DbSet<IncliSafe.Shared.Models.Analysis.Core.Prediction> Predictions { get; set; } = null!;
+        public DbSet<Pattern> Patterns { get; set; } = null!;
+        public DbSet<PatternHistory> PatternHistory { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -286,7 +288,8 @@ namespace IncliSafeApi.Data
 
                 entity.HasOne(a => a.Vehicle)
                     .WithMany(v => v.DobackAnalyses)
-                    .HasForeignKey(a => a.VehicleId);
+                    .HasForeignKey(a => a.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<TrendAnalysis>(entity =>
@@ -322,7 +325,7 @@ namespace IncliSafeApi.Data
                 entity.HasOne(t => t.Analysis)
                     .WithOne(a => a.TrendAnalysis)
                     .HasForeignKey<TrendAnalysis>(t => t.DobackAnalysisId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasMany(t => t.Predictions)
                     .WithOne()
@@ -356,8 +359,9 @@ namespace IncliSafeApi.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(a => a.Analysis)
-                    .WithMany(t => t.Anomalies)
-                    .HasForeignKey(a => a.AnalysisId);
+                    .WithMany(t => t.DetectedAnomalies)
+                    .HasForeignKey(a => a.AnalysisId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<AnalysisResult>(entity =>
@@ -517,6 +521,22 @@ namespace IncliSafeApi.Data
                 entity.Property(e => e.Recommendations).IsRequired();
                 entity.Property(e => e.CreatedAt).IsRequired();
             });
+
+            modelBuilder.Entity<Pattern>()
+                .HasMany(p => p.Details)
+                .WithOne(d => d.Pattern)
+                .HasForeignKey(d => d.PatternId);
+
+            modelBuilder.Entity<Pattern>()
+                .HasMany(p => p.History)
+                .WithOne(h => h.Pattern)
+                .HasForeignKey(h => h.PatternId);
+
+            modelBuilder.Entity<PatternDetails>()
+                .HasOne(p => p.DobackAnalysis)
+                .WithMany(d => d.DetectedPatterns)
+                .HasForeignKey(p => p.DobackAnalysisId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

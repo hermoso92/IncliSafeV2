@@ -11,8 +11,9 @@ using MudBlazor;
 using Microsoft.Extensions.Logging;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Exceptions;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafe.Client.Services
 {
@@ -178,9 +179,8 @@ namespace IncliSafe.Client.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/doback/historical/{vehicleId}?start={startDate:s}&end={endDate:s}");
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<List<DobackData>>() ?? new List<DobackData>();
+                return await _httpClient.GetFromJsonAsync<List<DobackData>>($"{BaseUrl}/historical/{vehicleId}?start={startDate:s}&end={endDate:s}")
+                    ?? new List<DobackData>();
             }
             catch (Exception ex)
             {
@@ -201,13 +201,14 @@ namespace IncliSafe.Client.Services
                 ?? new TrendData();
         }
 
-        public async Task<PatternDetails> GetPatternDetails(int patternId)
+        public async Task<List<PatternDetails>> GetPatternDetails(int patternId)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/doback/pattern/{patternId}");
+                var response = await _httpClient.GetAsync($"{BaseUrl}/pattern/{patternId}");
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PatternDetails>() ?? new PatternDetails();
+                return await response.Content.ReadFromJsonAsync<List<PatternDetails>>()
+                    ?? new List<PatternDetails>();
             }
             catch (Exception ex)
             {
@@ -233,27 +234,23 @@ namespace IncliSafe.Client.Services
 
         public async Task<NotificationSettings> GetNotificationSettings(int vehicleId)
         {
-            var result = await HandleRequestAsync(async () =>
-            {
-                var response = await _httpClient.GetAsync($"api/notifications/settings/{vehicleId}");
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<NotificationSettings>();
-            }, "Error al obtener la configuración de notificaciones");
-
-            return result.Data ?? new NotificationSettings { VehicleId = vehicleId };
+            var response = await _httpClient.GetAsync($"api/notifications/settings/{vehicleId}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<NotificationSettings>()
+                ?? new NotificationSettings { VehicleId = vehicleId };
         }
 
         public async Task<List<DobackFileInfo>> GetVehicleFiles(int vehicleId)
         {
-            // Implementation needed
-            throw new NotImplementedException();
+            return await _httpClient.GetFromJsonAsync<List<DobackFileInfo>>($"{BaseUrl}/files/{vehicleId}")
+                ?? new List<DobackFileInfo>();
         }
 
         public async Task<bool> ExportAnalysis(int fileId, string format)
         {
             try
             {
-                var response = await _httpClient.PostAsync($"api/doback/export/{fileId}?format={format}", null);
+                var response = await _httpClient.PostAsync($"{BaseUrl}/export/{fileId}?format={format}", null);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
@@ -265,14 +262,10 @@ namespace IncliSafe.Client.Services
 
         public async Task<NotificationSettings> UpdateNotificationSettings(NotificationSettings settings)
         {
-            var result = await HandleRequestAsync(async () =>
-            {
-                var response = await _httpClient.PutAsJsonAsync($"api/notifications/settings", settings);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<NotificationSettings>();
-            }, "Error al actualizar la configuración de notificaciones");
-
-            return result.Data ?? throw new Exception("Error al actualizar la configuración");
+            var response = await _httpClient.PutAsJsonAsync($"api/notifications/settings", settings);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<NotificationSettings>()
+                ?? throw new InvalidOperationException("Failed to update notification settings");
         }
 
         public async Task<ICollection<DobackData>> GetDobackDataAsync(int analysisId)
@@ -298,19 +291,12 @@ namespace IncliSafe.Client.Services
             return new();
         }
 
-        public async Task<AlertSettings> GetAlertSettings(int vehicleId)
+        public async Task<AlertSettings> GetAlertSettings(int patternId)
         {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/doback/alerts/settings/{vehicleId}");
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<AlertSettings>() ?? new AlertSettings();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting alert settings");
-                throw;
-            }
+            var response = await _httpClient.GetAsync($"{BaseUrl}/alerts/settings/{patternId}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<AlertSettings>()
+                ?? new AlertSettings();
         }
 
         public async Task<List<DobackData>> GetData(int analysisId)
@@ -328,22 +314,12 @@ namespace IncliSafe.Client.Services
             }
         }
 
-        public async Task<TrendAnalysisEntity> GetTrendAnalysis(int analysisId)
+        public async Task<TrendAnalysis> GetTrendAnalysis(int analysisId)
         {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/doback/analysis/{analysisId}/trends");
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<TrendAnalysisEntity>() ?? new TrendAnalysisEntity();
-                }
-                throw new ApiException("Error al obtener análisis de tendencias", response.StatusCode);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting trend analysis");
-                throw;
-            }
+            var response = await _httpClient.GetAsync($"{BaseUrl}/analysis/{analysisId}/trends");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<TrendAnalysis>()
+                ?? new TrendAnalysis();
         }
 
         public async Task<IncliSafe.Shared.Models.Analysis.AnalysisPrediction> GetPrediction(int vehicleId)
@@ -373,6 +349,54 @@ namespace IncliSafe.Client.Services
         public async Task<AnalysisPrediction> GetPredictionAsync(int vehicleId)
         {
             return await _httpClient.GetFromJsonAsync<AnalysisPrediction>($"{BaseUrl}/predict/{vehicleId}")
+                ?? new AnalysisPrediction();
+        }
+
+        public async Task<DashboardMetrics> GetDashboardMetrics()
+        {
+            return await _httpClient.GetFromJsonAsync<DashboardMetrics>($"{BaseUrl}/metrics")
+                ?? new DashboardMetrics();
+        }
+
+        public async Task<bool> DeleteAnalysisAsync(int analysisId)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"{BaseUrl}/{analysisId}");
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting analysis {Id}", analysisId);
+                return false;
+            }
+        }
+
+        public async Task<DobackData> GetDobackDataAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<DobackData>($"{BaseUrl}/data/{vehicleId}")
+                ?? new DobackData();
+        }
+
+        public async Task<List<AnalysisPrediction>> GetPredictionsAsync(int analysisId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<AnalysisPrediction>>($"{BaseUrl}/{analysisId}/predictions")
+                ?? new List<AnalysisPrediction>();
+        }
+
+        public async Task<AnalysisResult> AnalyzeFileAsync(int fileId)
+        {
+            var response = await _httpClient.PostAsync($"{BaseUrl}/analyze/{fileId}", null);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<AnalysisResult>()
+                ?? new AnalysisResult();
+        }
+
+        public async Task<AnalysisPrediction> GeneratePredictionAsync(int vehicleId)
+        {
+            var response = await _httpClient.PostAsync($"{BaseUrl}/predict/{vehicleId}", null);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<AnalysisPrediction>()
                 ?? new AnalysisPrediction();
         }
     }

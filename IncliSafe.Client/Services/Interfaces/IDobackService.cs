@@ -1,9 +1,8 @@
-using System.Threading.Tasks;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using IncliSafe.Shared.Models.Analysis;
-using IncliSafe.Shared.Models.Analysis.Core;
-using IncliSafe.Shared.Models;
-using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafe.Client.Services.Interfaces
 {
@@ -16,5 +15,11 @@ namespace IncliSafe.Client.Services.Interfaces
         Task<List<DobackData>> GetDobackData(int analysisId);
         Task<TrendAnalysis> GetTrendAnalysis(int analysisId);
         Task<PredictionResult> GetPredictions(int analysisId);
+        Task<DobackAnalysis?> GetAnalysis(int id);
+        Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId);
+        Task<List<AnalysisPrediction>> GetPredictions(int vehicleId);
+        Task<CoreMetrics> GetMetricsAsync();
+        Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysisDto);
+        Task<TrendAnalysis> AnalyzeTrendsAsync(int vehicleId, DateTime startDate, DateTime endDate);
     }
 } 
