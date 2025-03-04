@@ -1,4 +1,5 @@
 using System;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Shared.Models.DTOs
 {
@@ -13,21 +14,5 @@ namespace IncliSafe.Shared.Models.DTOs
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
         public DateTime? ReadAt { get; set; }
-    }
-
-    public enum AlertType
-    {
-        Inspection,
-        Maintenance,
-        License,
-        Safety,
-        Performance
-    }
-
-    public enum AlertSeverity
-    {
-        Info,
-        Warning,
-        Critical
     }
 } 

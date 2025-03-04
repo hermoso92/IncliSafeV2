@@ -195,19 +195,19 @@ namespace IncliSafe.Client.Services
             throw new NotImplementedException();
         }
 
-        public async Task<TrendData> GetTrendData(int vehicleId, DateTime start, DateTime end)
+        public async Task<IncliSafe.Shared.Models.Analysis.TrendData> GetTrendData(int vehicleId, DateTime start, DateTime end)
         {
             // Implementation needed
             throw new NotImplementedException();
         }
 
-        public async Task<PatternDetails> GetPatternDetails(int patternId)
+        public async Task<IncliSafe.Shared.Models.Analysis.Core.PatternDetails> GetPatternDetails(int patternId)
         {
             try
             {
                 var response = await _httpClient.GetAsync($"api/doback/pattern/{patternId}");
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PatternDetails>() ?? new PatternDetails();
+                return await response.Content.ReadFromJsonAsync<IncliSafe.Shared.Models.Analysis.Core.PatternDetails>() ?? new IncliSafe.Shared.Models.Analysis.Core.PatternDetails();
             }
             catch (Exception ex)
             {
@@ -216,13 +216,13 @@ namespace IncliSafe.Client.Services
             }
         }
 
-        public async Task<List<PatternHistory>> GetPatternHistory(int patternId)
+        public async Task<IncliSafe.Shared.Models.Analysis.Core.PatternHistory> GetPatternHistory(int patternId, DateTime start, DateTime end)
         {
             try
             {
                 var response = await _httpClient.GetAsync($"api/doback/pattern/{patternId}/history");
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<List<PatternHistory>>() ?? new List<PatternHistory>();
+                return await response.Content.ReadFromJsonAsync<IncliSafe.Shared.Models.Analysis.Core.PatternHistory>() ?? new IncliSafe.Shared.Models.Analysis.Core.PatternHistory();
             }
             catch (Exception ex)
             {
@@ -344,6 +344,36 @@ namespace IncliSafe.Client.Services
                 _logger.LogError(ex, "Error getting trend analysis");
                 throw;
             }
+        }
+
+        public async Task<IncliSafe.Shared.Models.Analysis.AnalysisPrediction> GetPrediction(int vehicleId)
+        {
+            // Implementation needed
+            throw new NotImplementedException();
+        }
+
+        public async Task<TrendData[]> GetTrendDataAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<TrendData[]>($"{BaseUrl}/trends/{vehicleId}") 
+                ?? Array.Empty<TrendData>();
+        }
+
+        public async Task<PatternDetails> GetPatternDetailsAsync(string patternId)
+        {
+            return await _httpClient.GetFromJsonAsync<PatternDetails>($"{BaseUrl}/patterns/{patternId}")
+                ?? new PatternDetails();
+        }
+
+        public async Task<PatternHistory[]> GetPatternHistoryAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<PatternHistory[]>($"{BaseUrl}/history/{vehicleId}")
+                ?? Array.Empty<PatternHistory>();
+        }
+
+        public async Task<AnalysisPrediction> GetPredictionAsync(int vehicleId)
+        {
+            return await _httpClient.GetFromJsonAsync<AnalysisPrediction>($"{BaseUrl}/predict/{vehicleId}")
+                ?? new AnalysisPrediction();
         }
     }
 } 

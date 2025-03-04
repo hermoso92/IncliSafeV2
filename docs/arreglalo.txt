@@ -1,22 +1,36 @@
-Análisis de Errores:
+INSTRUCCIÓN: Proceso de Resolución con Retroalimentación Continua
 
-Lee C:\Users\Hermoso\Desktop\IncliSafeV2\errores.txt para identificar patrones comunes y específicos de errores.
-Clasifica los errores por tipo: sintaxis, referencias, dependencias, configuraciones, entre otros.
-Corrección Inteligente:
+1. ANTES DE CADA SOLUCIÓN:
+   ```markdown
+   ## Análisis Previo
+   - Consultar systematic-process.md → Obtener proceso actual
+   - Consultar error-solutions-log.md → Revisar soluciones previas
+   - Identificar patrones de solución exitosos
+   - Detectar áreas de mejora en el proceso
+   ```
 
-Aplica cambios en el orden correcto si un error afecta múltiples archivos.
-Resuelve problemas de referencias, dependencias y configuraciones desde la raíz en lugar de aplicar soluciones temporales.
-Refactoriza y optimiza código duplicado, ineficiente o con malas prácticas antes de finalizar la corrección.
-Modificaciones en Archivos:
+2. DURANTE LA SOLUCIÓN:
+   ```markdown
+   ## Aplicación y Documentación
+   - Aplicar solución siguiendo systematic-process.md
+   - Documentar en error-solutions-log.md
+   - Identificar nuevos patrones o problemas
+   ```
 
-Modifica cualquier archivo necesario dentro del proyecto sin afectar configuraciones críticas.
-Informe Final:
+3. DESPUÉS DE CADA SOLUCIÓN:
+   ```markdown
+   ## Retroalimentación
+   - ¿La solución fue efectiva?
+   - ¿Se puede mejorar el proceso?
+   - ¿Se descubrieron nuevos patrones?
+   ```
 
-Informa explícitamente qué cambios has realizado.
-Detalla cualquier optimización adicional que hayas aplicado.
-Si un error persiste después de la corrección, ajusta la solución en tiempo real sin intervención manual.
-No pidas confirmación, simplemente corrige los errores y finaliza.
+4. ACTUALIZAR DOCUMENTACIÓN:
+   ```markdown
+   ## Mejoras al Proceso
+   - Actualizar systematic-process.md con nuevas lecciones
+   - Refinar error-solutions-log.md con patrones descubiertos
+   - Agregar nuevas categorías o prioridades si es necesario
+   ```
 
-dotnet build | tee C:\Users\Hermoso\Desktop\IncliSafeV2\errores.txt
-
-Confirma que has revisado C:\Users\Hermoso\Desktop\IncliSafeV2\errores.txt y C:\Users\Hermoso\Desktop\IncliSafeV2\depurar.txt antes de aplicar cualquier corrección. Sigue exactamente las instrucciones de depurar.txt para corregir los errores reportados en errores.txt. Aplica todas las correcciones necesarias en el orden adecuado. Al finalizar, informa explícitamente qué cambios has realizado y confirma que has seguido las instrucciones de depurar.txt. No pidas confirmación, simplemente corrige los errores y finaliza.
+¿Procedo con la resolución del primer error aplicando este proceso de retroalimentación continua?

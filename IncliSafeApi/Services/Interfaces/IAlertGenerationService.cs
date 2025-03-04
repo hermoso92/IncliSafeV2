@@ -1,15 +1,16 @@
 using System.Threading.Tasks;
 using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Notifications;
 
 namespace IncliSafeApi.Services.Interfaces
 {
     public interface IAlertGenerationService
     {
-        Task<Alert> SendAlertAsync(Alert alert);
-        Task<List<Alert>> GetAlertsAsync(int userId);
-        Task<bool> MarkAsReadAsync(int alertId);
-        Task<bool> DeleteAlertAsync(int alertId);
-        Task<AlertSettings> GetAlertSettingsAsync(int userId);
-        Task<AlertSettings> UpdateAlertSettingsAsync(AlertSettings settings);
+        Task<VehicleAlertDTO> CreateAlertAsync(int vehicleId, VehicleAlertDTO alert);
+        Task<bool> GenerateInspectionAlertAsync(int vehicleId, InspeccionDTO inspeccion);
+        Task<bool> GenerateMaintenanceAlertAsync(int vehicleId, VehicleMaintenanceDTO maintenance);
+        Task<bool> GenerateLicenseExpirationAlertAsync(int vehicleId);
+        Task<bool> CheckThresholdsAsync(int vehicleId);
+        Task ProcessAlertsAsync();
     }
 } 

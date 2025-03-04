@@ -6,6 +6,7 @@ using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis.Core;
 using IncliSafe.Shared.Models;
 using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
+using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
 
 namespace IncliSafeApi.Data
 {
@@ -33,7 +34,7 @@ namespace IncliSafeApi.Data
         public DbSet<TrendAnalysis> TrendAnalyses { get; set; } = null!;
         public DbSet<AnalysisResult> AnalysisResults { get; set; } = null!;
         public DbSet<IncliSafe.Shared.Models.Patterns.DetectedPattern> DetectedPatterns { get; set; } = null!;
-        public DbSet<AnalysisPrediction> AnalysisPredictions { get; set; } = null!;
+        public DbSet<CoreAnalysisPrediction> AnalysisPredictions { get; set; } = null!;
         public DbSet<IncliSafe.Shared.Models.Entities.Prediction> MaintenancePredictions { get; set; } = null!;
         public DbSet<VehicleAlert> VehicleAlerts { get; set; } = null!;
         public DbSet<VehicleMetrics> VehicleMetrics { get; set; } = null!;
@@ -385,7 +386,7 @@ namespace IncliSafeApi.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<AnalysisPrediction>(entity =>
+            modelBuilder.Entity<CoreAnalysisPrediction>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 

@@ -9,6 +9,9 @@ using IncliSafeApi.Data;
 using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Analysis.Core;
+using CorePrediction = IncliSafe.Shared.Models.Analysis.Core.Prediction;
+using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
+using EntityPrediction = IncliSafe.Shared.Models.Entities.Prediction;
 
 namespace IncliSafeApi.Services
 {
@@ -176,10 +179,10 @@ namespace IncliSafeApi.Services
 
         private async Task SavePrediction(MaintenancePredictionDTO prediction)
         {
-            var entity = new Prediction
+            var entity = new EntityPrediction
             {
                 VehicleId = prediction.VehicleId,
-                PredictionType = PredictionType.Maintenance,
+                PredictionType = CorePredictionType.Maintenance,
                 PredictedDate = prediction.PredictedMaintenanceDate,
                 Probability = prediction.MaintenanceProbability,
                 RiskLevel = prediction.RiskLevel,

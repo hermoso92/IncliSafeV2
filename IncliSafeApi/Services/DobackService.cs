@@ -12,6 +12,8 @@ using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis.Core;
 using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
+using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
+using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
 
 namespace IncliSafeApi.Services
 {
@@ -139,7 +141,7 @@ namespace IncliSafeApi.Services
             return new AnalysisResult();
         }
 
-        public async Task<List<AnalysisPrediction>> GetPredictions(int vehicleId)
+        public async Task<List<CoreAnalysisPrediction>> GetPredictions(int vehicleId)
         {
             return await _context.AnalysisPredictions
                 .Where(p => p.VehicleId == vehicleId)
@@ -239,7 +241,7 @@ namespace IncliSafeApi.Services
                 2);
         }
 
-        public async Task<List<decimal>> GetDataSeries(ICollection<DobackData> data, string property)
+        public List<decimal> GetDataSeries(ICollection<DobackData> data, string property)
         {
             if (data == null || !data.Any())
                 return new List<decimal>();
@@ -258,9 +260,9 @@ namespace IncliSafeApi.Services
             }).ToList();
         }
 
-        public async Task<decimal> GetAverageValue(ICollection<DobackData> data, string property)
+        public decimal GetAverageValue(ICollection<DobackData> data, string property)
         {
-            var series = await GetDataSeries(data, property);
+            var series = GetDataSeries(data, property);
             return series.Any() ? series.Average() : 0M;
         }
 
@@ -271,7 +273,11 @@ namespace IncliSafeApi.Services
 
         private bool IsSpeedAnomaly(decimal value, decimal threshold)
         {
-            return value > threshold;
+            if (value > 1.5M || value < -0.5M)
+            {
+                return true;
+            }
+            return false;
         }
 
         private async Task<List<decimal>> GetHistoricalValues(int vehicleId, string metric)
@@ -289,25 +295,18 @@ namespace IncliSafeApi.Services
             };
         }
 
-        // Método para convertir decimal a double cuando sea necesario
-        private double ToDouble(decimal value)
+        private List<double> ConvertToDoubleList(List<decimal> values)
         {
-            return Convert.ToDouble(value);
+            return values.Select(v => Convert.ToDouble(v)).ToList();
         }
 
-        // Método para convertir double a decimal cuando sea necesario
-        private decimal ToDecimal(double value)
+        public async Task<CoreAnalysisPrediction> GeneratePredictionAsync(int vehicleId)
         {
-            return Convert.ToDecimal(value);
-        }
-
-        public async Task<AnalysisPrediction> GeneratePredictionAsync(int vehicleId)
-        {
-            var prediction = new AnalysisPrediction
+            var prediction = new CoreAnalysisPrediction
             {
                 VehicleId = vehicleId,
                 Timestamp = DateTime.UtcNow,
-                // ... resto de la implementación
+                Type = CorePredictionType.Normal
             };
             
             _context.AnalysisPredictions.Add(prediction);
@@ -315,9 +314,22 @@ namespace IncliSafeApi.Services
             return prediction;
         }
 
-        public CoreMetrics GetMetrics()
+        public async Task<CoreMetrics> GetMetricsAsync()
         {
-            // ...
+            return new CoreMetrics
+            {
+                StabilityScore = await CalculateAverageStabilityScore(),
+                SafetyScore = await CalculateAverageSafetyScore(),
+                Trends = await CalculateTrendMetrics()
+            };
+        }
+
+        public async Task<DobackAnalysis> GetLatestAnalysisAsync(int vehicleId)
+        {
+            return await _context.DobackAnalyses
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.Timestamp)
+                .FirstOrDefaultAsync();
         }
     }
 } 

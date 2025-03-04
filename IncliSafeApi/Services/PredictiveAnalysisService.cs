@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.Analysis.Core;
+using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
+using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
 
 namespace IncliSafeApi.Services
 {
@@ -48,26 +50,26 @@ namespace IncliSafeApi.Services
             return new List<Pattern>();
         }
 
-        public async Task<List<AnalysisPrediction>> GetPredictions(int analysisId)
+        public async Task<List<CoreAnalysisPrediction>> GetPredictions(int analysisId)
         {
             return await _dobackService.GetPredictions(analysisId);
         }
 
-        private PredictionType GetPredictionType(decimal value)
+        private CorePredictionType GetPredictionType(decimal value)
         {
             return value switch
             {
-                > 0.8m => PredictionType.Stability,
-                > 0.6m => PredictionType.Safety,
-                > 0.4m => PredictionType.Maintenance,
-                > 0.2m => PredictionType.Performance,
-                _ => PredictionType.Anomaly
+                > 0.8m => CorePredictionType.Stability,
+                > 0.6m => CorePredictionType.Safety,
+                > 0.4m => CorePredictionType.Maintenance,
+                > 0.2m => CorePredictionType.Performance,
+                _ => CorePredictionType.Anomaly
             };
         }
 
         public async Task<PredictionResult> GetPrediction(int id)
         {
-            var type = PredictionType.Normal;
+            var type = CorePredictionType.Normal;
             return new PredictionResult();
         }
 

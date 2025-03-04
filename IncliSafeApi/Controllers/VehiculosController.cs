@@ -70,15 +70,17 @@ namespace IncliSafeApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<VehiculoDTO>> GetVehicle(int id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var vehicle = await _vehicleService.GetVehicleAsync(id);
-            
-            if (vehicle == null)
-                return NotFound();
-            
-            if (vehicle.OwnerId != userId)
+            if (id != int.Parse(GetCurrentUserId()))
+            {
                 return Forbid();
-            
+            }
+
+            var vehicle = await _vehicleService.GetVehicleAsync(id, GetCurrentUserId());
+            if (vehicle == null)
+            {
+                return NotFound();
+            }
+
             return Ok(vehicle);
         }
 
@@ -90,28 +92,20 @@ namespace IncliSafeApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateVehiculo(int id, VehiculoDTO vehiculoDto)
+        public async Task<IActionResult> UpdateVehicle(int id, VehiculoDTO dto)
         {
-            if (id != vehiculoDto.Id)
-                return BadRequest();
-
-            try
+            if (id != int.Parse(GetCurrentUserId()))
             {
-                var userId = GetCurrentUserId();
-                var vehiculo = vehiculoDto.ToEntity();
-                vehiculo.UserId = userId;
-
-                var success = await _vehicleService.UpdateVehicleAsync(vehiculo);
-                if (!success)
-                    return NotFound();
-
-                return NoContent();
+                return Forbid();
             }
-            catch (Exception ex)
+
+            var result = await _vehicleService.UpdateVehicleAsync(id, dto);
+            if (!result)
             {
-                _logger.LogError(ex, "Error updating vehicle {VehicleId}", id);
-                return StatusCode(500, "Error interno al actualizar el vehículo");
+                return NotFound();
             }
+
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
@@ -442,23 +436,33 @@ namespace IncliSafeApi.Controllers
             }
         }
 
-        [HttpGet("{id}/trends")]
-        public async Task<ActionResult<TrendAnalysisDTO>> GetVehicleTrends(int id)
+        [HttpGet("{id}/trend-analysis")]
+        public async Task<ActionResult<TrendAnalysisEntity>> GetTrendAnalysis(int id)
         {
             try
             {
-                var userId = GetCurrentUserId();
-                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
-                if (vehicle == null)
-                    return NotFound();
-
-                var trends = await _trendAnalysisService.AnalyzeVehicleTrendsAsync(id);
+                var trends = await _analysisService.GetTrendAnalysis(id);
                 return Ok(trends);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting trends for vehicle {VehicleId}", id);
-                return StatusCode(500, "Error interno al obtener tendencias del vehículo");
+                _logger.LogError(ex, "Error getting trend analysis for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/trend-metrics")]
+        public async Task<ActionResult<List<TrendMetric>>> GetTrendMetrics(int id)
+        {
+            try
+            {
+                var metrics = await _metricsService.GetTrendMetricsAsync(id);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend metrics for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -538,21 +542,6 @@ namespace IncliSafeApi.Controllers
             }
         }
 
-        [HttpGet("{id}/trends")]
-        public async Task<ActionResult<TrendAnalysisEntity>> GetTrendAnalysis(int id)
-        {
-            try
-            {
-                var trends = await _analysisService.GetTrendAnalysis(id);
-                return Ok(trends);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting trend analysis for vehicle {Id}", id);
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
-
         [HttpGet("{id}/predictions")]
         public async Task<ActionResult<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>> GetPredictions(int id)
         {
@@ -583,9 +572,9 @@ namespace IncliSafeApi.Controllers
             }
         }
 
-        private int GetCurrentUserId()
+        private string GetCurrentUserId()
         {
-            return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0";
         }
 
         private async Task<bool> VehiculoExists(int id)

@@ -476,5 +476,42 @@ namespace IncliSafeApi.Services
         {
             // Implementation of the method
         }
+
+        private Alert CreateAlertFromNotification(Notification notification)
+        {
+            return new Alert
+            {
+                Title = notification.Title,
+                Message = notification.Message,
+                Severity = notification.Severity,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                UserId = notification.UserId ?? 0,
+                Category = notification.Category,
+                Type = MapNotificationTypeToAlertType(notification.Type),
+                Priority = MapSeverityToPriority(notification.Severity)
+            };
+        }
+
+        private AlertType MapNotificationTypeToAlertType(NotificationType type)
+        {
+            return type switch
+            {
+                NotificationType.Maintenance => AlertType.Maintenance,
+                NotificationType.Safety => AlertType.Safety,
+                NotificationType.Vehicle => AlertType.Vehicle,
+                _ => AlertType.System
+            };
+        }
+
+        private AlertPriority MapSeverityToPriority(NotificationSeverity severity)
+        {
+            return severity switch
+            {
+                NotificationSeverity.Critical => AlertPriority.High,
+                NotificationSeverity.Warning => AlertPriority.Medium,
+                _ => AlertPriority.Low
+            };
+        }
     }
 } 

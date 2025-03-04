@@ -1,5 +1,6 @@
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Analysis.Core;
+using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
 
 namespace IncliSafeApi.Services.Interfaces
 {
@@ -9,6 +10,6 @@ namespace IncliSafeApi.Services.Interfaces
         Task<List<Anomaly>> DetectAnomalies(int vehicleId, DateTime startDate, DateTime endDate);
         Task<TrendAnalysis> AnalyzeTrends(int vehicleId, DateTime startDate, DateTime endDate);
         Task<List<Pattern>> DetectPatterns(int vehicleId, DateTime startDate, DateTime endDate);
-        Task<List<AnalysisPrediction>> GetPredictions(int analysisId);
+        Task<List<CoreAnalysisPrediction>> GetPredictions(int analysisId);
     }
 } 

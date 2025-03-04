@@ -326,6 +326,40 @@ namespace IncliSafeApi.Controllers
             }
         }
 
+        [HttpGet("latest/{vehicleId}")]
+        public async Task<ActionResult<DobackAnalysis>> GetLatestAnalysis(int vehicleId)
+        {
+            var analysis = await _context.DobackAnalyses
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.Timestamp)
+                .FirstOrDefaultAsync();
+
+            if (analysis == null)
+                return NotFound();
+
+            return Ok(analysis);
+        }
+
+        [HttpPost("{id}/process")]
+        public async Task<ActionResult<DobackAnalysis>> ProcessData(int id, [FromBody] List<DobackData> data)
+        {
+            try
+            {
+                if (id == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"))
+                {
+                    return Forbid();
+                }
+
+                var analysis = await _dobackService.ProcessDobackDataAsync(data);
+                return Ok(analysis);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing data for {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
         private async Task<List<DobackData>> ProcessDobackFile(string content)
         {
             var dataList = new List<DobackData>();

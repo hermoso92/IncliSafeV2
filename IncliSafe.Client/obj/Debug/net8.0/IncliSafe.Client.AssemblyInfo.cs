@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IncliSafe.Client")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5c9bd2a5d2a20c3571d0ef52579e45c20fa60e5f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a75fc038d1806646e67724026b370d945e9407bd")]
 [assembly: System.Reflection.AssemblyProductAttribute("IncliSafe.Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IncliSafe.Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

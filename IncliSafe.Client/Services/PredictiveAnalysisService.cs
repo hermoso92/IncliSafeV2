@@ -5,16 +5,21 @@ using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Client.Services.Interfaces;
 using IncliSafe.Shared.Models.Analysis.Core;
 using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace IncliSafe.Client.Services
 {
     public class PredictiveAnalysisService : IPredictiveAnalysisService
     {
         private readonly IDobackAnalysisService _dobackService;
+        private readonly HttpClient _http;
+        private const string BaseUrl = "api/analysis";
 
-        public PredictiveAnalysisService(IDobackAnalysisService dobackService)
+        public PredictiveAnalysisService(IDobackAnalysisService dobackService, HttpClient http)
         {
             _dobackService = dobackService;
+            _http = http;
         }
 
         public async Task<PredictionResult> PredictStability(int vehicleId, DateTime startDate, DateTime endDate)
@@ -42,6 +47,12 @@ namespace IncliSafe.Client.Services
         public async Task<List<AnalysisPrediction>> GetPredictions(int analysisId)
         {
             return await _dobackService.GetPredictionsAsync(analysisId);
+        }
+
+        public async Task<AnalysisPrediction> GetPredictionAsync(int vehicleId)
+        {
+            return await _http.GetFromJsonAsync<AnalysisPrediction>($"{BaseUrl}/predict/{vehicleId}")
+                ?? new AnalysisPrediction();
         }
 
         private CorePredictionType GetPredictionType(decimal value)

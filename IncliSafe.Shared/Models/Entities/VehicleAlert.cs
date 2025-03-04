@@ -1,8 +1,25 @@
 using System;
-using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafe.Shared.Models.Entities
 {
+    public enum AlertType
+    {
+        System,
+        Maintenance,
+        Safety,
+        Vehicle,
+        Inspection,
+        License,
+        Performance
+    }
+
+    public enum AlertSeverity
+    {
+        Info,
+        Warning,
+        Critical
+    }
+
     public class VehicleAlert
     {
         public int Id { get; set; }
