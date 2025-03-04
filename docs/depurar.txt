@@ -1,0 +1,36 @@
+Arregla todos los errores
+
+Confirmación de Análisis de Errores:
+
+1. Confirma que ha recibido y está analizando los errores proporcionados.
+2. Confirma que está siguiendo las instrucciones específicas recibidas para la depuración.
+3. Identifica patrones comunes y específicos en los errores.
+4. Clasifica los errores por tipo: sintaxis, referencias, dependencias, configuraciones, entre otros.
+
+Corrección Inteligente:
+
+1. Aplica cambios en el orden correcto si un error afecta múltiples archivos.
+2. Resuelve problemas de referencias, dependencias y configuraciones desde la raíz en lugar de aplicar soluciones temporales.
+3. Refactoriza y optimiza código duplicado, ineficiente o con malas prácticas antes de finalizar la corrección.
+4. Implementa pruebas unitarias y de integración para validar las correcciones y prevenir futuros errores.
+5. Utiliza herramientas de análisis estático para identificar problemas potenciales adicionales.
+
+Modificaciones en Archivos:
+
+1. Modifica cualquier archivo necesario dentro del proyecto sin afectar configuraciones críticas.
+2. Asegúrate de que todas las dependencias estén actualizadas y correctamente configuradas.
+
+Informe Final:
+
+1. Informa explícitamente que ha revisado los errores proporcionados y ha seguido las instrucciones recibidas.
+2. Detalla qué cambios ha realizado y cualquier optimización adicional aplicada.
+3. Documenta las soluciones en un registro de errores para evitar repeticiones en el futuro.
+4. Si un error persiste después de la corrección, ajusta la solución en tiempo real sin intervención manual.
+5. No pidas confirmación, simplemente corrige los errores y finaliza.
+
+Optimización Continua:
+
+1. Realiza revisiones de código para asegurar la calidad y la eficiencia.
+2. Refactoriza regularmente para mejorar la estructura y legibilidad del código.
+3. Participa en foros y comunidades para obtener ayuda y compartir experiencias.
+4. Consulta la documentación oficial y recursos de aprendizaje para mejorar el conocimiento de las tecnologías utilizadas.

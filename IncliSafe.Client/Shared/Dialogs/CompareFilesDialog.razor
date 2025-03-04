@@ -1,0 +1,27 @@
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.Analysis.Core
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect T="DobackAnalysis" Label="Análisis Base"
+                          @bind-Value="_baseAnalysis">
+                    @foreach (var analysis in Analyses)
+                    {
+                        <MudSelectItem Value="@analysis">
+                            @analysis.Timestamp.ToLocalTime().ToString("g")
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [Parameter] public List<DobackAnalysis> Analyses { get; set; } = new();
+    private DobackAnalysis _baseAnalysis;
+    // ... resto del código
+} 

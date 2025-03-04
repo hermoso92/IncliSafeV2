@@ -1,6 +1,9 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 
 namespace IncliSafe.Client.Services.Interfaces
 {

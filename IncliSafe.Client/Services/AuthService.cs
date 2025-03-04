@@ -2,92 +2,82 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Components.Authorization;
 using Blazored.LocalStorage;
-using IncliSafe.Shared.Models;
-using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using IncliSafe.Client.Auth;
 using IncliSafe.Client.Services.Interfaces;
+using IncliSafe.Shared.Models.Auth;
+using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Client.Services
 {
-    public class AuthService : ServiceBase, IAuthService
+    public class AuthService : IAuthService
     {
         private readonly HttpClient _http;
-        private readonly CustomAuthStateProvider _authStateProvider;
         private readonly ILocalStorageService _localStorage;
+        private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ILogger<AuthService> _logger;
-        private readonly ISnackbar _snackbar;
 
         public AuthService(
             HttpClient http,
-            AuthenticationStateProvider authStateProvider,
             ILocalStorageService localStorage,
-            ILogger<AuthService> logger,
-            ISnackbar snackbar,
-            CacheService cache) : base(http, snackbar, logger, cache)
+            AuthenticationStateProvider authStateProvider,
+            ILogger<AuthService> logger)
         {
             _http = http;
-            _authStateProvider = (CustomAuthStateProvider)authStateProvider;
             _localStorage = localStorage;
+            _authStateProvider = authStateProvider;
+            _logger = logger;
         }
 
         public async Task<UserSession> Login(string username, string password)
         {
-            var request = new LoginRequest { Nombre = username, Password = password };
-            var result = await HandleRequestAsync(async () =>
+            var request = new LoginRequest { Username = username, Password = password };
+            var response = await _http.PostAsJsonAsync("api/auth/login", request);
+            var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+            
+            if (result?.Success == true && result.User != null)
             {
-                var response = await _http.PostAsJsonAsync("api/auth/login", request);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<UserSession>();
-            }, "Error al iniciar sesión");
-
-            if (result.Data != null)
-            {
-                await _localStorage.SetItemAsync("UserSession", result.Data);
-                await _authStateProvider.MarkUserAsAuthenticated(result.Data);
+                await _localStorage.SetItemAsync("authToken", result.Token);
+                await ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated(result.User);
+                return result.User;
             }
-
-            return result.Data ?? throw new Exception("Error al iniciar sesión");
-        }
-
-        public async Task<UserSession?> GetCurrentUser()
-        {
-            return await _localStorage.GetItemAsync<UserSession>("UserSession");
+            
+            throw new Exception(result?.Message ?? "Error en la autenticación");
         }
 
         public async Task Logout()
         {
-            try
-            {
-                _logger.LogInformation("Iniciando proceso de logout...");
-                await _localStorage.RemoveItemAsync("UserSession");
-                _http.DefaultRequestHeaders.Authorization = null;
-                await _authStateProvider.MarkUserAsLoggedOut();
-                _snackbar.Add("Sesión cerrada correctamente", Severity.Success);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en proceso de logout");
-                _snackbar.Add($"Error al cerrar sesión: {ex.Message}", Severity.Error);
-            }
+            await _localStorage.RemoveItemAsync("authToken");
+            await ((CustomAuthStateProvider)_authStateProvider).MarkUserAsLoggedOut();
+        }
+
+        public async Task<UserSession?> GetCurrentUser()
+        {
+            var token = await _localStorage.GetItemAsync<string>("authToken");
+            if (string.IsNullOrEmpty(token))
+                return null;
+
+            var response = await _http.GetAsync("api/auth/user");
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await response.Content.ReadFromJsonAsync<UserSession>();
         }
 
         public async Task<bool> IsAuthenticated()
         {
             try
             {
-                var userSession = await _localStorage.GetItemAsync<UserSession>("UserSession");
-                if (userSession != null)
-                {
-                    // Restaurar el token si existe la sesión
-                    _http.DefaultRequestHeaders.Authorization = 
-                        new AuthenticationHeaderValue("Bearer", userSession.Token);
-                    return true;
-                }
-                return false;
+                var token = await _localStorage.GetItemAsync<string>("authToken");
+                if (string.IsNullOrEmpty(token))
+                    return false;
+
+                var user = await _localStorage.GetItemAsync<UserSession>("user");
+                return user != null;
             }
             catch (Exception ex)
             {

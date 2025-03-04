@@ -6,40 +6,39 @@
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">
-            @(Usuario.Id == 0 ? "Nuevo Usuario" : $"Editar Usuario - {Usuario.Nombre}")
+            @(usuario.Id == 0 ? "Nuevo Usuario" : $"Editar Usuario - {usuario.Nombre}")
         </MudText>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="form" Model="@Usuario">
+        <MudForm @ref="form" Model="@usuario">
             <MudGrid>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Usuario.Nombre" 
+                    <MudTextField @bind-Value="usuario.Nombre" 
                                 Label="Nombre" 
                                 Required="true"
                                 id="nombre"/>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Usuario.Email" 
+                    <MudTextField @bind-Value="usuario.Email" 
                                 Label="Email" 
                                 Required="true"
                                 id="email"/>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Usuario.Password" 
+                    <MudTextField @bind-Value="usuario.Password" 
                                 Label="Contraseña" 
-                                Required="@(Usuario.Id == 0)"
+                                Required="@(usuario.Id == 0)"
                                 Type="InputType.Password"
                                 id="password"/>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="Usuario.Rol" Label="Rol" Required="true" id="rol">
-                        <MudSelectItem Value="@("Administrador")">Administrador</MudSelectItem>
-                        <MudSelectItem Value="@("Inspector")">Inspector</MudSelectItem>
-                        <MudSelectItem Value="@("Usuario")">Usuario</MudSelectItem>
+                    <MudSelect @bind-Value="usuario.Rol" Label="Rol" Required="true" id="rol">
+                        <MudSelectItem Value="@("Admin")">Administrador</MudSelectItem>
+                        <MudSelectItem Value="@("User")">Usuario</MudSelectItem>
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12">
-                    <MudSwitch @bind-Value="Usuario.Activo" 
+                    <MudSwitch @bind-Value="usuario.Activo" 
                               Label="Activo" 
                               Color="Color.Primary" 
                               id="activo"/>
@@ -55,15 +54,15 @@
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public Usuario Usuario { get; set; } = new();
+    [Parameter] public Usuario usuario { get; set; } = new();
     private MudForm? form;
 
     protected override void OnInitialized()
     {
-        if (Usuario.Id == 0)
+        if (usuario.Id == 0)
         {
-            Usuario.Activo = true;
-            Usuario.Rol = "Usuario";
+            usuario.Activo = true;
+            usuario.Rol = "User";
         }
     }
 
@@ -79,7 +78,7 @@
             await form.Validate();
             if (form.IsValid)
             {
-                MudDialog.Close(DialogResult.Ok(Usuario));
+                MudDialog.Close(DialogResult.Ok(usuario));
             }
         }
     }

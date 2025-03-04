@@ -16,6 +16,11 @@ namespace IncliSafe.Shared.Models.Analysis
         public List<TrendMetric> Metrics { get; set; } = new();
         public List<Prediction> Predictions { get; set; } = new();
         public List<DetectedPattern> Patterns { get; set; } = new();
+        public decimal Value { get; set; }
+        public decimal Change { get; set; }
+        public string Direction { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public NotificationSeverity Severity { get; set; }
     }
 
     public class DataPoint

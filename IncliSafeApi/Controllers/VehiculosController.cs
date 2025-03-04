@@ -9,7 +9,15 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using IncliSafe.Shared.Models.Entities;
+using System.Security.Claims;
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafeApi.Services.Interfaces;
+using System.Linq;
+using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Notifications;
+using IncliSafe.Shared.Exceptions;
+using IncliSafe.Shared.Models.Analysis.Core;
 namespace IncliSafeApi.Controllers
 {
     [Route("api/[controller]")]
@@ -17,210 +25,562 @@ namespace IncliSafeApi.Controllers
     [Authorize]
     public class VehiculosController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IVehicleService _vehicleService;
+        private readonly IDobackAnalysisService _analysisService;
         private readonly ILogger<VehiculosController> _logger;
-        private readonly JsonSerializerOptions _jsonOptions;
+        private readonly IMeterService _metricsService;
+        private readonly ITrendAnalysisService _trendAnalysisService;
+        private readonly IMaintenancePredictionService _maintenancePredictionService;
+        private readonly ApplicationDbContext _context;
 
-        public VehiculosController(ApplicationDbContext context, ILogger<VehiculosController> logger)
+        public VehiculosController(
+            IVehicleService vehicleService,
+            IDobackAnalysisService analysisService,
+            ILogger<VehiculosController> logger,
+            IMeterService metricsService,
+            ITrendAnalysisService trendAnalysisService,
+            IMaintenancePredictionService maintenancePredictionService,
+            ApplicationDbContext context)
         {
-            _context = context;
+            _vehicleService = vehicleService;
+            _analysisService = analysisService;
             _logger = logger;
-            _jsonOptions = new JsonSerializerOptions
-            {
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
-                WriteIndented = true
-            };
+            _metricsService = metricsService;
+            _trendAnalysisService = trendAnalysisService;
+            _maintenancePredictionService = maintenancePredictionService;
+            _context = context;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehiculo>>> GetVehiculos()
+        public async Task<ActionResult<IEnumerable<VehiculoDTO>>> GetVehiculos()
         {
             try
             {
-                var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
-                _logger.LogInformation($"Obteniendo vehículos para usuario {userId}");
-
-                var vehiculos = await _context.Vehiculos
-                    .Where(v => v.UserId == userId)
-                    .Include(v => v.Inspecciones)
-                    .Include(v => v.Licenses)
-                    .ToListAsync();
-                
-                return Ok(vehiculos);
+                var userId = GetCurrentUserId();
+                var vehicles = await _vehicleService.GetVehiclesAsync(userId);
+                return Ok(vehicles);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener vehículos");
-                return StatusCode(500, "Error interno del servidor");
+                _logger.LogError(ex, "Error getting vehicles");
+                return StatusCode(500, "Error interno al obtener vehículos");
             }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Vehiculo>> GetVehiculo(int id)
+        public async Task<ActionResult<VehiculoDTO>> GetVehicle(int id)
         {
-            try
+            if (id != int.Parse(GetCurrentUserId()))
             {
-                var vehiculo = await _context.Vehiculos
-                    .Include(v => v.Inspecciones)
-                    .Include(v => v.Licenses)
-                    .FirstOrDefaultAsync(v => v.Id == id);
-
-                if (vehiculo == null)
-                {
-                    _logger.LogWarning("Vehículo no encontrado: {Id}", id);
-                    return NotFound($"No se encontró el vehículo con ID: {id}");
-                }
-
-                return Ok(vehiculo);
+                return Forbid();
             }
-            catch (Exception ex)
+
+            var vehicle = await _vehicleService.GetVehicleAsync(id, GetCurrentUserId());
+            if (vehicle == null)
             {
-                _logger.LogError(ex, "Error al obtener vehículo {Id}", id);
-                return StatusCode(500, "Error interno al obtener el vehículo");
+                return NotFound();
             }
+
+            return Ok(vehicle);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Vehiculo>> PostVehiculo(Vehiculo vehiculo)
+        public async Task<ActionResult<VehiculoDTO>> CreateVehicle(VehiculoDTO dto)
         {
-            try
-            {
-                var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
-                if (userId == 0)
-                {
-                    return BadRequest("Usuario no válido");
-                }
-
-                vehiculo.UserId = userId;
-                
-                // Validaciones adicionales
-                if (string.IsNullOrWhiteSpace(vehiculo.Placa))
-                    return BadRequest("La placa es requerida");
-                    
-                if (string.IsNullOrWhiteSpace(vehiculo.Marca))
-                    return BadRequest("La marca es requerida");
-                    
-                if (string.IsNullOrWhiteSpace(vehiculo.Modelo))
-                    return BadRequest("El modelo es requerido");
-                    
-                if (vehiculo.Año <= 1900 || vehiculo.Año > DateTime.Now.Year + 1)
-                    return BadRequest("El año no es válido");
-                    
-                if (string.IsNullOrWhiteSpace(vehiculo.Color))
-                    return BadRequest("El color es requerido");
-
-                // Verificar si ya existe un vehículo con la misma placa
-                if (await _context.Vehiculos.AnyAsync(v => v.Placa == vehiculo.Placa))
-                {
-                    return BadRequest("Ya existe un vehículo con esa placa");
-                }
-
-                _context.Vehiculos.Add(vehiculo);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetVehiculos), new { id = vehiculo.Id }, vehiculo);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear vehículo");
-                return StatusCode(500, "Error interno del servidor");
-            }
+            var vehicle = await _vehicleService.CreateVehicleAsync(dto);
+            return CreatedAtAction(nameof(GetVehicle), new { id = vehicle.Id }, vehicle);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutVehiculo(int id, Vehiculo vehiculo)
+        public async Task<IActionResult> UpdateVehicle(int id, VehiculoDTO dto)
         {
-            if (id != vehiculo.Id)
+            if (id != int.Parse(GetCurrentUserId()))
             {
-                return BadRequest("ID no coincide");
+                return Forbid();
             }
 
-            try
+            var result = await _vehicleService.UpdateVehicleAsync(id, dto);
+            if (!result)
             {
-                var existingVehiculo = await _context.Vehiculos.FindAsync(id);
-                if (existingVehiculo == null)
-                {
-                    return NotFound();
-                }
-
-                // Verificar que el usuario sea el propietario
-                var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
-                if (existingVehiculo.UserId != userId)
-                {
-                    return Forbid();
-                }
-
-                // Actualizar solo los campos permitidos
-                existingVehiculo.Placa = vehiculo.Placa;
-                existingVehiculo.Marca = vehiculo.Marca;
-                existingVehiculo.Modelo = vehiculo.Modelo;
-                existingVehiculo.Año = vehiculo.Año;
-                existingVehiculo.Color = vehiculo.Color;
-
-                await _context.SaveChangesAsync();
-                return NoContent();
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar vehículo");
-                return StatusCode(500, "Error interno del servidor");
-            }
+
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> DeleteVehiculo(int id)
         {
             try
             {
-                var vehiculo = await _context.Vehiculos
-                    .Include(v => v.Inspecciones)
-                    .Include(v => v.Licenses)
-                    .FirstOrDefaultAsync(v => v.Id == id);
+                var userId = GetCurrentUserId();
+                var success = await _vehicleService.DeleteVehicleAsync(id, userId);
 
-                if (vehiculo == null)
-                {
+                if (!success)
                     return NotFound();
-                }
-
-                // Eliminar inspecciones relacionadas
-                _context.Inspecciones.RemoveRange(vehiculo.Inspecciones);
-                
-                // Actualizar licencias relacionadas
-                foreach (var license in vehiculo.Licenses)
-                {
-                    license.VehiculoId = 0;
-                    license.Vehiculo = null;
-                }
-
-                _context.Vehiculos.Remove(vehiculo);
-                await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar vehículo");
-                return StatusCode(500, "Error interno del servidor");
+                _logger.LogError(ex, "Error deleting vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al eliminar el vehículo");
+            }
+        }
+
+        [HttpGet("{id}/license/validate")]
+        public async Task<ActionResult<LicenseValidationDTO>> ValidateLicense(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var license = await _vehicleService.GetLicenseAsync(id);
+                if (license == null)
+                    return NotFound();
+
+                return Ok(LicenseValidationDTO.FromLicense(license));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating license for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al validar la licencia");
             }
         }
 
         [HttpGet("{id}/inspecciones")]
-        public async Task<ActionResult<IEnumerable<Inspeccion>>> GetInspecciones(int id)
+        public async Task<ActionResult<IEnumerable<InspeccionDTO>>> GetInspecciones(int id)
         {
-            var vehiculo = await _context.Vehiculos
-                .Include(v => v.Inspecciones)
-                .FirstOrDefaultAsync(v => v.Id == id);
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
 
-            if (vehiculo == null)
-                return NotFound();
+                var inspecciones = await _vehicleService.GetInspeccionesAsync(id);
+                return Ok(inspecciones);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting inspections for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener inspecciones");
+            }
+        }
 
-            return Ok(vehiculo.Inspecciones);
+        [HttpPost("{id}/inspecciones")]
+        public async Task<IActionResult> AddInspeccion(int id, InspeccionDTO inspeccionDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var success = await _vehicleService.AddInspeccionAsync(id, inspeccionDto);
+                if (!success)
+                    return BadRequest();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding inspection for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al agregar inspección");
+            }
+        }
+
+        [HttpGet("{id}/license")]
+        public async Task<ActionResult<LicenseDTO>> GetLicense(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var license = await _vehicleService.GetLicenseAsync(id);
+                if (license == null)
+                    return NotFound();
+
+                return Ok(license);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting license for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener la licencia");
+            }
+        }
+
+        [HttpPut("{id}/license")]
+        public async Task<IActionResult> UpdateLicense(int id, LicenseDTO licenseDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var success = await _vehicleService.UpdateLicenseAsync(id, licenseDto);
+                if (!success)
+                    return BadRequest();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating license for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al actualizar la licencia");
+            }
+        }
+
+        [HttpPost("{id}/license")]
+        public async Task<ActionResult<LicenseDTO>> CreateLicense(int id, [FromBody] LicenseType type)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var license = await _vehicleService.CreateLicenseAsync(id, type);
+                return CreatedAtAction(nameof(GetLicense), new { id }, license);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating license for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al crear la licencia");
+            }
+        }
+
+        [HttpGet("{id}/stats")]
+        public async Task<ActionResult<VehicleStatsDTO>> GetVehicleStats(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var stats = await _vehicleService.GetVehicleStatsAsync(id);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting stats for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener estadísticas");
+            }
+        }
+
+        [HttpGet("{id}/stats/monthly")]
+        public async Task<ActionResult<List<MonthlyStatsDTO>>> GetMonthlyStats(
+            int id, 
+            [FromQuery] DateTime? startDate, 
+            [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var start = startDate ?? DateTime.UtcNow.AddMonths(-6);
+                var end = endDate ?? DateTime.UtcNow;
+
+                var stats = await _vehicleService.GetMonthlyStatsAsync(id, start, end);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting monthly stats for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener estadísticas mensuales");
+            }
+        }
+
+        [HttpGet("{id}/summary")]
+        public async Task<ActionResult<VehicleSummaryDTO>> GetVehicleSummary(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var summary = await _vehicleService.GetVehicleSummaryAsync(id);
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting summary for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener resumen del vehículo");
+            }
+        }
+
+        [HttpGet("{id}/alerts")]
+        public async Task<ActionResult<List<VehicleAlertDTO>>> GetVehicleAlerts(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var alerts = await _vehicleService.GetVehicleAlertsAsync(id);
+                return Ok(alerts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting alerts for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener alertas");
+            }
+        }
+
+        [HttpPost("{id}/alerts")]
+        public async Task<ActionResult<VehicleAlertDTO>> CreateAlert(int id, VehicleAlertDTO alertDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                alertDto.VehicleId = id;
+                var alert = await _vehicleService.CreateAlertAsync(id, alertDto);
+                return CreatedAtAction(nameof(GetVehicleAlerts), new { id }, alert);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating alert for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al crear alerta");
+            }
+        }
+
+        [HttpPut("{id}/alerts/{alertId}/read")]
+        public async Task<IActionResult> MarkAlertAsRead(int id, int alertId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var success = await _vehicleService.MarkAlertAsReadAsync(id, alertId);
+                if (!success)
+                    return NotFound();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking alert as read for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al marcar alerta como leída");
+            }
+        }
+
+        [HttpPost("{id}/alerts/generate")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> GenerateAlerts(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var alertService = HttpContext.RequestServices.GetRequiredService<IAlertGenerationService>();
+                
+                await alertService.GenerateInspectionAlertAsync(id);
+                await alertService.GenerateMaintenanceAlertAsync(id);
+                await alertService.GenerateLicenseExpirationAlertAsync(id);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating alerts for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al generar alertas");
+            }
+        }
+
+        [HttpGet("{id}/metrics")]
+        public async Task<ActionResult<VehicleMetricsDTO>> GetVehicleMetrics(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var metrics = await _metricsService.GetVehicleMetricsAsync(id);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting metrics for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener métricas del vehículo");
+            }
+        }
+
+        [HttpGet("{id}/trend-analysis")]
+        public async Task<ActionResult<TrendAnalysisEntity>> GetTrendAnalysis(int id)
+        {
+            try
+            {
+                var trends = await _analysisService.GetTrendAnalysis(id);
+                return Ok(trends);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend analysis for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/trend-metrics")]
+        public async Task<ActionResult<List<TrendMetric>>> GetTrendMetrics(int id)
+        {
+            try
+            {
+                var metrics = await _metricsService.GetTrendMetricsAsync(id);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend metrics for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/maintenance-prediction")]
+        public async Task<ActionResult<MaintenancePredictionDTO>> GetMaintenancePrediction(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var prediction = await _maintenancePredictionService.PredictMaintenanceAsync(id);
+                return Ok(prediction);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting maintenance prediction for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener predicción de mantenimiento");
+            }
+        }
+
+        [HttpGet("{id}/maintenance-predictions")]
+        public async Task<ActionResult<List<MaintenancePredictionDTO>>> GetMaintenancePredictionHistory(
+            int id,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var vehicle = await _vehicleService.GetVehicleAsync(id, userId);
+                if (vehicle == null)
+                    return NotFound();
+
+                var start = startDate ?? DateTime.UtcNow.AddMonths(-1);
+                var end = endDate ?? DateTime.UtcNow;
+
+                var predictions = await _context.Predictions
+                    .Where(p => p.VehicleId == id &&
+                           p.PredictionType == PredictionType.Maintenance &&
+                           p.CreatedAt >= start &&
+                           p.CreatedAt <= end)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(p => new MaintenancePredictionDTO
+                    {
+                        VehicleId = p.VehicleId,
+                        PredictedMaintenanceDate = p.PredictedDate,
+                        MaintenanceProbability = p.Probability,
+                        RiskLevel = p.RiskLevel,
+                        Recommendations = p.Recommendations.Split('|').ToList()
+                    })
+                    .ToListAsync();
+
+                return Ok(predictions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting maintenance prediction history for vehicle {VehicleId}", id);
+                return StatusCode(500, "Error interno al obtener historial de predicciones");
+            }
+        }
+
+        [HttpGet("{id}/analyses")]
+        public async Task<ActionResult<List<DobackAnalysis>>> GetAnalyses(int id)
+        {
+            try
+            {
+                var analyses = await _analysisService.GetAnalysesAsync(id);
+                return Ok(analyses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting analyses for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/predictions")]
+        public async Task<ActionResult<List<IncliSafe.Shared.Models.Analysis.Core.Prediction>>> GetPredictions(int id)
+        {
+            try
+            {
+                var predictions = await _analysisService.GetPredictionsAsync(id);
+                return Ok(predictions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting predictions for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}/anomalies")]
+        public async Task<ActionResult<List<Anomaly>>> GetAnomalies(int id)
+        {
+            try
+            {
+                var anomalies = await _analysisService.GetAnomaliesAsync(id);
+                return Ok(anomalies);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting anomalies for vehicle {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        private string GetCurrentUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0";
         }
 
         private async Task<bool> VehiculoExists(int id)
         {
-            return await _context.Vehiculos.AnyAsync(e => e.Id == id);
+            return await _vehicleService.ExistsAsync(id);
         }
     }
 }
+

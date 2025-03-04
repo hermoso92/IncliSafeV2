@@ -70,9 +70,8 @@ namespace IncliSafeApi.Services
             {
                 PatternName = pattern.Name,
                 KnowledgePatternId = pattern.Id,
-                ConfidenceScore = pattern.Confidence,
-                DetectionTime = DateTime.UtcNow,
-                VehicleId = 0 // Este valor deberá ser proporcionado por el contexto
+                ConfidenceScore = Convert.ToDecimal(pattern.Confidence),
+                DetectionTime = DateTime.UtcNow
             };
 
             _context.PatternDetections.Add(detection);

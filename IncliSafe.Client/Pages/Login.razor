@@ -1,59 +1,43 @@
 @page "/login"
-@using IncliSafe.Shared.Models
+@inject IAuthService AuthService
 @inject NavigationManager NavigationManager
-@inject AuthService AuthService
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-    <MudCard>
-        <MudCardHeader>
-            <MudText Typo="Typo.h5">Iniciar Sesión</MudText>
-        </MudCardHeader>
-        <MudCardContent>
-            <MudForm @ref="form" Model="@model">
-                <MudTextField @bind-Value="model.Nombre"
-                             Label="Nombre de Usuario"
-                             Required="true"
-                             RequiredError="El nombre es requerido"/>
-                <MudTextField @bind-Value="model.Password"
-                             Label="Contraseña"
-                             Required="true"
-                             RequiredError="La contraseña es requerida"
-                             InputType="InputType.Password"/>
-            </MudForm>
-        </MudCardContent>
-        <MudCardActions>
-            <MudButton OnClick="Submit" 
-                      Variant="Variant.Filled" 
-                      Color="Color.Primary" 
-                      Class="ml-auto">
-                Iniciar Sesión
-            </MudButton>
-        </MudCardActions>
-    </MudCard>
-</MudContainer>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard>
+            <MudCardContent>
+                <MudTextField @bind-Value="username" Label="Usuario" />
+                <MudTextField @bind-Value="password" Label="Contraseña" InputType="InputType.Password" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Color="Color.Primary" OnClick="HandleLogin">Iniciar Sesión</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
 
 @code {
-    private MudForm? form;
-    private LoginRequest model = new();
+    private string username = string.Empty;
+    private string password = string.Empty;
 
-    private async Task Submit()
+    private async Task HandleLogin()
     {
-        await form?.Validate()!;
-        if (form?.IsValid ?? false)
+        try
         {
-            try
+            var result = await AuthService.Login(username, password);
+            if (result != null)
             {
-                var result = await AuthService.Login(model);
-                if (result)
-                {
-                    NavigationManager.NavigateTo("/dashboard");
-                }
+                NavigationManager.NavigateTo("/");
             }
-            catch (Exception ex)
+            else
             {
-                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+                Snackbar.Add("Credenciales inválidas", Severity.Error);
             }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
     }
 }

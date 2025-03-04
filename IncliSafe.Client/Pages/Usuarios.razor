@@ -1,10 +1,13 @@
 @page "/usuarios"
 @attribute [Authorize(Roles = "Administrador")]
 @using IncliSafe.Shared.Models
+@using System.Text
+@using static System.Text.StringBuilder
 @inject UsuarioService UsuarioService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@using IncliSafe.Client.Shared.Dialogs
 
 <PageHeader Title="Usuarios"
            ShowAddButton="true"
@@ -23,89 +26,35 @@
     }
     else
     {
-        <MudTable Items="@GetFilteredUsuarios()" 
-                  Dense="true" 
-                  Hover="true" 
-                  Striped="true"
-                  Loading="@_loading"
-                  Breakpoint="Breakpoint.Sm">
-                    <ToolBarContent>
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="flex-grow-1">
-                            <MudTextField @bind-Value="_searchString" 
-                                         Placeholder="Buscar..." 
-                                         Adornment="Adornment.Start"
-                                         AdornmentIcon="@Icons.Material.Filled.Search"
-                                         IconSize="Size.Medium" 
-                                         Class="mt-0"
-                                         Immediate="true"
-                                         DebounceInterval="300"/>
-                            <MudSelect T="string" 
-                                      Label="Rol" 
-                                      @bind-Value="_selectedRol"
-                                      Clearable="true">
-                                <MudSelectItem Value="@("Administrador")">Administrador</MudSelectItem>
-                                <MudSelectItem Value="@("Inspector")">Inspector</MudSelectItem>
-                                <MudSelectItem Value="@("Usuario")">Usuario</MudSelectItem>
-                            </MudSelect>
-                            <MudSelect T="bool?" 
-                                      Label="Estado" 
-                                      @bind-Value="_selectedEstado"
-                                      Clearable="true">
-                                <MudSelectItem Value="@true">Activo</MudSelectItem>
-                                <MudSelectItem Value="@false">Inactivo</MudSelectItem>
-                            </MudSelect>
-                        </MudStack>
-                        <MudTooltip Text="Exportar a Excel">
-                            <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
-                                          Color="Color.Primary"
-                                          OnClick="ExportToExcel" />
-                        </MudTooltip>
-                        <MudTooltip Text="Limpiar filtros">
-                            <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
-                                          Color="Color.Default"
-                                          OnClick="ResetFilters" />
-                        </MudTooltip>
-                    </ToolBarContent>
-                    <HeaderContent>
-                        <MudTh>ID</MudTh>
-                        <MudTh>Nombre</MudTh>
-                        <MudTh>Email</MudTh>
-                        <MudTh>Rol</MudTh>
-                        <MudTh>Estado</MudTh>
-                        <MudTh>Acciones</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Id">@context.Id</MudTd>
-                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
-                        <MudTd DataLabel="Email">@context.Email</MudTd>
-                        <MudTd DataLabel="Rol">
-                            <MudChip Color="@GetRolColor(context.Rol)" Size="Size.Small">
-                                @context.Rol
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Estado">
-                            <MudChip Color="@(context.Activo ? Color.Success : Color.Error)" Size="Size.Small">
-                                @(context.Activo ? "Activo" : "Inactivo")
-                            </MudChip>
-                        </MudTd>
-                        <MudTd>
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                         Color="Color.Primary"
-                                         Size="Size.Small"
-                                         OnClick="@(() => OpenDialog(context))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                         Color="Color.Error"
-                                         Size="Size.Small"
-                                         OnClick="@(() => DeleteUsuario(context))" />
-                        </MudTd>
-                    </RowTemplate>
-                    <NoRecordsContent>
-                        <MudText>No hay usuarios registrados.</MudText>
-                    </NoRecordsContent>
-                    <PagerContent>
-                        <MudTablePager />
-                    </PagerContent>
-                </MudTable>
+        <MudTable Items="@usuarios" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Rol</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="Rol">
+                    <MudChip Color="@GetRolColor(context.Rol)">
+                        @context.Rol
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip Color="@(context.Activo ? Color.Success : Color.Error)">
+                        @(context.Activo ? "Activo" : "Inactivo")
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                 OnClick="@(() => EditarUsuario(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                 OnClick="@(() => EliminarUsuario(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
     }
 }
 
@@ -157,7 +106,7 @@
             }
         };
 
-        var dialog = await DialogService.ShowAsync<UsuarioDialog>(
+        var dialog = await DialogService.ShowAsync<Shared.Dialogs.UsuarioDialog>(
             usuario.Id == 0 ? "Nuevo Usuario" : "Editar Usuario", 
             parameters);
 
@@ -184,38 +133,49 @@
         }
     }
 
-    private async Task DeleteUsuario(Usuario usuario)
+    private async Task EditarUsuario(Usuario usuario)
     {
         var parameters = new DialogParameters
         {
-            ["Title"] = "Eliminar Usuario",
-            ["Message"] = $"¿Está seguro de eliminar al usuario {usuario.Nombre}?",
-            ["Color"] = Color.Error,
-            ["ConfirmText"] = "Eliminar"
+            ["usuario"] = usuario
         };
-
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("", parameters);
+        var dialog = await DialogService.ShowAsync<Shared.Dialogs.UsuarioDialog>("Editar Usuario", parameters);
         var result = await dialog.Result;
+        
+        if (!result.Cancelled)
+        {
+            await LoadUsuarios();
+            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+        }
+    }
 
-        if (!result.Canceled)
+    private async Task EliminarUsuario(Usuario usuario)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar eliminación",
+            $"¿Está seguro que desea eliminar al usuario {usuario.Nombre}?",
+            yesText: "Eliminar",
+            noText: "Cancelar");
+
+        if (confirm ?? false)
         {
             try
             {
                 await UsuarioService.DeleteUsuario(usuario.Id);
                 await LoadUsuarios();
+                Snackbar.Add("Usuario eliminado correctamente", Severity.Success);
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Error al eliminar usuario: {ex.Message}", Severity.Error);
             }
         }
     }
 
     private Color GetRolColor(string rol) => rol switch
     {
-        "Administrador" => Color.Error,
-        "Inspector" => Color.Warning,
-        "Usuario" => Color.Info,
+        "Admin" => Color.Primary,
+        "User" => Color.Secondary,
         _ => Color.Default
     };
 

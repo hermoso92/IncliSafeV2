@@ -1,0 +1,20 @@
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.Analysis.Core
+@using SharedDialogs = IncliSafe.Client.Shared.Dialogs
+
+<MudDialog>
+    <DialogContent>
+        @if (Analysis != null)
+        {
+            <MudText>Fecha: @Analysis.Timestamp.ToString("g")</MudText>
+            <MudText>Índice: @Analysis.StabilityIndex.ToString("P2")</MudText>
+            <MudText>Confianza: @Analysis.Confidence.ToString("P2")</MudText>
+        }
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [Parameter] public DobackAnalysis Analysis { get; set; } = null!;
+    // ... resto del código
+} 

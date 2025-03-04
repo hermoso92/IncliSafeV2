@@ -28,6 +28,18 @@
                 "http"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "clean"
+            ],
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "silent"
+            }
         }
     ]
 } 

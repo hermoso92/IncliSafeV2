@@ -6,7 +6,7 @@ namespace IncliSafe.Client.Services.Interfaces
     {
         Task<UserSession> Login(string username, string password);
         Task Logout();
-        Task<bool> IsAuthenticated();
         Task<UserSession?> GetCurrentUser();
+        Task<bool> IsAuthenticated();
     }
 } 

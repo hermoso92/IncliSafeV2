@@ -33,32 +33,26 @@ namespace IncliSafeApi.Services
             var user = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.Username == username);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            if (user == null || !VerifyPassword(password, user.Password))
             {
                 return new AuthResponse 
                 { 
                     Success = false, 
-                    Message = "Credenciales inválidas",
-                    Token = string.Empty,
-                    User = null
+                    Message = "Usuario o contraseña incorrectos" 
                 };
             }
 
-            var token = await GenerateJwtToken(user) ?? string.Empty;
+            var token = await GenerateJwtToken(user);
             var session = new UserSession
             {
                 Id = user.Id,
-                Username = user.Username,
-                Name = user.Name ?? string.Empty,
-                Role = user.Role ?? "User",
+                Username = user.Email,
+                Name = user.Nombre,
+                Role = user.Rol,
                 Token = token,
-                IsActive = user.IsActive,
+                IsActive = user.Activo,
                 LastLogin = DateTime.UtcNow
             };
-
-            // Actualizar último login
-            user.LastLogin = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
 
             return new AuthResponse
             {
@@ -71,7 +65,7 @@ namespace IncliSafeApi.Services
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            if (await _context.Usuarios.AnyAsync(u => u.Username == request.Username))
+            if (await _context.Usuarios.AnyAsync(u => u.Email == request.Email))
             {
                 return new AuthResponse 
                 { 
@@ -84,27 +78,26 @@ namespace IncliSafeApi.Services
 
             var user = new Usuario
             {
-                Username = request.Username,
-                Name = request.Name ?? string.Empty,
                 Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = "User",
-                IsActive = true,
+                Nombre = request.Name ?? string.Empty,
+                Password = HashPassword(request.Password),
+                Rol = "Usuario",
+                Activo = true,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Usuarios.Add(user);
             await _context.SaveChangesAsync();
 
-            var token = await GenerateJwtToken(user) ?? string.Empty;
+            var token = await GenerateJwtToken(user);
             var session = new UserSession
             {
                 Id = user.Id,
-                Username = user.Username,
-                Name = user.Name,
-                Role = user.Role,
+                Username = user.Email,
+                Name = user.Nombre,
+                Role = user.Rol,
                 Token = token,
-                IsActive = user.IsActive,
+                IsActive = user.Activo,
                 LastLogin = DateTime.UtcNow
             };
 
@@ -119,14 +112,15 @@ namespace IncliSafeApi.Services
 
         public async Task<bool> ValidateTokenAsync(string token)
         {
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token)) 
+                return false;
 
             try
             {
+                var tokenHandler = new JwtSecurityTokenHandler();
                 var key = _configuration["JwtSettings:SecretKey"] ?? 
                     throw new InvalidOperationException("JWT SecretKey not configured");
 
-                var tokenHandler = new JwtSecurityTokenHandler();
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
@@ -138,8 +132,10 @@ namespace IncliSafeApi.Services
                     ClockSkew = TimeSpan.Zero
                 };
 
-                await Task.Run(() => tokenHandler.ValidateToken(token, validationParameters, out _));
-                return true;
+                var principal = await Task.Run(() => 
+                    tokenHandler.ValidateToken(token, validationParameters, out _));
+                
+                return principal != null;
             }
             catch
             {
@@ -150,12 +146,12 @@ namespace IncliSafeApi.Services
         public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
         {
             var user = await _context.Usuarios.FindAsync(userId);
-            if (user == null || !VerifyPassword(currentPassword, user.PasswordHash))
+            if (user == null || !VerifyPassword(currentPassword, user.Password))
             {
                 return false;
             }
 
-            user.PasswordHash = HashPassword(newPassword);
+            user.Password = HashPassword(newPassword);
             await _context.SaveChangesAsync();
             return true;
         }
@@ -207,11 +203,11 @@ namespace IncliSafeApi.Services
                 return new UserSession
                 {
                     Id = user.Id,
-                    Username = user.Username,
-                    Name = user.Name ?? string.Empty,
-                    Role = user.Role ?? "User",
+                    Username = user.Email,
+                    Name = user.Nombre,
+                    Role = user.Rol,
                     Token = token,
-                    IsActive = user.IsActive,
+                    IsActive = user.Activo,
                     LastLogin = user.LastLogin ?? DateTime.UtcNow
                 };
             }
@@ -255,6 +251,13 @@ namespace IncliSafeApi.Services
         {
             if (user == null) return null;
 
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.Role, user.Rol)
+            };
+
             var key = _configuration["JwtSettings:Key"] ?? 
                 throw new InvalidOperationException("JWT Key not configured");
             var issuer = _configuration["JwtSettings:Issuer"] ?? 
@@ -264,13 +267,6 @@ namespace IncliSafeApi.Services
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role)
-            };
 
             var token = new JwtSecurityToken(
                 issuer: issuer,

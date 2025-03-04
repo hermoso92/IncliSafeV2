@@ -12,7 +12,7 @@ namespace IncliSafe.Client.Services
         private List<Vehiculo>? _vehiculos;
         private List<Inspeccion>? _inspecciones;
         
-        private readonly IVehicleService _vehiculoService;
+        private readonly IVehicleService _vehicleService;
         private readonly IInspectionService _inspeccionService;
         
         public event Action? OnChange;
@@ -21,10 +21,10 @@ namespace IncliSafe.Client.Services
         public List<Inspeccion> Inspecciones => _inspecciones ?? new();
         
         public StateContainer(
-            IVehicleService vehiculoService,
+            IVehicleService vehicleService,
             IInspectionService inspeccionService)
         {
-            _vehiculoService = vehiculoService;
+            _vehicleService = vehicleService;
             _inspeccionService = inspeccionService;
         }
         
@@ -32,7 +32,7 @@ namespace IncliSafe.Client.Services
         {
             if (!_isInitialized)
             {
-                _vehiculos = await _vehiculoService.GetVehiculosAsync();
+                _vehiculos = await _vehicleService.GetVehiculos();
                 _inspecciones = await _inspeccionService.GetInspeccionesAsync();
                 _isInitialized = true;
                 NotifyStateChanged();
@@ -52,5 +52,10 @@ namespace IncliSafe.Client.Services
         }
         
         private void NotifyStateChanged() => OnChange?.Invoke();
+
+        public async Task<List<Vehiculo>> GetVehiculos()
+        {
+            return await _vehicleService.GetVehiculos();
+        }
     }
 } 

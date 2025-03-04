@@ -12,7 +12,10 @@ using System.Collections.Generic;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Patterns;
 using System.Text.Json;
-
+using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Analysis.Core;
+using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
+using CoreMetrics = IncliSafe.Shared.Models.Analysis.Core.DashboardMetrics;
 namespace IncliSafeApi.Controllers
 {
     [ApiController]
@@ -111,18 +114,16 @@ namespace IncliSafeApi.Controllers
         [HttpGet("vehicle/{vehicleId}/latest")]
         public async Task<ActionResult<AnalysisResult>> GetLatestAnalysis(int vehicleId)
         {
-            var vehicle = await _context.Vehiculos
-                .FirstOrDefaultAsync(v => v.Id == vehicleId && v.UserId == GetCurrentUserId());
-            
-            if (vehicle == null)
-                return NotFound();
-
-            var latest = await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.Timestamp)
-                .FirstOrDefaultAsync();
-
-            return latest?.Result ?? new AnalysisResult();
+            try
+            {
+                var result = await _dobackService.GetLatestAnalysisAsync(vehicleId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting latest analysis");
+                return StatusCode(500, "Error interno del servidor");
+            }
         }
 
         [HttpGet("vehicle/{vehicleId}/trends")]
@@ -144,16 +145,17 @@ namespace IncliSafeApi.Controllers
         }
 
         [HttpGet("metrics")]
-        public async Task<ActionResult<DashboardMetrics>> GetDashboardMetrics()
+        public async Task<ActionResult<CoreMetrics>> GetDashboardMetrics()
         {
             try
             {
-                var metrics = await _dobackService.GetDashboardMetrics();
+                var metrics = await _dobackService.GetMetrics();
                 return Ok(metrics);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                _logger.LogError(ex, "Error al obtener métricas del dashboard");
+                return StatusCode(500, "Error interno al obtener métricas");
             }
         }
 
@@ -223,6 +225,141 @@ namespace IncliSafeApi.Controllers
             }
         }
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<DobackAnalysis>> GetAnalysis(int id)
+        {
+            var analysis = await _dobackService.GetAnalysisAsync(id);
+            if (analysis == null)
+                return NotFound();
+
+            if (analysis.VehicleId.ToString() != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                return Forbid();
+
+            return Ok(analysis);
+        }
+
+        [HttpGet("{id}/data")]
+        public async Task<ActionResult<List<DobackData>>> GetDobackData(int id)
+        {
+            var data = await _dobackService.GetDobackDataAsync(id);
+            return Ok(data);
+        }
+
+        [HttpPost("data")]
+        public async Task<ActionResult<DobackData>> ProcessData([FromBody] DobackDataDto dto)
+        {
+            try
+            {
+                var data = new DobackData
+                {
+                    AccelerationX = Convert.ToDecimal(dto.AccelerationX),
+                    AccelerationY = Convert.ToDecimal(dto.AccelerationY),
+                    AccelerationZ = Convert.ToDecimal(dto.AccelerationZ),
+                    Roll = Convert.ToDecimal(dto.Roll),
+                    Pitch = Convert.ToDecimal(dto.Pitch),
+                    Yaw = Convert.ToDecimal(dto.Yaw),
+                    Speed = Convert.ToDecimal(dto.Speed),
+                    StabilityIndex = Convert.ToDecimal(dto.StabilityIndex),
+                    Temperature = Convert.ToDecimal(dto.Temperature),
+                    Humidity = Convert.ToDecimal(dto.Humidity),
+                    TimeAntWifi = Convert.ToDecimal(dto.TimeAntWifi),
+                    Timestamp = dto.Timestamp
+                };
+
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing data");
+                return BadRequest("Error processing data");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<DobackAnalysis>> CreateAnalysis(DobackAnalysis analysis)
+        {
+            try
+            {
+                analysis.Timestamp = DateTime.UtcNow;
+                foreach (var data in analysis.Data)
+                {
+                    data.Timestamp = DateTime.UtcNow;
+                }
+
+                var result = await _dobackService.CreateAnalysisAsync(analysis);
+                return CreatedAtAction(nameof(GetAnalysis), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear análisis");
+                return StatusCode(500, "Error interno al crear el análisis");
+            }
+        }
+
+        [HttpGet("vehicle/{vehicleId}/history")]
+        public async Task<ActionResult<List<DobackAnalysis>>> GetAnalysisHistory(int vehicleId)
+        {
+            try
+            {
+                var history = await _dobackService.GetAnalysisHistoryAsync(vehicleId);
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener historial para vehículo {VehicleId}", vehicleId);
+                return StatusCode(500, "Error interno al obtener el historial");
+            }
+        }
+
+        [HttpGet("{id}/patterns")]
+        public async Task<ActionResult<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>>> GetDetectedPatterns(int id)
+        {
+            try
+            {
+                var patterns = await _dobackService.GetDetectedPatternsAsync(id);
+                return Ok(patterns);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener patrones para análisis {Id}", id);
+                return StatusCode(500, "Error interno al obtener patrones");
+            }
+        }
+
+        [HttpGet("latest/{vehicleId}")]
+        public async Task<ActionResult<DobackAnalysis>> GetLatestAnalysis(int vehicleId)
+        {
+            var analysis = await _context.DobackAnalyses
+                .Where(a => a.VehicleId == vehicleId)
+                .OrderByDescending(a => a.Timestamp)
+                .FirstOrDefaultAsync();
+
+            if (analysis == null)
+                return NotFound();
+
+            return Ok(analysis);
+        }
+
+        [HttpPost("{id}/process")]
+        public async Task<ActionResult<DobackAnalysis>> ProcessData(int id, [FromBody] List<DobackData> data)
+        {
+            try
+            {
+                if (id == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"))
+                {
+                    return Forbid();
+                }
+
+                var analysis = await _dobackService.ProcessDobackDataAsync(data);
+                return Ok(analysis);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing data for {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
         private async Task<List<DobackData>> ProcessDobackFile(string content)
         {
             var dataList = new List<DobackData>();
@@ -252,34 +389,23 @@ namespace IncliSafeApi.Controllers
 
                 return new DobackData
                 {
-                    AccelerometerX = Convert.ToDouble(dataLine[0]),
-                    AccelerometerY = Convert.ToDouble(dataLine[1]),
-                    AccelerometerZ = Convert.ToDouble(dataLine[2]),
-                    Roll = Convert.ToDouble(dataLine[3]),
-                    Pitch = Convert.ToDouble(dataLine[4]),
-                    Yaw = Convert.ToDouble(dataLine[5]),
-                    Speed = Convert.ToDouble(dataLine[6]),
+                    AccelerationX = Convert.ToDecimal(dataLine[0]),
+                    AccelerationY = Convert.ToDecimal(dataLine[1]),
+                    AccelerationZ = Convert.ToDecimal(dataLine[2]),
+                    Roll = Convert.ToDecimal(dataLine[3]),
+                    Pitch = Convert.ToDecimal(dataLine[4]),
+                    Yaw = Convert.ToDecimal(dataLine[5]),
+                    Speed = Convert.ToDecimal(dataLine[6]),
                     StabilityIndex = Convert.ToDecimal(dataLine[7]),
-                    Temperature = Convert.ToDouble(dataLine[8]),
-                    Humidity = Convert.ToDouble(dataLine[9]),
-                    TimeAntWifi = Convert.ToDouble(dataLine[10]),
-                    USCycle1 = Convert.ToDouble(dataLine[11]),
-                    USCycle2 = Convert.ToDouble(dataLine[12]),
-                    USCycle3 = Convert.ToDouble(dataLine[13]),
-                    USCycle4 = Convert.ToDouble(dataLine[14]),
-                    USCycle5 = Convert.ToDouble(dataLine[15]),
-                    AccMagnitude = Convert.ToDouble(dataLine[16]),
-                    MicrosCleanCAN = Convert.ToDouble(dataLine[17]),
-                    MicrosSD = Convert.ToDouble(dataLine[18]),
-                    ErrorsCAN = int.Parse(dataLine[19]),
-                    Steer = Convert.ToDouble(dataLine[20]),
-                    Timestamp = DateTime.UtcNow,
-                    SafetyScore = 0.9M,
-                    MaintenanceScore = 0.85M
+                    Temperature = Convert.ToDecimal(dataLine[8]),
+                    Humidity = Convert.ToDecimal(dataLine[9]),
+                    TimeAntWifi = Convert.ToDecimal(dataLine[10]),
+                    Timestamp = DateTime.UtcNow
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error parsing Doback line");
                 return null;
             }
         }
@@ -307,7 +433,7 @@ namespace IncliSafeApi.Controllers
             return 0.85M; // Ahora devolvemos un decimal literal
         }
 
-        private async Task<AnalysisResult> CreateAnalysisResult(List<DobackData> data, List<DetectedPattern> patterns)
+        private async Task<AnalysisResult> CreateAnalysisResult(List<DobackData> data, List<IncliSafe.Shared.Models.Patterns.DetectedPattern> patterns)
         {
             var cycle = await _context.Cycles.FindAsync(data.First().CycleId);
             if (cycle == null)
@@ -340,14 +466,14 @@ namespace IncliSafeApi.Controllers
             return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
 
-        private DetectedPattern CreatePattern(KnowledgePattern pattern, decimal confidence)
+        private IncliSafe.Shared.Models.Patterns.DetectedPattern CreatePattern(KnowledgePattern pattern, decimal confidence)
         {
-            return new DetectedPattern
+            return new IncliSafe.Shared.Models.Patterns.DetectedPattern
             {
                 PatternName = pattern.Name,
                 Description = pattern.Description,
                 ConfidenceScore = confidence,
-                DetectedValues = new List<string> { "value1", "value2" },
+                DetectedValues = new List<double>(),
                 RecommendedActions = pattern.RecommendedActions,
                 DetectionTime = DateTime.UtcNow,
                 VehicleId = GetCurrentUserId()

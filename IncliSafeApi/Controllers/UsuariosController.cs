@@ -48,13 +48,20 @@ namespace IncliSafeApi.Controllers
         public async Task<ActionResult<Usuario>> GetUsuario(int id)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
-
             if (usuario == null)
-            {
                 return NotFound();
-            }
 
-            return usuario;
+            return new Usuario
+            {
+                Id = usuario.Id,
+                Username = usuario.Username,
+                Email = usuario.Email,
+                Nombre = usuario.Nombre,
+                Rol = usuario.Rol,
+                Activo = usuario.Activo,
+                CreatedAt = usuario.CreatedAt,
+                LastLogin = usuario.LastLogin
+            };
         }
 
         [HttpPost]

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using IncliSafe.Shared.Models.DTOs;
 
 namespace IncliSafeApi.Hubs
 {
@@ -22,7 +23,19 @@ namespace IncliSafeApi.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
                 _logger.LogInformation($"Usuario {userId} conectado a notificaciones");
             }
+            await Groups.AddToGroupAsync(Context.ConnectionId, Context.UserIdentifier!);
             await base.OnConnectedAsync();
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"User_{userId}");
+            }
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, Context.UserIdentifier!);
+            await base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinVehicleGroup(string vehicleId)
@@ -38,6 +51,16 @@ namespace IncliSafeApi.Hubs
         public async Task SendNotification(string user, string message)
         {
             await Clients.User(user).SendAsync("ReceiveNotification", message);
+        }
+
+        public async Task SendAlert(VehicleAlertDTO alert)
+        {
+            await Clients.User(Context.UserIdentifier!).SendAsync("ReceiveAlert", alert);
+        }
+
+        public async Task MarkAlertAsRead(int alertId)
+        {
+            await Clients.User(Context.UserIdentifier!).SendAsync("AlertRead", alertId);
         }
     }
 } 

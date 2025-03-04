@@ -1,0 +1,28 @@
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.Analysis.Core
+@using IncliSafe.Shared.Models.Analysis
+
+<MudDialog>
+    <DialogContent>
+        <MudSelect T="int" Label="Archivo para comparar" @bind-Value="selectedFileId">
+            @foreach (var file in Files)
+            {
+                <MudSelectItem Value="@file.Id">@file.FileName</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Comparar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public List<DobackAnalysis> Files { get; set; } = new();
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    private int selectedFileId;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(selectedFileId));
+    private void Cancel() => MudDialog.Cancel();
+} 

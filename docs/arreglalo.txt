@@ -1,0 +1,36 @@
+INSTRUCCIÓN: Proceso de Resolución con Retroalimentación Continua
+
+1. ANTES DE CADA SOLUCIÓN:
+   ```markdown
+   ## Análisis Previo
+   - Consultar systematic-process.md → Obtener proceso actual
+   - Consultar error-solutions-log.md → Revisar soluciones previas
+   - Identificar patrones de solución exitosos
+   - Detectar áreas de mejora en el proceso
+   ```
+
+2. DURANTE LA SOLUCIÓN:
+   ```markdown
+   ## Aplicación y Documentación
+   - Aplicar solución siguiendo systematic-process.md
+   - Documentar en error-solutions-log.md
+   - Identificar nuevos patrones o problemas
+   ```
+
+3. DESPUÉS DE CADA SOLUCIÓN:
+   ```markdown
+   ## Retroalimentación
+   - ¿La solución fue efectiva?
+   - ¿Se puede mejorar el proceso?
+   - ¿Se descubrieron nuevos patrones?
+   ```
+
+4. ACTUALIZAR DOCUMENTACIÓN:
+   ```markdown
+   ## Mejoras al Proceso
+   - Actualizar systematic-process.md con nuevas lecciones
+   - Refinar error-solutions-log.md con patrones descubiertos
+   - Agregar nuevas categorías o prioridades si es necesario
+   ```
+
+¿Procedo con la resolución del primer error aplicando este proceso de retroalimentación continua?

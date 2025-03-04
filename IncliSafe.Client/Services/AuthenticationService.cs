@@ -65,17 +65,17 @@ namespace IncliSafe.Client.Services
             }
         }
 
-        public async Task<Usuario> GetCurrentUser()
+        public async Task<Usuario?> GetCurrentUser()
         {
             try
             {
                 var user = await _localStorage.GetItemAsync<Usuario>(UserKey);
-                return user ?? throw new Exception("Usuario no encontrado");
+                return user;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener usuario actual");
-                throw;
+                return null;
             }
         }
 
