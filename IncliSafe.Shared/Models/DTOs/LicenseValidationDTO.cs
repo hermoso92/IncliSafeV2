@@ -28,6 +28,26 @@ namespace IncliSafe.Shared.Models.DTOs
             
             return true;
         }
+
+        public bool IsValid()
+        {
+            if (string.IsNullOrEmpty(LicenseKey))
+            {
+                return false;
+            }
+            
+            if (ExpirationDate < DateTime.UtcNow)
+            {
+                return false;
+            }
+            
+            if (!IsActive)
+            {
+                return false;
+            }
+            
+            return true;
+        }
     }
 } 
 

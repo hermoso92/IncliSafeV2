@@ -1,15 +1,19 @@
-using IncliSafe.Shared.Models.Enums;
 using System;
+using IncliSafe.Shared.Models.Common;
+using IncliSafe.Shared.Models.Enums;
 using System.Collections.Generic;
 
 namespace IncliSafe.Shared.Models.Core
 {
     public class SensorReading : BaseEntity
     {
-        public required int SensorId { get; set; }
+        public required string SensorId { get; set; }
+        public required string Value { get; set; }
+        public required string Unit { get; set; }
         public required DateTime Timestamp { get; set; }
-        public required double Value { get; set; }
-        public string? Unit { get; set; }
+        public string? Quality { get; set; }
+        public string? Location { get; set; }
+        public string? Description { get; set; }
         public required SensorType Type { get; set; }
         public required SensorStatus Status { get; set; }
         public string? Notes { get; set; }

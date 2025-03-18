@@ -4,20 +4,14 @@ using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Enums;
 
-namespace IncliSafe.Shared.Models.Analysis
+namespace IncliSafe.Shared.Models.Analysis;
+
+public abstract class AnalysisBase : BaseEntity
 {
-    public class AnalysisBase : BaseEntity
-    {
-        public new int Id { get; set; }
-        public new DateTime CreatedAt { get; set; }
-        public required int VehicleId { get; set; }
-        public required DateTime AnalysisDate { get; set; }
-        public required AnalysisType Type { get; set; }
-        public required decimal StabilityScore { get; set; }
-        public required decimal SafetyScore { get; set; }
-        public required decimal MaintenanceScore { get; set; }
-        public string? Notes { get; set; }
-        public virtual Vehicle Vehicle { get; set; } = null!;
-    }
+    public required string Name { get; set; }
+    public string? Description { get; set; }
+    public required AnalysisType Type { get; set; }
+    public Dictionary<string, object> Parameters { get; set; } = new();
 } 

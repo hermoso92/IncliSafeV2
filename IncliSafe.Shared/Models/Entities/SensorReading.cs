@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using IncliSafe.Shared.Models.Common;
+using IncliSafe.Shared.Models.Enums;
+using IncliSafe.Shared.Models.Notifications;
 
 namespace IncliSafe.Shared.Models.Entities
 {
@@ -12,7 +14,7 @@ namespace IncliSafe.Shared.Models.Entities
         public required decimal Value { get; set; }
         public required string Unit { get; set; }
         public decimal? Threshold { get; set; }
-        public AlertSeverity? Severity { get; set; }
+        public AlertSeverity Severity { get; set; }
         public virtual Vehicle Vehicle { get; set; } = null!;
         public virtual ICollection<Alert> Alerts { get; set; } = new List<Alert>();
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();

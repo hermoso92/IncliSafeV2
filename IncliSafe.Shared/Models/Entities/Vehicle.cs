@@ -8,6 +8,11 @@ namespace IncliSafe.Shared.Models.Entities
 {
     public class Vehicle : BaseEntity
     {
+        public required string Name { get; set; }
+        public required string Description { get; set; }
+        public required string Type { get; set; }
+        public required string Status { get; set; }
+        public required bool IsActive { get; set; }
         public required string Placa { get; set; }
         public required string Marca { get; set; }
         public required string Modelo { get; set; }
@@ -32,9 +37,6 @@ namespace IncliSafe.Shared.Models.Entities
         public decimal DistanciaEjes { get; set; }
         public decimal DistanciaEjePosterior { get; set; }
         public decimal VelocidadMaxima { get; set; }
-        public required string Status { get; set; }
-        public required string Type { get; set; }
-        public bool IsActive { get; set; }
         public virtual Usuario Propietario { get; set; } = null!;
         public virtual ICollection<Inspeccion> Inspecciones { get; set; } = new List<Inspeccion>();
         public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();

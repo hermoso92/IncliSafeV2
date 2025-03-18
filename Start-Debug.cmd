@@ -1,0 +1,3 @@
+@echo off
+echo Iniciando proceso de depuración y mejora automática...
+powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -Command "& {Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -NoProfile -File \"%~dp0scripts\Master-Debug.ps1\"' -WindowStyle Hidden}" 
