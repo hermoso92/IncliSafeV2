@@ -1,0 +1,65 @@
+{
+    "project": {
+        "name": "IncliSafe",
+        "version": "2.0.0",
+        "workspacePath": "C:/Users/Hermoso/Desktop/IncliSafeV2",
+        "documentation": {
+            "stateFile": "docs/state-tracking.md",
+            "processFile": "docs/systematic-process.md",
+            "errorLogFile": "docs/error-solutions-log.md"
+        },
+        "build": {
+            "logFile": "build-log.txt",
+            "autoSave": true,
+            "autoUpdateState": true
+        },
+        "namespaces": {
+            "analysis": "IncliSafe.Shared.Models.Analysis",
+            "entities": "IncliSafe.Shared.Models.Entities",
+            "dtos": "IncliSafe.Shared.Models.DTOs"
+        },
+        "conventions": {
+            "aliases": {
+                "CoreAnalysis": "IncliSafe.Shared.Models.Analysis",
+                "EntityAnalysis": "IncliSafe.Shared.Models.Entities"
+            },
+            "suffixes": {
+                "dto": "DTO",
+                "interface": "I",
+                "service": "Service"
+            }
+        },
+        "automation": {
+            "scripts": {
+                "build": "scripts/Update-ProjectState.ps1",
+                "test": "scripts/Run-Tests.ps1",
+                "update": "scripts/Update-Documentation.ps1"
+            },
+            "hooks": {
+                "preBuild": ["update-state"],
+                "postBuild": ["update-docs", "save-changes"],
+                "onError": ["log-error", "update-state"]
+            }
+        },
+        "errorTracking": {
+            "categories": [
+                "References",
+                "Types",
+                "Implementation",
+                "Configuration"
+            ],
+            "priorities": [
+                "Critical",
+                "High",
+                "Medium",
+                "Low"
+            ],
+            "statuses": [
+                "Open",
+                "InProgress",
+                "Resolved",
+                "Verified"
+            ]
+        }
+    }
+} 

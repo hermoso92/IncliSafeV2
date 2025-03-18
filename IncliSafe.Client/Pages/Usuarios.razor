@@ -1,0 +1,229 @@
+@page "/usuarios"
+@attribute [Authorize(Roles = "Administrador")]
+@using IncliSafe.Shared.Models
+@using System.Text
+@using static System.Text.StringBuilder
+@inject UsuarioService UsuarioService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@using IncliSafe.Client.Shared.Dialogs
+
+<PageHeader Title="Usuarios"
+           ShowAddButton="true"
+           AddButtonText="Nuevo Usuario"
+           OnAddClick="@(() => OpenDialog(new Usuario()))" />
+
+<LoadingComponent IsLoading="@_loading" Message="Cargando usuarios..." />
+
+@if (!_loading)
+{
+    @if (_error)
+    {
+        <ErrorComponent Message="@_errorMessage" 
+                       ShowRetry="true" 
+                       OnRetryClick="LoadUsuarios" />
+    }
+    else
+    {
+        <MudTable Items="@usuarios" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Rol</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="Rol">
+                    <MudChip Color="@GetRolColor(context.Rol)">
+                        @context.Rol
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip Color="@(context.Activo ? Color.Success : Color.Error)">
+                        @(context.Activo ? "Activo" : "Inactivo")
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                 OnClick="@(() => EditarUsuario(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                 OnClick="@(() => EliminarUsuario(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@code {
+    private List<Usuario> usuarios = new();
+    private bool _loading = true;
+    private bool _error;
+    private string _errorMessage = "";
+    private string _searchString = "";
+    private string? _selectedRol;
+    private bool? _selectedEstado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsuarios();
+    }
+
+    private async Task LoadUsuarios()
+    {
+        try
+        {
+            _loading = true;
+            _error = false;
+            usuarios = await UsuarioService.GetUsuarios();
+        }
+        catch (Exception ex)
+        {
+            _error = true;
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenDialog(Usuario usuario)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Usuario"] = new Usuario 
+            { 
+                Id = usuario.Id,
+                Nombre = usuario.Nombre,
+                Email = usuario.Email,
+                Password = usuario.Password,
+                Rol = usuario.Rol,
+                Activo = usuario.Activo
+            }
+        };
+
+        var dialog = await DialogService.ShowAsync<Shared.Dialogs.UsuarioDialog>(
+            usuario.Id == 0 ? "Nuevo Usuario" : "Editar Usuario", 
+            parameters);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            var editedUsuario = (Usuario)result.Data;
+            try
+            {
+                if (editedUsuario.Id == 0)
+                {
+                    await UsuarioService.CreateUsuario(editedUsuario);
+                }
+                else
+                {
+                    await UsuarioService.UpdateUsuario(editedUsuario);
+                }
+                await LoadUsuarios();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task EditarUsuario(Usuario usuario)
+    {
+        var parameters = new DialogParameters
+        {
+            ["usuario"] = usuario
+        };
+        var dialog = await DialogService.ShowAsync<Shared.Dialogs.UsuarioDialog>("Editar Usuario", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Cancelled)
+        {
+            await LoadUsuarios();
+            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+        }
+    }
+
+    private async Task EliminarUsuario(Usuario usuario)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar eliminación",
+            $"¿Está seguro que desea eliminar al usuario {usuario.Nombre}?",
+            yesText: "Eliminar",
+            noText: "Cancelar");
+
+        if (confirm ?? false)
+        {
+            try
+            {
+                await UsuarioService.DeleteUsuario(usuario.Id);
+                await LoadUsuarios();
+                Snackbar.Add("Usuario eliminado correctamente", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al eliminar usuario: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private Color GetRolColor(string rol) => rol switch
+    {
+        "Admin" => Color.Primary,
+        "User" => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private IEnumerable<Usuario> GetFilteredUsuarios()
+    {
+        return usuarios
+            .Where(u => 
+                (string.IsNullOrWhiteSpace(_searchString) || 
+                 u.Nombre.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                 u.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) &&
+                (_selectedRol == null || u.Rol == _selectedRol) &&
+                (_selectedEstado == null || u.Activo == _selectedEstado))
+            .OrderBy(u => u.Nombre);
+    }
+
+    private void ResetFilters()
+    {
+        _searchString = "";
+        _selectedRol = null;
+        _selectedEstado = null;
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var filteredData = GetFilteredUsuarios();
+            var fileName = $"usuarios_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var csv = new StringBuilder();
+            
+            // Encabezados
+            csv.AppendLine("ID,Nombre,Email,Rol,Estado");
+            
+            // Datos
+            foreach (var user in filteredData)
+            {
+                csv.AppendLine($"{user.Id},{user.Nombre},{user.Email},{user.Rol},{(user.Activo ? "Activo" : "Inactivo")}");
+            }
+
+            // Crear el archivo y descargarlo
+            var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+            await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Convert.ToBase64String(bytes));
+            
+            Snackbar.Add("Archivo exportado correctamente", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al exportar: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,131 @@
+@using IncliSafe.Shared.Models.Notifications
+@inject IDobackAnalysisService DobackService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer>
+            <EditForm Model="@settings" OnValidSubmit="SubmitAsync">
+                <DataAnnotationsValidator />
+                
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mb-4">Configuración de Notificaciones</MudText>
+                    </MudItem>
+
+                    <!-- Umbrales -->
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="settings.WarningThreshold" 
+                                       Label="Umbral de Advertencia"
+                                       Min="0" Max="1" Step="0.05M"/>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="settings.CriticalThreshold" 
+                                       Label="Umbral Crítico"
+                                       Min="0" Max="1" Step="0.05M"/>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="settings.StabilityThreshold" 
+                                       Label="Umbral de Estabilidad"
+                                       Min="0" Max="1" Step="0.05M"/>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="settings.SafetyThreshold" 
+                                       Label="Umbral de Seguridad"
+                                       Min="0" Max="1" Step="0.05M"/>
+                    </MudItem>
+
+                    <!-- Configuración de Notificaciones -->
+                    <MudItem xs="12" sm="6">
+                        <MudSelect @bind-Value="settings.MinimumSeverity" 
+                                 Label="Severidad Mínima">
+                            @foreach(var severity in Enum.GetValues<NotificationSeverity>())
+                            {
+                                <MudSelectItem Value="@severity">@severity</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudSelect @bind-Value="settings.Priority" 
+                                 Label="Prioridad">
+                            @foreach(var priority in Enum.GetValues<NotificationPriority>())
+                            {
+                                <MudSelectItem Value="@priority">@priority</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Canales de Notificación -->
+                    <MudItem xs="12">
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText>Canales de Notificación</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudGrid>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSwitch @bind-Checked="settings.EnableEmail" 
+                                                 Label="Email" Color="Color.Primary"/>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSwitch @bind-Checked="settings.EnablePush" 
+                                                 Label="Push" Color="Color.Primary"/>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSwitch @bind-Checked="settings.EnableSMS" 
+                                                 Label="SMS" Color="Color.Primary"/>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="settings.MinutesBetweenNotifications" 
+                                       Label="Minutos entre notificaciones"
+                                       Min="1" Max="120"/>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Value="settings.Enabled"
+                                   Color="Color.Primary"
+                                   Label="Activar alertas" />
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="SubmitAsync">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public NotificationSettings settings { get; set; } = new();
+    [Parameter] public int VehicleId { get; set; }
+
+    private async Task SubmitAsync()
+    {
+        try
+        {
+            settings.VehicleId = VehicleId;
+            var result = await DobackService.UpdateNotificationSettings(settings);
+            Snackbar.Add("Configuración guardada correctamente", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar la configuración: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+} 

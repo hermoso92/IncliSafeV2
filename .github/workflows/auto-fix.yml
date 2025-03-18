@@ -1,0 +1,53 @@
+name: Auto-Fix Process
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'  # Cada 4 horas
+  workflow_dispatch:  # Permite ejecución manual
+
+jobs:
+  auto-fix:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build with errors logging
+      run: |
+        dotnet build --no-restore > errores.txt 2>&1
+        
+    - name: Run Auto-Fix Script
+      shell: pwsh
+      run: ./scripts/Auto-Fix.ps1
+      
+    - name: Update Documentation
+      shell: pwsh
+      run: |
+        # Actualizar CHANGELOG
+        $date = Get-Date -Format "yyyy-MM-dd"
+        $changes = git diff --name-only
+        
+        if ($changes) {
+          Add-Content -Path CHANGELOG.md -Value "`n### [$date]`n"
+          Add-Content -Path CHANGELOG.md -Value "#### Fixed`n"
+          foreach ($change in $changes) {
+            Add-Content -Path CHANGELOG.md -Value "- Auto-fix: $change"
+          }
+        }
+        
+        # Commit cambios en documentación
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add CHANGELOG.md
+        git commit -m "docs: Actualización automática de CHANGELOG [skip ci]"
+        git push 

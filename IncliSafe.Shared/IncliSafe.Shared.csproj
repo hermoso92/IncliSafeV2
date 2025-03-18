@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.3" />
+    <PackageReference Include="MudBlazor" Version="6.16.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <!-- Incluir archivos específicos -->
+  <ItemGroup>
+    <Compile Include="Models/**/*.cs" />
+    <Compile Include="DTOs/**/*.cs" />
+    <Compile Include="GlobalUsings.cs" />
+    <Compile Include="Exceptions\NotFoundException.cs" />
+  </ItemGroup>
+
+  <!-- Definir las carpetas del proyecto -->
+  <ItemGroup>
+    <Folder Include="Models\Core\" />
+    <Folder Include="Models\Analysis\" />
+    <Folder Include="Models\Auth\" />
+    <Folder Include="Models\Entities\" />
+    <Folder Include="Models\Knowledge\" />
+    <Folder Include="Models\Notifications\" />
+    <Folder Include="Models\Patterns\" />
+    <Folder Include="Models\DTOs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Models\Notifications\NotificationType.cs">
+      <DependentUpon>Notification.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Models\Notifications\NotificationSeverity.cs">
+      <DependentUpon>Notification.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Notifications\NotificationType.cs" />
+    <Compile Remove="Models\Analysis\AnomalyType.cs" />
+    <Compile Remove="Models\Analysis\DobackAnalysis.cs" />
+    <Compile Remove="Models\Analysis\DobackData.cs" />
+    <Compile Remove="Models\Analysis\AnalysisResult.cs" />
+    <Compile Remove="Models\Analysis\PredictionRisk.cs" />
+    <Compile Remove="Models\Analysis\Prediction.cs" />
+  </ItemGroup>
+
+</Project>

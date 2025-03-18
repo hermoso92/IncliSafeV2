@@ -1,0 +1,30 @@
+@using IncliSafe.Shared.Models.Patterns
+@inject IKnowledgeBaseService KnowledgeService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="pattern.Name" Label="Nombre" />
+        <MudTextField @bind-Value="pattern.Description" Label="Descripción" Lines="3" />
+        <MudNumericField @bind-Value="pattern.Threshold" Label="Umbral" />
+        <MudSelect @bind-Value="pattern.PatternType" Label="Tipo">
+            <MudSelectItem Value="@("Stability")">Estabilidad</MudSelectItem>
+            <MudSelectItem Value="@("Safety")">Seguridad</MudSelectItem>
+            <MudSelectItem Value="@("Maintenance")">Mantenimiento</MudSelectItem>
+            <MudSelectItem Value="@("Performance")">Rendimiento</MudSelectItem>
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private KnowledgePattern pattern = new();
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(pattern));
+    private void Cancel() => MudDialog.Cancel();
+} 

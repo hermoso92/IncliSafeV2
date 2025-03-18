@@ -1,0 +1,69 @@
+@page "/doback-viewer"
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Core
+@using IncliSafe.Client.Services.Interfaces
+@inject IDobackService DobackService
+@inject IDobackAnalysisService AnalysisService
+@inject IVehicleService VehicleService
+@inject IJSRuntime JS
+@attribute [Authorize]
+@using MudBlazor
+@using MudBlazor.Charts
+@using IncliSafe.Shared.Models.Analysis.Core
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Doback Viewer</MudText>
+    
+    @if (_loading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        @if (Analysis != null)
+        {
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h5">Análisis Doback</MudText>
+                    <MudText>Fecha: @Analysis.Timestamp.ToLocalTime().ToString("g")</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText>Estabilidad: @Analysis.GetStabilityIndex()</MudText>
+                            <MudText>Velocidad: @Analysis.GetSpeed()</MudText>
+                            <MudText>Roll: @Analysis.GetRoll()</MudText>
+                            <MudText>Pitch: @Analysis.GetPitch()</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        }
+    }
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private DobackAnalysis _currentAnalysis;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _loading = true;
+            // Implementar lógica de carga
+            await LoadDobackDataAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    
+    private async Task LoadDobackDataAsync()
+    {
+        // Implementar lógica de carga de datos
+    }
+} 

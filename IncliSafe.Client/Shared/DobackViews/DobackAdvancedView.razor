@@ -1,0 +1,36 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+@using MudBlazor
+@using MudBlazor.Dialog
+@using IncliSafe.Shared.Models
+@using System.Text.Json
+@using System.Collections.Generic
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudText>Análisis Avanzado</MudText>
+    </MudItem>
+
+    @if (Analysis != null)
+    {
+        <MudItem xs="6">
+            <MudCard>
+                <MudCardContent>
+                    <MudText>Estabilidad: @Analysis.GetStabilityIndex()</MudText>
+                    <MudText>Velocidad: @Analysis.GetSpeed()</MudText>
+                    <MudText>Roll: @Analysis.GetRoll()</MudText>
+                    <MudText>Pitch: @Analysis.GetPitch()</MudText>
+                    <MudText>Yaw: @Analysis.GetYaw()</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter] public DobackAnalysis? Analysis { get; set; }
+} 

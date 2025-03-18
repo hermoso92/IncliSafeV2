@@ -1,0 +1,67 @@
+{
+    "backup": {
+        "compress": true,
+        "maxBackups": 10,
+        "excludePatterns": [
+            "bin",
+            "obj",
+            "node_modules",
+            ".vs",
+            "*.user",
+            "*.suo"
+        ]
+    },
+    "security": {
+        "sensitivePatterns": [
+            "password\\s*=\\s*[\"'][^\"']*[\"']",
+            "apikey\\s*=\\s*[\"'][^\"']*[\"']",
+            "secret\\s*=\\s*[\"'][^\"']*[\"']",
+            "connectionstring\\s*=\\s*[\"'][^\"']*[\"']",
+            "jwt\\s*=\\s*[\"'][^\"']*[\"']"
+        ],
+        "excludeFiles": [
+            "appsettings.Development.json",
+            "appsettings.Local.json",
+            "*.user",
+            "*.config"
+        ]
+    },
+    "analysis": {
+        "maxMethodLines": 30,
+        "maxFileLines": 1000,
+        "maxComplexity": 10,
+        "excludeFromAnalysis": [
+            "*.Designer.cs",
+            "*.generated.cs",
+            "*.g.cs"
+        ],
+        "todoPatterns": [
+            "TODO:",
+            "HACK:",
+            "FIXME:",
+            "NOTE:",
+            "PENDING:"
+        ]
+    },
+    "documentation": {
+        "includeMetrics": true,
+        "generateGraphs": false,
+        "metricsToTrack": [
+            "LinesOfCode",
+            "CyclomaticComplexity",
+            "MaintenanceIndex",
+            "ClassCoupling"
+        ]
+    },
+    "build": {
+        "configuration": "Debug",
+        "platform": "Any CPU",
+        "verbosity": "normal",
+        "treatWarningsAsErrors": false
+    },
+    "paths": {
+        "backupDir": "Backups",
+        "logsDir": "logs",
+        "docsDir": "docs"
+    }
+} 

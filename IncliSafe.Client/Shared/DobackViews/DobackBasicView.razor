@@ -1,0 +1,105 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IDobackAnalysisService DobackService
+@inject IJSRuntime JS
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
+
+<MudGrid>
+    <!-- Gráficas de Aceleración -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Aceleraciones</MudText>
+            <div id="accelerationChart" style="height: 300px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráficas de Orientación -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Orientación</MudText>
+            <div id="orientationChart" style="height: 300px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráfica de Estabilidad -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Índice de Estabilidad</MudText>
+            <div id="stabilityChart" style="height: 400px;"></div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@if (Analysis?.Data != null)
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Aceleración</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText>X: @Analysis.GetValue("AccelerationX")</MudText>
+                    <MudText>Y: @Analysis.GetValue("AccelerationY")</MudText>
+                    <MudText>Z: @Analysis.GetValue("AccelerationZ")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public DobackAnalysis? Analysis { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InitializeCharts();
+        }
+        else if (Analysis != null)
+        {
+            await UpdateCharts();
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        await JS.InvokeVoidAsync("initDobackCharts");
+    }
+
+    private async Task UpdateCharts()
+    {
+        if (Analysis?.Data == null) return;
+
+        var accelerationData = new
+        {
+            x = Analysis.Data.Select(d => d.AccelerationX).ToList(),
+            y = Analysis.Data.Select(d => d.AccelerationY).ToList(),
+            z = Analysis.Data.Select(d => d.AccelerationZ).ToList(),
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        var orientationData = new
+        {
+            roll = Analysis.Data.Select(d => d.Roll).ToList(),
+            pitch = Analysis.Data.Select(d => d.Pitch).ToList(),
+            yaw = Analysis.Data.Select(d => d.Yaw).ToList(),
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        var stabilityData = new
+        {
+            index = Analysis.Data.Select(d => d.StabilityIndex).ToList(),
+            speed = Analysis.Data.Select(d => d.Speed).ToList(),
+            time = Analysis.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+        };
+
+        await JS.InvokeVoidAsync("updateDobackCharts", accelerationData, orientationData, stabilityData);
+    }
+} 

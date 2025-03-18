@@ -1,0 +1,24 @@
+@using MudBlazor
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudSelect T="string" Label="Formato de exportación" @bind-Value="format">
+            <MudSelectItem Value="@("csv")">CSV</MudSelectItem>
+            <MudSelectItem Value="@("xlsx")">Excel</MudSelectItem>
+            <MudSelectItem Value="@("json")">JSON</MudSelectItem>
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Exportar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    private string format = "csv";
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(format));
+    private void Cancel() => MudDialog.Cancel();
+} 

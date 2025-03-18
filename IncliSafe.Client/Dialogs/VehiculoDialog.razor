@@ -1,0 +1,83 @@
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(Vehiculo.Id == 0 ? "Nuevo Vehículo" : $"Editar Vehículo - {Vehiculo.Placa}")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="form" Model="@Vehiculo">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Vehiculo.Placa" 
+                                Label="Placa" 
+                                Required="true"
+                                id="placa"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Vehiculo.Marca" 
+                                Label="Marca" 
+                                Required="true"
+                                id="marca"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Vehiculo.Modelo" 
+                                Label="Modelo" 
+                                Required="true"
+                                id="modelo"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="Vehiculo.Año" 
+                                   Label="Año" 
+                                   Required="true"
+                                   id="anio"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Vehiculo.Color" 
+                                Label="Color" 
+                                Required="true"
+                                id="color"/>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Vehiculo Vehiculo { get; set; } = new();
+    private MudForm? form;
+
+    protected override void OnInitialized()
+    {
+        if (Vehiculo.Id == 0)
+        {
+            // Valores por defecto para nuevo vehículo
+            Vehiculo.Año = DateTime.Now.Year;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        if (form is not null)
+        {
+            await form.Validate();
+            if (form.IsValid)
+            {
+                MudDialog.Close(DialogResult.Ok(Vehiculo));
+            }
+        }
+    }
+}

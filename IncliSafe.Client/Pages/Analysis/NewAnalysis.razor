@@ -1,0 +1,95 @@
+@page "/analysis/new"
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Core
+@using IncliSafe.Client.Services.Interfaces
+@inject IDobackService DobackService
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Nuevo Análisis</MudText>
+
+        <EditForm Model="@_analysisModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_analysisModel.Name"
+                                Label="Nombre del Análisis"
+                                Required="true"
+                                For="@(() => _analysisModel.Name)" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_analysisModel.Description"
+                                Label="Descripción"
+                                Lines="3"
+                                Required="true"
+                                For="@(() => _analysisModel.Description)" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSelect T="string" Label="Tipo de Análisis" 
+                              @bind-Value="_analysisModel.AnalysisType"
+                              Required="true"
+                              For="@(() => _analysisModel.AnalysisType)">
+                        <MudSelectItem Value="@("Stability")">Estabilidad</MudSelectItem>
+                        <MudSelectItem Value="@("Safety")">Seguridad</MudSelectItem>
+                        <MudSelectItem Value="@("Maintenance")">Mantenimiento</MudSelectItem>
+                        <MudSelectItem Value="@("Complete")">Completo</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                    <MudButton OnClick="@(() => NavigationManager.NavigateTo("/analysis/history"))"
+                              Variant="Variant.Text">
+                        Cancelar
+                    </MudButton>
+                    <MudButton ButtonType="ButtonType.Submit"
+                              Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              Disabled="@_processing">
+                        @if (_processing)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Procesando</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Iniciar Análisis</MudText>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _processing;
+    private readonly AnalysisResult _analysisModel = new()
+    {
+        Name = string.Empty,
+        Description = string.Empty,
+        AnalysisType = string.Empty
+    };
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            _processing = true;
+            await DobackService.CreateAnalysisAsync(1, _analysisModel); // TODO: Obtener el ID del vehículo seleccionado
+            NavigationManager.NavigateTo("/analysis/history");
+        }
+        catch (Exception ex)
+        {
+            // TODO: Manejar el error
+            Console.Error.WriteLine($"Error al crear el análisis: {ex.Message}");
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+} 

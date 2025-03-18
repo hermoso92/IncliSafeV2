@@ -1,0 +1,164 @@
+@page "/vehiculos"
+@attribute [Authorize]
+@using IncliSafe.Shared.Models
+@inject VehiculoService VehiculoService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageHeader Title="Vehículos"
+           ShowAddButton="true"
+           AddButtonText="Nuevo Vehículo"
+           OnAddClick="@(() => OpenDialog(new Vehiculo()))" />
+
+<LoadingComponent IsLoading="@_loading" Message="Cargando vehículos..." />
+
+@if (!_loading)
+{
+    @if (_error)
+    {
+        <ErrorComponent Message="@_errorMessage" 
+                       ShowRetry="true" 
+                       OnRetryClick="LoadVehiculos" />
+    }
+    else
+    {
+        <MudTable Items="@vehiculos" 
+                  Dense="true" 
+                  Hover="true" 
+                  Striped="true"
+                  Loading="@_loading">
+            <HeaderContent>
+                <MudTh>Placa</MudTh>
+                <MudTh>Marca</MudTh>
+                <MudTh>Modelo</MudTh>
+                <MudTh>Año</MudTh>
+                <MudTh>Color</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Placa">@context.Placa</MudTd>
+                <MudTd DataLabel="Marca">@context.Marca</MudTd>
+                <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+                <MudTd DataLabel="Año">@context.Año</MudTd>
+                <MudTd DataLabel="Color">@context.Color</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                 Color="Color.Primary"
+                                 Size="Size.Small"
+                                 OnClick="@(() => OpenDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                 Color="Color.Error"
+                                 Size="Size.Small"
+                                 OnClick="@(() => DeleteVehiculo(context))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No hay vehículos registrados.</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    }
+}
+
+@code {
+    private List<Vehiculo> vehiculos = new();
+    private bool _loading = true;
+    private bool _error;
+    private string _errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVehiculos();
+    }
+
+    private async Task LoadVehiculos()
+    {
+        try
+        {
+            _loading = true;
+            _error = false;
+            vehiculos = await VehiculoService.GetVehiculos();
+        }
+        catch (Exception ex)
+        {
+            _error = true;
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenDialog(Vehiculo vehiculo)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Vehiculo"] = new Vehiculo 
+            { 
+                Id = vehiculo.Id,
+                Placa = vehiculo.Placa,
+                Marca = vehiculo.Marca,
+                Modelo = vehiculo.Modelo,
+                Año = vehiculo.Año,
+                Color = vehiculo.Color,
+                UserId = vehiculo.UserId
+            }
+        };
+
+        var dialog = await DialogService.ShowAsync<VehiculoDialog>(
+            vehiculo.Id == 0 ? "Nuevo Vehículo" : "Editar Vehículo", 
+            parameters);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            var editedVehiculo = (Vehiculo)result.Data;
+            try
+            {
+                if (editedVehiculo.Id == 0)
+                {
+                    await VehiculoService.CreateVehiculo(editedVehiculo);
+                }
+                else
+                {
+                    await VehiculoService.UpdateVehiculo(editedVehiculo);
+                }
+                await LoadVehiculos();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteVehiculo(Vehiculo vehiculo)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Title"] = "Eliminar Vehículo",
+            ["Message"] = $"¿Está seguro de eliminar el vehículo {vehiculo.Placa}?",
+            ["Color"] = Color.Error,
+            ["ConfirmText"] = "Eliminar"
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                await VehiculoService.DeleteVehiculo(vehiculo.Id);
+                await LoadVehiculos();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

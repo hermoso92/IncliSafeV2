@@ -1,0 +1,219 @@
+/* Variables de tema */
+:root {
+    --primary-color: #1890ff;
+    --success-color: #52c41a;
+    --warning-color: #faad14;
+    --error-color: #f5222d;
+    --text-color: #262626;
+    --text-secondary: #8c8c8c;
+    --border-color: #f0f0f0;
+    --background-light: #fafafa;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos generales */
+.page-container {
+    padding: 24px;
+    background-color: var(--background-light);
+    min-height: calc(100vh - 64px);
+}
+
+/* Tarjetas y paneles */
+.dashboard-card {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.metric-card {
+    text-align: center;
+    padding: 24px;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 16px 0;
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Gráficas */
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin: 16px 0;
+}
+
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: var(--text-color);
+}
+
+/* Tablas */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background-color: var(--background-light);
+    padding: 12px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table tr:hover {
+    background-color: var(--background-light);
+}
+
+/* Indicadores y badges */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+}
+
+.status-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status-indicator.success {
+    background-color: rgba(82, 196, 26, 0.1);
+    color: var(--success-color);
+}
+
+.status-indicator.success::before {
+    background-color: var(--success-color);
+}
+
+.status-indicator.warning {
+    background-color: rgba(250, 173, 20, 0.1);
+    color: var(--warning-color);
+}
+
+.status-indicator.warning::before {
+    background-color: var(--warning-color);
+}
+
+.status-indicator.error {
+    background-color: rgba(245, 34, 45, 0.1);
+    color: var(--error-color);
+}
+
+.status-indicator.error::before {
+    background-color: var(--error-color);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-container {
+        padding: 16px;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px;
+    }
+}
+
+/* Temas oscuro/claro */
+[data-theme="dark"] {
+    --text-color: #ffffff;
+    --text-secondary: #a8a8a8;
+    --background-light: #141414;
+    --border-color: #303030;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Utilidades */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gap-2 {
+    gap: 8px;
+}
+
+.gap-4 {
+    gap: 16px;
+}
+
+/* Tooltips personalizados */
+.custom-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    z-index: 1000;
+} 

@@ -1,0 +1,114 @@
+@page "/base-conocimiento"
+@attribute [Authorize(Roles = "Administrador")]
+@inject IKnowledgeBaseService KnowledgeService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using IncliSafe.Shared.Models.Patterns
+@using CorePatternType = IncliSafe.Shared.Models.Analysis.Core.PatternType
+
+<PageHeader Title="Base de Conocimiento"
+           ShowAddButton="true"
+           AddButtonText="Nuevo Patrón"
+           OnAddClick="@(() => OpenPatternDialog(null))" />
+
+<MudContainer>
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText Typo="Typo.h5">Base de Conocimiento</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardContent>
+                    @if (_patternDistributions != null)
+                    {
+                        <MudChart ChartType="ChartType.Pie"
+                                 InputData="@_patternDistributions.Select(p => Convert.ToDouble(p.ConfidenceScore)).ToArray()"
+                                 InputLabels="@_patternDistributions.Select(p => p.PatternName).ToArray()" />
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private List<KnowledgePattern> _patterns = new();
+    private KnowledgeStats _stats = new();
+    private Dictionary<string, double> _patternDistribution = new();
+    private List<PatternDistribution>? _patternDistributions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        await LoadPatternDistributions();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loading = true;
+            _patterns = await KnowledgeService.GetPatterns();
+            _stats = await KnowledgeService.GetStats();
+            _patternDistribution = await KnowledgeService.GetPatternDistribution();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadPatternDistributions()
+    {
+        _patternDistributions = await KnowledgeService.GetPatternDistribution();
+        _patternDistribution = _patternDistributions
+            .ToDictionary(
+                p => p.PatternName,
+                p => Convert.ToDouble(p.ConfidenceScore)
+            );
+    }
+
+    private Color GetPatternColor(string patternType) => patternType switch
+    {
+        "Stability" => Color.Primary,
+        "Maintenance" => Color.Warning,
+        "Performance" => Color.Info,
+        "Safety" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task OpenPatternDialog(KnowledgePattern? pattern)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Pattern"] = pattern ?? new KnowledgePattern(),
+            ["IsNew"] = pattern == null
+        };
+
+        var dialog = await DialogService.ShowAsync<PatternDialog>(
+            pattern == null ? "Nuevo Patrón" : "Editar Patrón",
+            parameters);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task ShowPatternDetails(KnowledgePattern pattern)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Pattern"] = pattern
+        };
+
+        await DialogService.ShowAsync<PatternDetailsDialog>("Detalles del Patrón", parameters);
+    }
+} 

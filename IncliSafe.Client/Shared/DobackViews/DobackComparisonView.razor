@@ -1,0 +1,259 @@
+@namespace IncliSafe.Client.Shared.DobackViews
+@inject IJSRuntime JS
+@using MudBlazor
+@using MudBlazor.Dialog
+@using IncliSafe.Shared.Models
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@inject IDobackAnalysisService DobackService;
+@using IncliSafe.Shared.Models.Analysis.Core;
+
+<MudGrid>
+    <!-- Controles de Comparación -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudDateRangePicker @bind-DateRange="_dateRange" 
+                                      Label="Rango de Fechas"
+                                      AutoClose="true"/>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Métrica Principal" 
+                             @bind-Value="_selectedMetric">
+                        <MudSelectItem Value="@("stability")">Estabilidad</MudSelectItem>
+                        <MudSelectItem Value="@("acceleration")">Aceleración</MudSelectItem>
+                        <MudSelectItem Value="@("orientation")">Orientación</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                             OnClick="UpdateComparison">
+                        Actualizar Comparación
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Gráficas de Comparación -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Comparación de Datos</MudText>
+            <div id="comparisonChart" style="height: 400px;"></div>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Análisis de Diferencias -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Análisis de Diferencias</MudText>
+            <MudTable Items="@_differences" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Métrica</MudTh>
+                    <MudTh>Base</MudTh>
+                    <MudTh>Comparación</MudTh>
+                    <MudTh>Diferencia</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Metric</MudTd>
+                    <MudTd>@context.BaseValue.ToString("N2")</MudTd>
+                    <MudTd>@context.ComparisonValue.ToString("N2")</MudTd>
+                    <MudTd>
+                        <MudChip Color="@GetDifferenceColor(context.Difference)"
+                                Size="Size.Small">
+                            @(context.Difference > 0 ? "+" : "")@context.Difference.ToString("P1")
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Conclusiones -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Conclusiones</MudText>
+            @foreach (var conclusion in _conclusions)
+            {
+                <MudAlert Severity="@conclusion.Severity" Class="mb-2">
+                    <MudText>@conclusion.Message</MudText>
+                </MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Comparación</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (BaseAnalysis != null && ComparisonAnalysis != null)
+                {
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText>Estabilidad Base: @BaseAnalysis.GetStabilityIndex()</MudText>
+                            <MudText>Velocidad Base: @BaseAnalysis.GetSpeed()</MudText>
+                            <MudText>Roll Base: @BaseAnalysis.GetRoll()</MudText>
+                            <MudText>Pitch Base: @BaseAnalysis.GetPitch()</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText>Estabilidad Comparación: @ComparisonAnalysis.GetStabilityIndex()</MudText>
+                            <MudText>Velocidad Comparación: @ComparisonAnalysis.GetSpeed()</MudText>
+                            <MudText>Roll Comparación: @ComparisonAnalysis.GetRoll()</MudText>
+                            <MudText>Pitch Comparación: @ComparisonAnalysis.GetPitch()</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+    [Parameter] public DobackAnalysis? BaseAnalysis { get; set; }
+    [Parameter] public DobackAnalysis? ComparisonAnalysis { get; set; }
+
+    private DateRange _dateRange = new(DateTime.Now.AddDays(-7), DateTime.Now);
+    private string _selectedMetric = "stability";
+    private List<DifferenceMetric> _differences = new();
+    private List<Conclusion> _conclusions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (BaseAnalysis != null && ComparisonAnalysis != null)
+        {
+            await CompareAnalyses();
+        }
+    }
+
+    private async Task CompareAnalyses()
+    {
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return;
+
+        _differences = CalculateDifferences();
+        _conclusions = GenerateConclusions();
+        await UpdateComparisonChart();
+    }
+
+    private async Task UpdateComparisonChart()
+    {
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return;
+
+        var baseData = BaseAnalysis.GetData().Select(d => new
+        {
+            Timestamp = d.Timestamp,
+            Value = _selectedMetric switch
+            {
+                "stability" => d.StabilityIndex,
+                "speed" => d.Speed,
+                "roll" => d.Roll,
+                "pitch" => d.Pitch,
+                _ => 0M
+            }
+        }).ToList();
+
+        var compData = ComparisonAnalysis.GetData().Select(d => new
+        {
+            Timestamp = d.Timestamp,
+            Value = _selectedMetric switch
+            {
+                "stability" => d.StabilityIndex,
+                "speed" => d.Speed,
+                "roll" => d.Roll,
+                "pitch" => d.Pitch,
+                _ => 0M
+            }
+        }).ToList();
+
+        await JS.InvokeVoidAsync("updateComparisonChart", "comparisonChart", new
+        {
+            BaseData = baseData,
+            ComparisonData = compData,
+            Metric = _selectedMetric
+        });
+    }
+
+    private List<DifferenceMetric> CalculateDifferences()
+    {
+        var metrics = new List<DifferenceMetric>();
+        if (BaseAnalysis == null || ComparisonAnalysis == null) return metrics;
+
+        metrics.Add(new DifferenceMetric(
+            "Estabilidad",
+            BaseAnalysis.GetStabilityIndex(),
+            ComparisonAnalysis.GetStabilityIndex()
+        ));
+
+        metrics.Add(new DifferenceMetric(
+            "Velocidad",
+            BaseAnalysis.GetSpeed(),
+            ComparisonAnalysis.GetSpeed()
+        ));
+
+        return metrics;
+    }
+
+    private List<Conclusion> GenerateConclusions()
+    {
+        var conclusions = new List<Conclusion>();
+        
+        foreach (var diff in _differences)
+        {
+            if (Math.Abs(diff.Difference) > 0.2M)
+            {
+                conclusions.Add(new Conclusion(
+                    $"Diferencia significativa en {diff.Metric}: {diff.Difference:P1}",
+                    diff.Difference > 0 ? Severity.Success : Severity.Warning
+                ));
+            }
+        }
+
+        return conclusions;
+    }
+
+    private Color GetDifferenceColor(decimal difference) => difference switch
+    {
+        > 0.1M => Color.Success,
+        < -0.1M => Color.Error,
+        _ => Color.Default
+    };
+
+    private record DifferenceMetric(string Metric, decimal BaseValue, decimal ComparisonValue)
+    {
+        public decimal Difference => (ComparisonValue - BaseValue) / BaseValue;
+    }
+
+    private record Conclusion(string Message, Severity Severity);
+
+    private async Task UpdateComparison()
+    {
+        await CompareAnalyses();
+    }
+
+    private List<ChartSeries> GetChartData()
+    {
+        if (BaseAnalysis?.Data == null) return new();
+
+        return new List<ChartSeries>
+        {
+            new ChartSeries 
+            { 
+                Name = "Estabilidad",
+                Data = BaseAnalysis.Data.Select(d => Convert.ToDouble(d.StabilityIndex)).ToArray()
+            }
+        };
+    }
+
+    private string[] GetTimeLabels() => 
+        BaseAnalysis?.Data
+            .Select(d => d.Timestamp.ToString("HH:mm:ss"))
+            .ToArray() 
+        ?? Array.Empty<string>();
+} 

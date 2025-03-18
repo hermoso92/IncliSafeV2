@@ -1,0 +1,249 @@
+@page "/doback/analytics/{VehicleId:int}"
+@inject IDobackAnalysisService DobackService
+@inject IVehicleService VehicleService
+@inject IDialogService DialogService
+@attribute [Authorize]
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Analysis.Core
+@using SharedDialogs = IncliSafe.Client.Shared.Dialogs
+@using CorePredictionType = IncliSafe.Shared.Models.Analysis.Core.PredictionType
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Selector de Archivos y Controles -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudSelect T="int" Label="Archivo Doback" 
+                                 @bind-Value="_selectedFileId"
+                                 OnSelectedValuesChange="@LoadSelectedFile">
+                            @foreach (var file in _availableFiles)
+                            {
+                                <MudSelectItem Value="@file.Id">
+                                    @file.FileName - @file.Timestamp.ToLocalTime().ToString("g")
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudSelect T="string" Label="Modo de Visualización"
+                                 @bind-Value="_selectedView">
+                            <MudSelectItem Value="@("basic")">Vista Básica</MudSelectItem>
+                            <MudSelectItem Value="@("advanced")">Vista Avanzada</MudSelectItem>
+                            <MudSelectItem Value="@("comparison")">Comparación</MudSelectItem>
+                            <MudSelectItem Value="@("trends")">Tendencias</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4" Class="d-flex align-center">
+                        <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                            <MudButton OnClick="ExportData">
+                                <MudIcon Icon="@Icons.Material.Filled.Download" Class="mr-2"/>
+                                Exportar
+                            </MudButton>
+                            <MudButton OnClick="ShowAnalysisDetails">
+                                <MudIcon Icon="@Icons.Material.Filled.Analytics" Class="mr-2"/>
+                                Detalles
+                            </MudButton>
+                            <MudButton OnClick="CompareFiles">
+                                <MudIcon Icon="@Icons.Material.Filled.Compare" Class="mr-2"/>
+                                Comparar
+                            </MudButton>
+                        </MudButtonGroup>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        @if (_selectedView == "basic")
+        {
+            <DobackBasicView Analysis="@_currentAnalysis" />
+        }
+        else if (_selectedView == "advanced")
+        {
+            <DobackAdvancedView Analysis="@_currentAnalysis" />
+        }
+        else if (_selectedView == "comparison")
+        {
+            <DobackComparisonView VehicleId="@VehicleId" 
+                                 BaseAnalysis="@_currentAnalysis"
+                                 ComparisonAnalysis="@_comparisonAnalysis" />
+        }
+        else if (_selectedView == "trends")
+        {
+            <DobackTrendsView VehicleId="@VehicleId" />
+        }
+
+        <!-- Panel de Métricas -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="3">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">Índice de Estabilidad</MudText>
+                                @GetStabilityProgress()
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" md="3">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">Índice de Seguridad</MudText>
+                                <MudProgressCircular Value="@((double)(_currentAnalysis?.Result?.GetSafetyScore() ?? 0) * 100)"
+                                                   Color="Color.Success"
+                                                   Size="Size.Large">
+                                    @((_currentAnalysis?.Result?.GetSafetyScore() ?? 0).ToString("P0"))
+                                </MudProgressCircular>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" md="3">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">Patrones Detectados</MudText>
+                                <MudText Typo="Typo.h3" Color="Color.Primary">
+                                    @(_currentAnalysis?.DetectedPatterns.Count ?? 0)
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" md="3">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">Estado General</MudText>
+                                <MudChip Color="@GetOverallStatusColor()" Size="Size.Large">
+                                    @GetOverallStatus()
+                                </MudChip>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter] public int VehicleId { get; set; }
+
+    private List<DobackFileInfo> _availableFiles = new();
+    private int _selectedFileId;
+    private string _selectedView = "basic";
+    private DobackAnalysis? _currentAnalysis;
+    private DobackAnalysis? _comparisonAnalysis;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAvailableFiles();
+        if (_availableFiles.Any())
+        {
+            _selectedFileId = _availableFiles[0].Id;
+            await LoadSelectedFile();
+        }
+    }
+
+    private async Task LoadAvailableFiles()
+    {
+        _availableFiles = await DobackService.GetVehicleFiles(VehicleId);
+    }
+
+    private async Task LoadSelectedFile()
+    {
+        if (_selectedFileId > 0)
+        {
+            _currentAnalysis = await DobackService.GetAnalysisAsync(_selectedFileId);
+        }
+    }
+
+    private async Task ExportData()
+    {
+        if (_currentAnalysis == null) return;
+
+        var parameters = new DialogParameters
+        {
+            ["Analysis"] = _currentAnalysis,
+            ["ExportTypes"] = new[] { "CSV", "PDF", "Excel" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ExportDialog>("Exportar Datos", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var exportType = result.Data.ToString();
+            await DobackService.ExportAnalysis(_currentAnalysis.Id, exportType);
+        }
+    }
+
+    private async Task ShowAnalysisDetails()
+    {
+        if (_currentAnalysis == null) return;
+
+        var parameters = new DialogParameters
+        {
+            ["Analysis"] = _currentAnalysis
+        };
+
+        await DialogService.ShowAsync<SharedDialogs.AnalysisDetailsDialog>("Detalles del Análisis", parameters);
+    }
+
+    private async Task CompareFiles()
+    {
+        var parameters = new DialogParameters
+        {
+            ["AvailableFiles"] = _availableFiles.Where(f => f.Id != _selectedFileId),
+            ["CurrentFileId"] = _selectedFileId
+        };
+
+        var dialog = await DialogService.ShowAsync<SharedDialogs.CompareFilesDialog>("Comparar Archivos", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is int comparisonFileId)
+        {
+            _comparisonAnalysis = await DobackService.GetAnalysisAsync(comparisonFileId);
+            _selectedView = "comparison";
+        }
+    }
+
+    private Color GetStabilityColor(decimal score) => score switch
+    {
+        >= 0.8M => Color.Success,
+        >= 0.6M => Color.Warning,
+        _ => Color.Error
+    };
+
+    private string GetOverallStatus()
+    {
+        if (_currentAnalysis?.Result == null) return "Sin datos";
+        
+        return (_currentAnalysis.Result.StabilityScore, _currentAnalysis.Result.SafetyScore) switch
+        {
+            ( >= 0.8M, >= 0.8M) => "Excelente",
+            ( >= 0.6M, >= 0.6M) => "Bueno",
+            ( >= 0.4M, >= 0.4M) => "Regular",
+            _ => "Atención Requerida"
+        };
+    }
+
+    private Color GetOverallStatusColor() => GetOverallStatus() switch
+    {
+        "Excelente" => Color.Success,
+        "Bueno" => Color.Info,
+        "Regular" => Color.Warning,
+        _ => Color.Error
+    };
+
+    private RenderFragment GetStabilityProgress()
+    {
+        var value = _currentAnalysis?.Result?.StabilityScore ?? 0;
+        return @<MudProgressCircular Value="@(Convert.ToDouble(value * 100))"
+                                   Color="@GetStabilityColor(value)"
+                                   Size="Size.Large">
+                    @value.ToString("P0")
+                </MudProgressCircular>;
+    }
+} 

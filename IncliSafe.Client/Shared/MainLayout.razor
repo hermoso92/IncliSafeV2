@@ -1,0 +1,100 @@
+@using IncliSafe.Shared.Models.Entities
+@using IncliSafe.Shared.Models.Auth
+@inherits LayoutComponentBase
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+@inject ILocalStorageService localStorage
+@using Microsoft.AspNetCore.Components.Web
+@using Blazored.LocalStorage
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
+                       Color="Color.Inherit" 
+                       Edge="Edge.Start" 
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+        <MudSpacer />
+        <NotificationCenter />
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" 
+                       Color="Color.Inherit" 
+                       OnClick="@LogoutAsync" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+            <Microsoft.AspNetCore.Components.Web.ErrorBoundary>
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                        Ha ocurrido un error. Por favor, inténtelo de nuevo.
+                    </MudAlert>
+                </ErrorContent>
+            </Microsoft.AspNetCore.Components.Web.ErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen;
+    private bool _darkMode;
+    private UserSession? _currentUser;
+    private List<Notification> _notifications = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUser = await AuthService.GetCurrentUser();
+        await LoadNotifications();
+        _darkMode = await LoadThemePreference();
+    }
+
+    private async Task LoadNotifications()
+    {
+        // Cargar notificaciones del usuario
+    }
+
+    private async Task NavigateToProfile()
+    {
+        NavigationManager.NavigateTo("/profile");
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        _darkMode = !_darkMode;
+        await JS.InvokeVoidAsync("setDarkMode", _darkMode);
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthService.Logout();
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private async Task<bool> LoadThemePreference()
+    {
+        var theme = await localStorage.GetItemAsync<string>("theme");
+        _darkMode = theme == "dark";
+        return _darkMode;
+    }
+
+    private async Task SaveThemePreference()
+    {
+        await localStorage.SetItemAsync("theme", _darkMode ? "dark" : "light");
+    }
+}

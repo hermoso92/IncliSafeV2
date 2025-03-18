@@ -1,0 +1,122 @@
+@page "/dashboard"
+@inject IDobackService DobackService
+@inject IVehicleService VehicleService
+@inject IPredictiveAnalysisService PredictiveService
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+@inject IDobackAnalysisService DobackAnalysisService
+@inject IAlertService AlertService
+@attribute [Authorize]
+@using IncliSafe.Client.Services.Extensions
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Notifications
+@using IncliSafe.Client.Services.Interfaces
+@using MudBlazor
+@using IncliSafe.Shared.Models
+@using IncliSafe.Shared.Models.DTOs
+@using IncliSafe.Shared.Models.Analysis.Core
+@using IncliSafe.Shared.Models.Core
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h4">Dashboard de Análisis</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Índice de Estabilidad</MudText>
+                <MudText Typo="Typo.h4">@(_metrics?.StabilityScore.ToString("P2") ?? "N/A")</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Índice de Seguridad</MudText>
+                <MudText Typo="Typo.h4">@(_metrics?.SafetyScore.ToString("P2") ?? "N/A")</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Índice de Mantenimiento</MudText>
+                <MudText Typo="Typo.h4">@(_metrics?.MaintenanceScore.ToString("P2") ?? "N/A")</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Total de Análisis</MudText>
+                <MudText Typo="Typo.h4">@(_metrics?.TotalAnalyses ?? 0)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Alertas Recientes</MudText>
+                @if (_metrics?.RecentAlerts != null && _metrics.RecentAlerts.Any())
+                {
+                    <MudList>
+                        @foreach (var alert in _metrics.RecentAlerts)
+                        {
+                            <MudListItem>
+                                <MudText>@alert.Title</MudText>
+                                <MudText Typo="Typo.caption">@alert.Message</MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+                else
+                {
+                    <MudText>No hay alertas recientes</MudText>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Anomalías Recientes</MudText>
+                @if (_metrics?.RecentAnomalies != null && _metrics.RecentAnomalies.Any())
+                {
+                    <MudList>
+                        @foreach (var anomaly in _metrics.RecentAnomalies)
+                        {
+                            <MudListItem>
+                                <MudText>@anomaly.Description</MudText>
+                                <MudText Typo="Typo.caption">Detectada: @anomaly.DetectedAt.ToString("g")</MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+                else
+                {
+                    <MudText>No hay anomalías recientes</MudText>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private DashboardMetrics? _metrics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            _metrics = await DobackService.GetDashboardMetricsAsync(1); // TODO: Obtener el ID del vehículo seleccionado
+        }
+        catch (Exception ex)
+        {
+            // TODO: Manejar el error
+            Console.Error.WriteLine($"Error al cargar los datos del dashboard: {ex.Message}");
+        }
+    }
+}

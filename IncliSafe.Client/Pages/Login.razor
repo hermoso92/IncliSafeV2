@@ -1,0 +1,43 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard>
+            <MudCardContent>
+                <MudTextField @bind-Value="username" Label="Usuario" />
+                <MudTextField @bind-Value="password" Label="Contraseña" InputType="InputType.Password" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Color="Color.Primary" OnClick="HandleLogin">Iniciar Sesión</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var result = await AuthService.Login(username, password);
+            if (result != null)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("Credenciales inválidas", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,178 @@
+@page "/analysis/{Id:int}"
+@using IncliSafe.Shared.Models.Analysis
+@using IncliSafe.Shared.Models.Core
+@using IncliSafe.Client.Services.Interfaces
+@inject IDobackService DobackService
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    @if (_loading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_analysis == null)
+    {
+        <MudAlert Severity="Severity.Error">No se encontró el análisis solicitado.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.h4">@_analysis.Name</MudText>
+                            <MudText Typo="Typo.subtitle1">@_analysis.Description</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6" Class="d-flex justify-end align-center">
+                            <MudChip Color="@GetStatusColor(_analysis.Status)" Size="Size.Large">
+                                @_analysis.Status
+                            </MudChip>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Detalles del Análisis</MudText>
+                    <MudList>
+                        <MudListItem>
+                            <MudText>Tipo: @_analysis.AnalysisType</MudText>
+                        </MudListItem>
+                        <MudListItem>
+                            <MudText>Fecha de Inicio: @_analysis.CreatedAt.ToLocalTime().ToString("g")</MudText>
+                        </MudListItem>
+                        @if (_analysis.Status == AnalysisStatus.Completed)
+                        {
+                            <MudListItem>
+                                <MudText>Fecha de Finalización: @_analysis.CompletedAt?.ToLocalTime().ToString("g")</MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Patrones Detectados</MudText>
+                    @if (_analysis.Patterns != null && _analysis.Patterns.Any())
+                    {
+                        <MudList>
+                            @foreach (var pattern in _analysis.Patterns)
+                            {
+                                <MudListItem>
+                                    <MudText>@pattern.Name</MudText>
+                                    <MudText Typo="Typo.caption">@pattern.Description</MudText>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <MudText>No se han detectado patrones.</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Alertas</MudText>
+                    @if (_analysis.Alerts != null && _analysis.Alerts.Any())
+                    {
+                        <MudTable Items="@_analysis.Alerts" Dense="true" Hover="true">
+                            <HeaderContent>
+                                <MudTh>Título</MudTh>
+                                <MudTh>Mensaje</MudTh>
+                                <MudTh>Estado</MudTh>
+                                <MudTh>Acciones</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Título">@context.Title</MudTd>
+                                <MudTd DataLabel="Mensaje">@context.Message</MudTd>
+                                <MudTd DataLabel="Estado">
+                                    <MudChip Color="@(context.IsAcknowledged ? Color.Success : Color.Warning)" Size="Size.Small">
+                                        @(context.IsAcknowledged ? "Reconocida" : "Pendiente")
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd>
+                                    @if (!context.IsAcknowledged)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                     OnClick="@(() => AcknowledgeAlert(context))"
+                                                     Size="Size.Small"
+                                                     Title="Reconocer alerta" />
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudText>No hay alertas registradas.</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton OnClick="@(() => NavigationManager.NavigateTo("/analysis/history"))"
+                          Variant="Variant.Text">
+                    Volver al Historial
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool _loading = true;
+    private AnalysisResult? _analysis;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAnalysisDetails();
+    }
+
+    private async Task LoadAnalysisDetails()
+    {
+        try
+        {
+            _loading = true;
+            _analysis = await DobackService.GetAnalysisDetailsAsync(1, Id); // TODO: Obtener el ID del vehículo seleccionado
+        }
+        catch (Exception ex)
+        {
+            // TODO: Manejar el error
+            Console.Error.WriteLine($"Error al cargar los detalles del análisis: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(AnalysisStatus status) => status switch
+    {
+        AnalysisStatus.Completed => Color.Success,
+        AnalysisStatus.InProgress => Color.Info,
+        AnalysisStatus.Failed => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task AcknowledgeAlert(AnalysisAlert alert)
+    {
+        try
+        {
+            await DobackService.AcknowledgeAlertAsync(1, Id, alert.Id); // TODO: Obtener el ID del vehículo seleccionado
+            await LoadAnalysisDetails();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Manejar el error
+            Console.Error.WriteLine($"Error al reconocer la alerta: {ex.Message}");
+        }
+    }
+} 

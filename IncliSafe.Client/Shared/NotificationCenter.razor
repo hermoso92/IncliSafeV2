@@ -1,0 +1,110 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using IncliSafe.Shared.Models.Notifications
+@inject INotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IAsyncDisposable
+
+<MudMenu AnchorOrigin="Origin.BottomRight" 
+         TransformOrigin="Origin.TopRight">
+    <ActivatorContent>
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
+                       Color="Color.Inherit" />
+    </ActivatorContent>
+    <ChildContent>
+        @if (_notifications.Any())
+        {
+            foreach (var notification in _notifications)
+            {
+                <MudMenuItem>
+                    <MudText>@notification.Message</MudText>
+                    <MudText Typo="Typo.caption">
+                        @notification.CreatedAt.ToLocalTime().ToString("g")
+                    </MudText>
+                </MudMenuItem>
+            }
+        }
+        else
+        {
+            <MudMenuItem>No hay notificaciones</MudMenuItem>
+        }
+    </ChildContent>
+</MudMenu>
+
+@code {
+    private HubConnection? _hubConnection;
+    private List<Notification> _notifications = new();
+    private int _unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+        await InitializeSignalR();
+    }
+
+    private async Task InitializeSignalR()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notificationHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<Notification>("ReceiveNotification", (notification) =>
+        {
+            _notifications.Insert(0, notification);
+            if (!notification.IsRead) _unreadCount++;
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task LoadNotifications()
+    {
+        _notifications = await NotificationService.GetNotificationsAsync();
+        _unreadCount = _notifications.Count(n => !n.IsRead);
+    }
+
+    private async Task HandleNotificationClick(Notification notification)
+    {
+        if (!notification.IsRead)
+        {
+            await NotificationService.MarkAsRead(notification.Id);
+            notification.IsRead = true;
+            _unreadCount--;
+        }
+
+        if (notification.VehicleId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/vehiculo/{notification.VehicleId}");
+        }
+    }
+
+    private string GetSeverityIcon(NotificationSeverity severity) => severity switch
+    {
+        NotificationSeverity.Critical => Icons.Material.Filled.Warning,
+        NotificationSeverity.Warning => Icons.Material.Filled.Info,
+        _ => Icons.Material.Filled.Notifications
+    };
+
+    private Color GetSeverityColor(NotificationSeverity severity) => severity switch
+    {
+        NotificationSeverity.Critical => Color.Error,
+        NotificationSeverity.Warning => Color.Warning,
+        _ => Color.Info
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}
+
+<style>
+.unread-notification {
+    background-color: var(--mud-palette-background-grey);
+}
+</style> 
