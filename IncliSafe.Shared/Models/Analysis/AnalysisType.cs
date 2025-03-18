@@ -4,6 +4,7 @@ using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Analysis
 {

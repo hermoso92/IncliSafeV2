@@ -1,17 +1,25 @@
-using IncliSafe.Shared.Models.Enums;
 using System;
+using System.Collections.Generic;
+using IncliSafe.Shared.Models.Enums;
 using IncliSafe.Shared.Models.Common;
 
 namespace IncliSafe.Shared.Models.Analysis
 {
-    public class Prediction
+    public class Prediction : BaseEntity
     {
-        public required int Id { get; set; }
-        public required int VehicleId { get; set; }
-        public required DateTime Timestamp { get; set; }
-        public required decimal PredictedValue { get; set; }
+        public override Guid Id { get; set; }
+        public required string Name { get; set; }
+        public string? Description { get; set; }
+        public required PredictionType Type { get; set; }
+        public required DateTime PredictedAt { get; set; }
         public required decimal Confidence { get; set; }
-        public required string MetricType { get; set; }
+        public required decimal Value { get; set; }
+        public string? Unit { get; set; }
+        public decimal? LowerBound { get; set; }
+        public decimal? UpperBound { get; set; }
+        public List<string> Factors { get; set; } = new();
+        public Dictionary<string, object> Parameters { get; set; } = new();
+        public override DateTime CreatedAt { get; set; }
     }
 
     public enum PredictionRisk

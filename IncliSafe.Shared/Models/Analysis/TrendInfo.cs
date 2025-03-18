@@ -1,22 +1,19 @@
 using System;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models.Common;
+using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Analysis
 {
     public class TrendInfo
     {
-        public required int Id { get; set; }
-        public required DateTime Timestamp { get; set; }
-        public required string MetricType { get; set; }
-        public required decimal Value { get; set; }
-        public required decimal PreviousValue { get; set; }
-        public required decimal Change { get; set; }
-        public required decimal ChangePercentage { get; set; }
-        public required TrendDirection Direction { get; set; }
-        public required PerformanceTrend Performance { get; set; }
-        public List<decimal> HistoricalValues { get; set; } = new();
-        public List<DateTime> HistoricalDates { get; set; } = new();
+        public required DateTime StartTime { get; set; }
+        public required DateTime EndTime { get; set; }
+        public required decimal StartValue { get; set; }
+        public required decimal EndValue { get; set; }
+        public required decimal ChangeRate { get; set; }
+        public required decimal Confidence { get; set; }
+        public required TrendType Type { get; set; }
+        public Dictionary<string, object> Metadata { get; set; } = new();
     }
 } 
 

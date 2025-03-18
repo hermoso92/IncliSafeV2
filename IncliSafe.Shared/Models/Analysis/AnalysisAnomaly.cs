@@ -4,7 +4,7 @@ using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Analysis;
 
-public class Anomaly
+public class AnalysisAnomaly
 {
     public required Guid Id { get; set; }
     public required string Name { get; set; }

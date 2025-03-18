@@ -1,24 +1,21 @@
 using System;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models.Common;
-using IncliSafe.Shared.Models.Entities;
-using IncliSafe.Shared.Models.Notifications;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Enums;
 
-namespace IncliSafe.Shared.Models.Analysis
+namespace IncliSafe.Shared.Models.Analysis;
+
+public class AnalysisPrediction
 {
-    public class AnalysisPrediction : BaseEntity
-    {
-        public new int Id { get; set; }
-        public new DateTime CreatedAt { get; set; }
-        public required int VehicleId { get; set; }
-        public required DateTime PredictedAt { get; set; }
-        public required PredictionType Type { get; set; }
-        public required decimal Probability { get; set; }
-        public required string Description { get; set; } = string.Empty;
-        public required decimal PredictedValue { get; set; }
-        public int? AnalysisId { get; set; }
-        public virtual Vehicle Vehicle { get; set; } = null!;
-        public virtual DobackAnalysis? Analysis { get; set; }
-    }
+    public required Guid Id { get; set; }
+    public required string Name { get; set; }
+    public string? Description { get; set; }
+    public required PredictionType Type { get; set; }
+    public required DateTime PredictedAt { get; set; }
+    public required decimal Confidence { get; set; }
+    public required decimal Value { get; set; }
+    public string? Unit { get; set; }
+    public decimal? LowerBound { get; set; }
+    public decimal? UpperBound { get; set; }
+    public List<string> Factors { get; set; } = new();
+    public Dictionary<string, object> Parameters { get; set; } = new();
 } 
