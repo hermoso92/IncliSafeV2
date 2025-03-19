@@ -2,54 +2,102 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
 using IncliSafe.Shared.Models.Enums;
 using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Entities;
 
 namespace IncliSafe.Shared.Models.DTOs
 {
-    public class AnalysisDTO : BaseDTO
+    public static class IdConverter
     {
-        public override Guid Id { get; set; }
-        public virtual string Name { get; set; }
-        public virtual string Description { get; set; }
-        public required Enums.AnalysisType Type { get; set; }
-        public virtual decimal StabilityScore { get; set; }
-        public virtual Guid VehicleId { get; set; }
-        public List<string> Recommendations { get; set; } = new();
-        public string? Notes { get; set; }
-        public override DateTime CreatedAt { get; set; }
-    }
-
-    public class DobackAnalysisDTO : AnalysisDTO
-    {
-        public override string Name { get; set; }
-        public override string Description { get; set; }
-        public override decimal StabilityScore { get; set; }
-        public override Guid VehicleId { get; set; }
-        public List<DobackDataPoint> DataPoints { get; set; } = new();
-        public AlertSeverity Severity { get; set; }
-
-        public static DobackAnalysisDTO FromDobackAnalysis(DobackAnalysis analysis)
+        public static int GuidToInt(Guid guid)
         {
-            return new DobackAnalysisDTO
-            {
-                Id = analysis.Id,
-                Name = analysis.Name,
-                Description = analysis.Description,
-                Type = analysis.Type,
-                StabilityScore = analysis.StabilityScore,
-                VehicleId = analysis.VehicleId,
-                DataPoints = analysis.DataPoints,
-                Recommendations = analysis.Recommendations,
-                Notes = analysis.Notes,
-                CreatedAt = analysis.CreatedAt,
-                Severity = analysis.Severity
-            };
+            return Math.Abs(guid.GetHashCode());
+        }
+
+        public static Guid IntToGuid(int id)
+        {
+            return new Guid($"{id:D32}");
         }
     }
 
-    public class DobackDataDTO
+    public class AnalysisDTO
+    {
+        public required int Id { get; set; }
+        public required string Name { get; set; }
+        public string? Description { get; set; }
+        public required IncliSafe.Shared.Models.Enums.AnalysisType Type { get; set; }
+        public required decimal Score { get; set; }
+        public required DateTime AnalyzedAt { get; set; }
+        public required Guid VehicleId { get; set; }
+        public List<AnalysisDataDTO> DataPoints { get; set; } = new();
+        public List<string> Recommendations { get; set; } = new();
+        public string? Notes { get; set; }
+        public required IncliSafe.Shared.Models.Enums.AlertSeverity Severity { get; set; }
+        public Dictionary<string, object> Parameters { get; set; } = new();
+
+        public virtual IncliSafe.Shared.Models.Analysis.Core.AnalysisResult ToEntity()
+        {
+            return new IncliSafe.Shared.Models.Analysis.Core.AnalysisResult
+            {
+                Id = Id,
+                Name = Name,
+                Description = Description,
+                Type = Type,
+                Score = Score,
+                AnalyzedAt = AnalyzedAt,
+                VehicleId = VehicleId,
+                DataPoints = DataPoints.Select(d => d.ToEntity()).ToList(),
+                Recommendations = Recommendations,
+                Notes = Notes,
+                Severity = Severity,
+                Parameters = Parameters
+            };
+        }
+
+        public virtual IncliSafe.Shared.Models.Analysis.Core.AnalysisResult FromEntity(IncliSafe.Shared.Models.Analysis.Core.AnalysisResult entity)
+        {
+            Id = entity.Id;
+            Name = entity.Name;
+            Description = entity.Description;
+            Type = entity.Type;
+            Score = entity.Score;
+            AnalyzedAt = entity.AnalyzedAt;
+            VehicleId = entity.VehicleId;
+            DataPoints = entity.DataPoints.Select(d => AnalysisDataDTO.FromEntity(d)).ToList();
+            Recommendations = entity.Recommendations;
+            Notes = entity.Notes;
+            Severity = entity.Severity;
+            Parameters = entity.Parameters;
+            return entity;
+        }
+    }
+
+    public class AnalysisResultDTO : AnalysisDTO
+    {
+        public required decimal StabilityScore { get; set; }
+        public required decimal SafetyScore { get; set; }
+        public required decimal MaintenanceScore { get; set; }
+
+        public override IncliSafe.Shared.Models.Analysis.Core.AnalysisResult ToEntity()
+        {
+            var result = base.ToEntity();
+            result.Score = StabilityScore;
+            return result;
+        }
+
+        public override IncliSafe.Shared.Models.Analysis.Core.AnalysisResult FromEntity(IncliSafe.Shared.Models.Analysis.Core.AnalysisResult entity)
+        {
+            base.FromEntity(entity);
+            StabilityScore = entity.Score;
+            SafetyScore = entity.Score;
+            MaintenanceScore = entity.Score;
+            return entity;
+        }
+    }
+
+    public class AnalysisDataDTO
     {
         public required DateTime Timestamp { get; set; }
         public required decimal Value { get; set; }
@@ -57,9 +105,9 @@ namespace IncliSafe.Shared.Models.DTOs
         public string? MetricType { get; set; }
         public Dictionary<string, decimal> AdditionalMetrics { get; set; } = new();
 
-        public static DobackDataDTO FromEntity(DobackData entity)
+        public static AnalysisDataDTO FromEntity(IncliSafe.Shared.Models.Analysis.Core.AnalysisData entity)
         {
-            return new DobackDataDTO
+            return new AnalysisDataDTO
             {
                 Timestamp = entity.Timestamp,
                 Value = entity.Value,
@@ -68,25 +116,37 @@ namespace IncliSafe.Shared.Models.DTOs
                 AdditionalMetrics = entity.AdditionalMetrics
             };
         }
+
+        public IncliSafe.Shared.Models.Analysis.Core.AnalysisData ToEntity()
+        {
+            return new IncliSafe.Shared.Models.Analysis.Core.AnalysisData
+            {
+                Timestamp = Timestamp,
+                Value = Value,
+                SensorId = SensorId,
+                MetricType = MetricType,
+                AdditionalMetrics = AdditionalMetrics
+            };
+        }
     }
 
     public class AnomalyDTO : BaseDTO
     {
-        public override Guid Id { get; set; }
+        public override int Id { get; set; }
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public required AnomalyType Type { get; set; }
+        public required IncliSafe.Shared.Models.Enums.AnomalyType Type { get; set; }
         public required decimal Score { get; set; }
         public required DateTime DetectedAt { get; set; }
-        public required AlertSeverity Severity { get; set; }
+        public required IncliSafe.Shared.Models.Enums.AlertSeverity Severity { get; set; }
         public Dictionary<string, object> Parameters { get; set; } = new();
         public override DateTime CreatedAt { get; set; }
 
-        public static AnomalyDTO FromAnomaly(Anomaly anomaly)
+        public static AnomalyDTO FromAnomaly(IncliSafe.Shared.Models.Analysis.Core.Anomaly anomaly)
         {
             return new AnomalyDTO
             {
-                Id = anomaly.Id,
+                Id = Math.Abs(anomaly.Id.GetHashCode()),
                 Name = anomaly.Name,
                 Description = anomaly.Description,
                 Type = anomaly.Type,
@@ -101,25 +161,25 @@ namespace IncliSafe.Shared.Models.DTOs
 
     public class PredictionDTO : BaseDTO
     {
-        public override Guid Id { get; set; }
+        public override int Id { get; set; }
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public required PredictionType Type { get; set; }
+        public required IncliSafe.Shared.Models.Enums.PredictionType Type { get; set; }
         public required decimal Confidence { get; set; }
         public required DateTime PredictedAt { get; set; }
         public required DateTime ValidUntil { get; set; }
         public Dictionary<string, object> Parameters { get; set; } = new();
         public override DateTime CreatedAt { get; set; }
 
-        public static PredictionDTO FromPrediction(Prediction prediction)
+        public static PredictionDTO FromPrediction(IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction prediction)
         {
             return new PredictionDTO
             {
-                Id = prediction.Id,
+                Id = Math.Abs(prediction.Id.GetHashCode()),
                 Name = prediction.Name,
                 Description = prediction.Description,
                 Type = prediction.Type,
-                Confidence = prediction.Confidence,
+                Confidence = prediction.Probability,
                 PredictedAt = prediction.PredictedAt,
                 ValidUntil = prediction.ValidUntil,
                 Parameters = prediction.Parameters,
@@ -136,18 +196,16 @@ namespace IncliSafe.Shared.Models.DTOs
         public List<PatternDataPointDTO> DataPoints { get; set; } = new();
         public Dictionary<string, string> Metadata { get; set; } = new();
 
-        public static DetectedPatternDTO FromEntity(Patterns.DetectedPattern entity)
+        public static DetectedPatternDTO FromEntity(IncliSafe.Shared.Models.Analysis.Core.DetectedPattern entity)
         {
-            var dto = new DetectedPatternDTO
+            return new DetectedPatternDTO
             {
-                Type = entity.PatternType.ToString(),
-                Description = entity.Description ?? string.Empty,
+                Type = entity.Type,
+                Description = entity.Description,
                 Confidence = entity.Confidence,
-                Metadata = entity.Metadata
+                DataPoints = entity.DataPoints.Select(d => PatternDataPointDTO.FromEntity(d)).ToList(),
+                Metadata = entity.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString() ?? "")
             };
-
-            dto.DataPoints = entity.DataPoints.Select(p => PatternDataPointDTO.FromEntity(p)).ToList();
-            return dto;
         }
     }
 
@@ -158,48 +216,80 @@ namespace IncliSafe.Shared.Models.DTOs
         public required decimal Value { get; set; }
         public Dictionary<string, decimal> Metrics { get; set; } = new();
 
-        public static PatternDataPointDTO FromEntity(Patterns.PatternDataPoint entity)
+        public static PatternDataPointDTO FromEntity(IncliSafe.Shared.Models.Analysis.Core.PatternDataPoint entity)
         {
             return new PatternDataPointDTO
             {
                 Timestamp = entity.Timestamp,
                 Label = entity.Label,
                 Value = entity.Value,
-                Metrics = entity.AdditionalMetrics ?? new Dictionary<string, decimal>()
+                Metrics = entity.Metrics
+            };
+        }
+
+        public IncliSafe.Shared.Models.Analysis.Core.PatternDataPoint ToEntity()
+        {
+            return new IncliSafe.Shared.Models.Analysis.Core.PatternDataPoint
+            {
+                Timestamp = Timestamp,
+                Label = Label,
+                Value = Value,
+                Metrics = Metrics
             };
         }
     }
 
-    public class TrendAnalysisDTO : AnalysisDTO
+    public class TrendAnalysisDTO
     {
+        public required int Id { get; set; }
+        public required int VehicleId { get; set; }
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
         public required decimal TrendValue { get; set; }
         public required decimal Seasonality { get; set; }
         public required decimal Correlation { get; set; }
+        public required IncliSafe.Shared.Models.Enums.TrendDirection Direction { get; set; }
+        public required IncliSafe.Shared.Models.Enums.PerformanceTrend Performance { get; set; }
         public List<TrendDataDTO> Data { get; set; } = new();
+        public Dictionary<string, object> Parameters { get; set; } = new();
+        public Dictionary<string, object> Metadata { get; set; } = new();
 
-        public static TrendAnalysisDTO FromEntity(TrendAnalysis entity)
+        public static TrendAnalysisDTO FromEntity(IncliSafe.Shared.Models.Analysis.TrendAnalysis entity)
         {
-            var dto = new TrendAnalysisDTO
+            return new TrendAnalysisDTO
             {
                 Id = entity.Id,
                 VehicleId = entity.VehicleId,
-                AnalysisTime = entity.AnalysisDate,
-                Type = entity.Type,
-                StabilityScore = entity.StabilityScore,
-                SafetyScore = entity.SafetyScore,
-                MaintenanceScore = entity.MaintenanceScore,
-                Notes = entity.Notes,
                 StartDate = entity.StartDate,
                 EndDate = entity.EndDate,
                 TrendValue = entity.TrendValue,
                 Seasonality = entity.Seasonality,
-                Correlation = entity.Correlation
+                Correlation = entity.Correlation,
+                Direction = entity.Direction,
+                Performance = entity.Performance,
+                Data = entity.Data.Select(d => TrendDataDTO.FromEntity(d)).ToList(),
+                Parameters = entity.Parameters,
+                Metadata = entity.Metadata
             };
+        }
 
-            dto.Data = entity.Data.Select(TrendDataDTO.FromEntity).ToList();
-            return dto;
+        public IncliSafe.Shared.Models.Analysis.TrendAnalysis ToEntity()
+        {
+            return new IncliSafe.Shared.Models.Analysis.TrendAnalysis
+            {
+                Id = Id,
+                VehicleId = VehicleId,
+                StartDate = StartDate,
+                EndDate = EndDate,
+                TrendValue = TrendValue,
+                Seasonality = Seasonality,
+                Correlation = Correlation,
+                Direction = Direction,
+                Performance = Performance,
+                Data = Data.Select(d => d.ToEntity()).ToList(),
+                Parameters = Parameters,
+                Metadata = Metadata
+            };
         }
     }
 
@@ -210,7 +300,7 @@ namespace IncliSafe.Shared.Models.DTOs
         public string? Label { get; set; }
         public Dictionary<string, decimal> Metrics { get; set; } = new();
 
-        public static TrendDataDTO FromEntity(TrendData entity)
+        public static TrendDataDTO FromEntity(IncliSafe.Shared.Models.Analysis.TrendData entity)
         {
             return new TrendDataDTO
             {
@@ -218,6 +308,17 @@ namespace IncliSafe.Shared.Models.DTOs
                 Value = entity.Value,
                 Label = entity.Label,
                 Metrics = entity.Metrics
+            };
+        }
+
+        public IncliSafe.Shared.Models.Analysis.TrendData ToEntity()
+        {
+            return new IncliSafe.Shared.Models.Analysis.TrendData
+            {
+                Timestamp = Timestamp,
+                Value = Value,
+                Label = Label,
+                Metrics = Metrics
             };
         }
     }

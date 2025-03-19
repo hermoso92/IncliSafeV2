@@ -1,13 +1,5 @@
 namespace IncliSafe.Shared.Models.Enums
 {
-    public enum AnalysisType
-    {
-        Doback,
-        Trend,
-        Pattern,
-        Anomaly
-    }
-
     public enum CycleType
     {
         Operation,
@@ -29,23 +21,9 @@ namespace IncliSafe.Shared.Models.Enums
         Anomaly,
         Trend,
         Cycle,
-        Event
-    }
-
-    public enum AlertType
-    {
-        System,
-        Performance,
-        Safety,
-        Maintenance
-    }
-
-    public enum AlertSeverity
-    {
-        Low,
-        Medium,
-        High,
-        Critical
+        Event,
+        Spike,
+        Drift
     }
 
     public enum PredictionType
@@ -54,7 +32,8 @@ namespace IncliSafe.Shared.Models.Enums
         Safety,
         Maintenance,
         Performance,
-        System
+        System,
+        Efficiency
     }
 
     public enum AnomalyType
@@ -63,7 +42,9 @@ namespace IncliSafe.Shared.Models.Enums
         Safety,
         Maintenance,
         Performance,
-        System
+        System,
+        Efficiency,
+        Acceleration
     }
 
     public enum MaintenanceType
@@ -104,14 +85,6 @@ namespace IncliSafe.Shared.Models.Enums
         Inactive,
         Suspended,
         Deleted
-    }
-
-    public enum NotificationType
-    {
-        System,
-        Alert,
-        Maintenance,
-        Analysis
     }
 
     public enum AnomalySeverity
@@ -188,5 +161,99 @@ namespace IncliSafe.Shared.Models.Enums
         Valid,
         Invalid,
         Warning
+    }
+
+    public enum AnalysisType
+    {
+        Doback,
+        Trend,
+        Pattern,
+        Prediction
+    }
+
+    public enum PatternSeverity
+    {
+        Low,
+        Medium,
+        High,
+        Critical
+    }
+
+    public enum TrendDirection
+    {
+        Up,
+        Down,
+        Stable
+    }
+
+    public enum PerformanceTrend
+    {
+        Improving,
+        Declining,
+        Stable
+    }
+
+    public enum LicenseStatus
+    {
+        Active,
+        Expired,
+        Suspended,
+        Revoked,
+        Pending
+    }
+
+    public enum VehicleStatus
+    {
+        Active,
+        Inactive,
+        Maintenance,
+        Inspection,
+        Retired
+    }
+
+    public enum NotificationType
+    {
+        System,
+        Alert,
+        Warning,
+        Info,
+        Success
+    }
+
+    public enum AlertPriority
+    {
+        Low,
+        Medium,
+        High,
+        Critical
+    }
+
+    public enum VehicleType
+    {
+        Car,
+        Truck,
+        Bus,
+        Van,
+        Other
+    }
+
+    public enum VehicleCondition
+    {
+        New,
+        Excellent,
+        Good,
+        Fair,
+        Poor,
+        Critical
+    }
+
+    public enum FuelType
+    {
+        Gasoline,
+        Diesel,
+        Electric,
+        Hybrid,
+        CNG,
+        LPG
     }
 } 

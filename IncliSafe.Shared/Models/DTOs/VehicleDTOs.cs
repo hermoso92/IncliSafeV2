@@ -8,33 +8,18 @@ using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.DTOs
 {
-    public class VehicleDTO
+    public class VehicleDTO : BaseDTO
     {
-        public required Guid Id { get; set; }
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public required VehicleType Type { get; set; }
-        public required VehicleStatus Status { get; set; }
-        public required VehicleCondition Condition { get; set; }
-        public required FuelType FuelType { get; set; }
-        public required string Model { get; set; }
-        public required string Manufacturer { get; set; }
         public required string LicensePlate { get; set; }
+        public required string Manufacturer { get; set; }
+        public required string Model { get; set; }
         public required int Year { get; set; }
-        public required decimal Mileage { get; set; }
-        public required DateTime LastMaintenanceDate { get; set; }
-        public required DateTime NextMaintenanceDate { get; set; }
-        public Dictionary<string, object> Parameters { get; set; } = new();
         public required string VIN { get; set; }
-        public required string Estado { get; set; }
-        public required int PropietarioId { get; set; }
-        public required string PropietarioNombre { get; set; }
-        public required DateTime UltimaInspeccion { get; set; }
-        public required DateTime ProximaInspeccion { get; set; }
-        public List<string> Alertas { get; set; } = new();
-        public required double Score { get; set; }
-        public required string NumeroSerie { get; set; } = string.Empty;
-        public required string NumeroMotor { get; set; } = string.Empty;
+        public required FuelType FuelType { get; set; }
+        public required VehicleCondition Condition { get; set; }
+        public required decimal Mileage { get; set; }
         public required decimal CapacidadCarga { get; set; }
         public required decimal PesoVacio { get; set; }
         public required decimal PesoTotal { get; set; }
@@ -44,8 +29,21 @@ namespace IncliSafe.Shared.Models.DTOs
         public required decimal DistanciaEjes { get; set; }
         public required decimal DistanciaEjePosterior { get; set; }
         public required decimal VelocidadMaxima { get; set; }
-        public required DateTime CreatedAt { get; set; }
+        public required DateTime LastMaintenanceDate { get; set; }
+        public required DateTime NextMaintenanceDate { get; set; }
+        public required DateTime PurchaseDate { get; set; }
+        public required int OwnerId { get; set; }
         public required bool IsActive { get; set; }
+        public required string NumeroSerie { get; set; }
+        public required string NumeroMotor { get; set; }
+        public required VehicleType Type { get; set; }
+        public required VehicleStatus Status { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public string? DeletedBy { get; set; }
 
         public static VehicleDTO FromEntity(Vehicle entity)
         {
@@ -54,21 +52,39 @@ namespace IncliSafe.Shared.Models.DTOs
                 Id = entity.Id,
                 Name = entity.Name,
                 Description = entity.Description,
-                Type = entity.Type,
-                Status = entity.Status,
-                Condition = entity.Condition,
-                FuelType = entity.FuelType,
-                Model = entity.Model,
-                Manufacturer = entity.Manufacturer,
                 LicensePlate = entity.LicensePlate,
+                Manufacturer = entity.Manufacturer,
+                Model = entity.Model,
                 Year = entity.Year,
+                VIN = entity.VIN,
+                FuelType = entity.FuelType,
+                Condition = entity.Condition,
                 Mileage = entity.Mileage,
+                CapacidadCarga = entity.CapacidadCarga,
+                PesoVacio = entity.PesoVacio,
+                PesoTotal = entity.PesoTotal,
+                LongitudTotal = entity.LongitudTotal,
+                AnchoTotal = entity.AnchoTotal,
+                AlturaTotal = entity.AlturaTotal,
+                DistanciaEjes = entity.DistanciaEjes,
+                DistanciaEjePosterior = entity.DistanciaEjePosterior,
+                VelocidadMaxima = entity.VelocidadMaxima,
                 LastMaintenanceDate = entity.LastMaintenanceDate,
                 NextMaintenanceDate = entity.NextMaintenanceDate,
-                Parameters = entity.Parameters,
-                VIN = entity.VIN,
-                Estado = "Activo",
-                PropietarioNombre = "Sin Asignar"
+                PurchaseDate = entity.PurchaseDate,
+                OwnerId = entity.OwnerId,
+                IsActive = entity.IsActive,
+                NumeroSerie = entity.NumeroSerie,
+                NumeroMotor = entity.NumeroMotor,
+                Type = entity.Type,
+                Status = entity.Status,
+                CreatedAt = entity.CreatedAt,
+                UpdatedAt = entity.UpdatedAt,
+                CreatedBy = entity.CreatedBy,
+                UpdatedBy = entity.UpdatedBy,
+                IsDeleted = entity.IsDeleted,
+                DeletedAt = entity.DeletedAt,
+                DeletedBy = entity.DeletedBy
             };
         }
 
@@ -79,20 +95,39 @@ namespace IncliSafe.Shared.Models.DTOs
                 Id = Id,
                 Name = Name,
                 Description = Description,
-                Type = Type,
-                Status = Status,
-                Condition = Condition,
-                FuelType = FuelType,
-                Model = Model,
-                Manufacturer = Manufacturer,
                 LicensePlate = LicensePlate,
+                Manufacturer = Manufacturer,
+                Model = Model,
                 Year = Year,
+                VIN = VIN,
+                FuelType = FuelType,
+                Condition = Condition,
                 Mileage = Mileage,
+                CapacidadCarga = CapacidadCarga,
+                PesoVacio = PesoVacio,
+                PesoTotal = PesoTotal,
+                LongitudTotal = LongitudTotal,
+                AnchoTotal = AnchoTotal,
+                AlturaTotal = AlturaTotal,
+                DistanciaEjes = DistanciaEjes,
+                DistanciaEjePosterior = DistanciaEjePosterior,
+                VelocidadMaxima = VelocidadMaxima,
                 LastMaintenanceDate = LastMaintenanceDate,
                 NextMaintenanceDate = NextMaintenanceDate,
-                Parameters = Parameters,
-                VIN = VIN,
-                CreatedAt = CreatedAt
+                PurchaseDate = PurchaseDate,
+                OwnerId = OwnerId,
+                IsActive = IsActive,
+                NumeroSerie = NumeroSerie,
+                NumeroMotor = NumeroMotor,
+                Type = Type,
+                Status = Status,
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt,
+                CreatedBy = CreatedBy,
+                UpdatedBy = UpdatedBy,
+                IsDeleted = IsDeleted,
+                DeletedAt = DeletedAt,
+                DeletedBy = DeletedBy
             };
         }
     }

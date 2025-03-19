@@ -1,0 +1,1 @@
+// Este archivo ha sido eliminado ya que los enums están definidos en IncliSafe.Shared/Models/Enums/AnalysisEnums.cs 
