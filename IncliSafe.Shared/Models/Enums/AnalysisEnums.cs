@@ -163,14 +163,6 @@ namespace IncliSafe.Shared.Models.Enums
         Warning
     }
 
-    public enum AnalysisType
-    {
-        Doback,
-        Trend,
-        Pattern,
-        Prediction
-    }
-
     public enum PatternSeverity
     {
         Low,
@@ -253,7 +245,6 @@ namespace IncliSafe.Shared.Models.Enums
         Diesel,
         Electric,
         Hybrid,
-        CNG,
-        LPG
+        Other
     }
 } 

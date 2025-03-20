@@ -13,8 +13,8 @@ namespace IncliSafe.Shared.Models.Analysis
         public required int Id { get; set; }
         public required DateTime CreatedAt { get; set; }
         public required string Name { get; set; }
-        public required string Description { get; set; }
-        public required string AnalysisType { get; set; }
+        public string? Description { get; set; }
+        public required AnalysisType AnalysisType { get; set; }
         public required decimal StabilityScore { get; set; }
         public required decimal SafetyScore { get; set; }
         public required decimal EfficiencyScore { get; set; }
@@ -24,6 +24,11 @@ namespace IncliSafe.Shared.Models.Analysis
         public required int DobackAnalysisId { get; set; }
         public List<string> Recommendations { get; set; } = new();
         public virtual DobackAnalysisDTO DobackAnalysis { get; set; } = null!;
+        public required decimal Score { get; set; }
+        public required DateTime AnalyzedAt { get; set; }
+        public string? Notes { get; set; }
+        public required AlertSeverity Severity { get; set; }
+        public Dictionary<string, object> Parameters { get; set; } = new();
     }
 
     public class DobackAnalysisDTO

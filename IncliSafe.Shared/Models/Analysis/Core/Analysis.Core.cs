@@ -18,16 +18,16 @@ namespace IncliSafe.Shared.Models.Analysis.Core
 
     public interface IAnalysisRepository
     {
-        Task<AnalysisResult> GetAnalysisAsync(Guid id);
-        Task<List<AnalysisResult>> GetAnalysesAsync(Guid vehicleId);
+        Task<AnalysisResult> GetAnalysisAsync(int id);
+        Task<List<AnalysisResult>> GetAnalysesAsync(int vehicleId);
         Task<AnalysisResult> CreateAnalysisAsync(AnalysisResult analysis);
         Task<AnalysisResult> UpdateAnalysisAsync(AnalysisResult analysis);
-        Task<bool> DeleteAnalysisAsync(Guid id);
+        Task<bool> DeleteAnalysisAsync(int id);
     }
 
     public interface IAnalysisFactory
     {
-        AnalysisResult CreateAnalysis(string name, AnalysisType type, Guid vehicleId);
+        AnalysisResult CreateAnalysis(string name, AnalysisType type, int vehicleId);
         AnalysisResult CreateAnalysis(AnalysisDTO dto);
         AnalysisResult UpdateAnalysis(AnalysisResult analysis, AnalysisDTO dto);
         AnalysisResult CloneAnalysis(AnalysisResult analysis);
@@ -42,6 +42,7 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public required decimal StabilityScore { get; set; }
         public required decimal SafetyScore { get; set; }
         public required decimal MaintenanceScore { get; set; }
+        public required decimal EfficiencyScore { get; set; }
         public string? Notes { get; set; }
     }
 
@@ -54,10 +55,8 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public Dictionary<string, decimal> AdditionalMetrics { get; set; } = new();
     }
 
-    public class Anomaly
+    public class Anomaly : BaseEntity
     {
-        public required Guid Id { get; set; }
-        public required DateTime CreatedAt { get; set; }
         public required int VehicleId { get; set; }
         public required DateTime DetectedAt { get; set; }
         public required AnomalyType Type { get; set; }
@@ -72,10 +71,8 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public int? AnalysisId { get; set; }
     }
 
-    public class AnalysisPrediction
+    public class AnalysisPrediction : BaseEntity
     {
-        public required Guid Id { get; set; }
-        public required DateTime CreatedAt { get; set; }
         public required int VehicleId { get; set; }
         public required DateTime PredictedAt { get; set; }
         public required PredictionType Type { get; set; }
@@ -93,11 +90,11 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public required string Type { get; set; }
         public string? Description { get; set; }
         public required decimal Confidence { get; set; }
-        public List<PatternDataPoint> DataPoints { get; set; } = new();
+        public List<CorePatternDataPoint> DataPoints { get; set; } = new();
         public Dictionary<string, string> Metadata { get; set; } = new();
     }
 
-    public class PatternDataPoint
+    public class CorePatternDataPoint
     {
         public required DateTime Timestamp { get; set; }
         public string? Label { get; set; }
@@ -105,19 +102,18 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public Dictionary<string, decimal> Metrics { get; set; } = new();
     }
 
-    public class AnalysisResult : BaseEntity
+    public class AnalysisResult : AnalysisBase
     {
         public required string Name { get; set; }
         public string? Description { get; set; }
-        public required AnalysisType Type { get; set; }
         public required decimal Score { get; set; }
         public required DateTime AnalyzedAt { get; set; }
-        public required Guid VehicleId { get; set; }
         public List<AnalysisData> DataPoints { get; set; } = new();
         public List<string> Recommendations { get; set; } = new();
-        public string? Notes { get; set; }
         public required AlertSeverity Severity { get; set; }
         public Dictionary<string, object> Parameters { get; set; } = new();
+        public required decimal Confidence { get; set; }
+        public required AnalysisData Data { get; set; }
     }
 
     public class DashboardMetrics
@@ -172,6 +168,3 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public required decimal Confidence { get; set; }
     }
 } 
-
-
-

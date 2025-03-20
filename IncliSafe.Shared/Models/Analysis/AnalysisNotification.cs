@@ -8,11 +8,12 @@ namespace IncliSafe.Shared.Models.Analysis;
 public class AnalysisNotification : BaseEntity
 {
     public required string Title { get; set; }
-    public string? Description { get; set; }
-    public required AnalysisType Type { get; set; }
+    public required string Message { get; set; }
+    public required NotificationType Type { get; set; }
     public required NotificationSeverity Severity { get; set; }
-    public required bool IsRead { get; set; }
-    public required bool IsResolved { get; set; }
-    public required Guid VehicleId { get; set; }
+    public required int VehicleId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime? ReadAt { get; set; }
+    public string? ReadBy { get; set; }
     public Dictionary<string, object> Parameters { get; set; } = new();
 } 

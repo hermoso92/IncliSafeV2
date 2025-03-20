@@ -7,12 +7,15 @@ namespace IncliSafe.Shared.Models.Analysis;
 
 public class AnalysisAnomaly : BaseEntity
 {
-    public required string Title { get; set; }
-    public string? Description { get; set; }
+    public required string Name { get; set; }
+    public required string Description { get; set; }
     public required AnomalyType Type { get; set; }
-    public required AnomalySeverity Severity { get; set; }
+    public required AlertSeverity Severity { get; set; }
     public required DateTime DetectedAt { get; set; }
-    public required bool IsResolved { get; set; }
-    public required Guid VehicleId { get; set; }
+    public required decimal Score { get; set; }
+    public required decimal ExpectedValue { get; set; }
+    public required decimal ActualValue { get; set; }
+    public required decimal Deviation { get; set; }
+    public required int VehicleId { get; set; }
     public Dictionary<string, object> Parameters { get; set; } = new();
 } 

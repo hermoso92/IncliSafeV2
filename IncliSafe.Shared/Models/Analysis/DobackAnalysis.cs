@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Enums;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Shared.Models.Analysis;
 

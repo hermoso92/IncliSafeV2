@@ -27,7 +27,7 @@ namespace IncliSafe.Shared.Models.Analysis
         public Dictionary<string, object> Metadata { get; set; } = new();
     }
 
-    public class AnalysisType
+    public class AnalysisTypeData
     {
         public required string Name { get; set; }
         public required string Description { get; set; }

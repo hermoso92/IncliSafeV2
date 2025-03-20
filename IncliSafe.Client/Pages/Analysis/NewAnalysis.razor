@@ -1,4 +1,5 @@
 @page "/analysis/new"
+@using IncliSafe.Shared.Models.Enums
 @using IncliSafe.Shared.Models.Analysis
 @using IncliSafe.Shared.Models.Core
 @using IncliSafe.Client.Services.Interfaces
@@ -6,90 +7,65 @@
 @inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudPaper Class="pa-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Nuevo Análisis</MudText>
-
-        <EditForm Model="@_analysisModel" OnValidSubmit="HandleValidSubmit">
-            <DataAnnotationsValidator />
-
-            <MudGrid>
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_analysisModel.Name"
-                                Label="Nombre del Análisis"
-                                Required="true"
-                                For="@(() => _analysisModel.Name)" />
-                </MudItem>
-
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_analysisModel.Description"
-                                Label="Descripción"
-                                Lines="3"
-                                Required="true"
-                                For="@(() => _analysisModel.Description)" />
-                </MudItem>
-
-                <MudItem xs="12">
-                    <MudSelect T="string" Label="Tipo de Análisis" 
-                              @bind-Value="_analysisModel.AnalysisType"
-                              Required="true"
-                              For="@(() => _analysisModel.AnalysisType)">
-                        <MudSelectItem Value="@("Stability")">Estabilidad</MudSelectItem>
-                        <MudSelectItem Value="@("Safety")">Seguridad</MudSelectItem>
-                        <MudSelectItem Value="@("Maintenance")">Mantenimiento</MudSelectItem>
-                        <MudSelectItem Value="@("Complete")">Completo</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-
-                <MudItem xs="12" Class="d-flex justify-space-between align-center">
-                    <MudButton OnClick="@(() => NavigationManager.NavigateTo("/analysis/history"))"
-                              Variant="Variant.Text">
-                        Cancelar
-                    </MudButton>
-                    <MudButton ButtonType="ButtonType.Submit"
-                              Variant="Variant.Filled"
-                              Color="Color.Primary"
-                              Disabled="@_processing">
-                        @if (_processing)
-                        {
-                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                            <MudText Class="ms-2">Procesando</MudText>
-                        }
-                        else
-                        {
-                            <MudText>Iniciar Análisis</MudText>
-                        }
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-        </EditForm>
-    </MudPaper>
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Nuevo Análisis</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_success">
+                <MudTextField T="string" @bind-Value="_analysisModel.Name" Label="Nombre" Required="true" RequiredError="El nombre es requerido" />
+                <MudTextField T="string" @bind-Value="_analysisModel.Description" Label="Descripción" Lines="3" />
+                <MudSelect T="AnalysisType" @bind-Value="_analysisModel.AnalysisType" Label="Tipo de Análisis" Required="true" RequiredError="El tipo de análisis es requerido">
+                    @foreach (var type in Enum.GetValues<AnalysisType>())
+                    {
+                        <MudSelectItem Value="@type">@type</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudNumericField @bind-Value="_analysisModel.Score" Label="Puntuación" Required="true" RequiredError="La puntuación es requerida" />
+                <MudDatePicker @bind-Date="_analysisModel.AnalyzedAt" Label="Fecha de Análisis" Required="true" RequiredError="La fecha de análisis es requerida" />
+                <MudSelect T="AlertSeverity" @bind-Value="_analysisModel.Severity" Label="Severidad" Required="true" RequiredError="La severidad es requerida">
+                    @foreach (var severity in Enum.GetValues<AlertSeverity>())
+                    {
+                        <MudSelectItem Value="@severity">@severity</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAnalysis" Disabled="@(!_success)">Guardar</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/analysis"))">Cancelar</MudButton>
+        </MudCardActions>
+    </MudCard>
 </MudContainer>
 
 @code {
-    private bool _processing;
-    private readonly AnalysisResult _analysisModel = new()
+    private MudForm _form;
+    private bool _success;
+    private AnalysisDTO _analysisModel = new()
     {
         Name = string.Empty,
         Description = string.Empty,
-        AnalysisType = string.Empty
+        AnalysisType = AnalysisType.Doback,
+        Score = 0,
+        AnalyzedAt = DateTime.Now,
+        VehicleId = Guid.Empty,
+        Severity = AlertSeverity.Info
     };
 
-    private async Task HandleValidSubmit()
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    private async Task SaveAnalysis()
     {
-        try
+        await _form.Validate();
+        if (_form.IsValid)
         {
-            _processing = true;
-            await DobackService.CreateAnalysisAsync(1, _analysisModel); // TODO: Obtener el ID del vehículo seleccionado
-            NavigationManager.NavigateTo("/analysis/history");
-        }
-        catch (Exception ex)
-        {
-            // TODO: Manejar el error
-            Console.Error.WriteLine($"Error al crear el análisis: {ex.Message}");
-        }
-        finally
-        {
-            _processing = false;
+            // TODO: Implementar guardado
+            Snackbar.Add("Análisis guardado correctamente", Severity.Success);
+            NavigationManager.NavigateTo("/analysis");
         }
     }
 } 

@@ -1,92 +1,116 @@
 @page "/analysis/history"
+@using IncliSafe.Shared.Models.Enums
 @using IncliSafe.Shared.Models.Analysis
 @using IncliSafe.Shared.Models.Core
 @using IncliSafe.Client.Services.Interfaces
 @inject IDobackService DobackService
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudPaper Class="pa-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Historial de Análisis</MudText>
-
-        @if (_loading)
-        {
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-        }
-        else if (_analysisHistory == null || !_analysisHistory.Any())
-        {
-            <MudAlert Severity="Severity.Info">No hay análisis registrados.</MudAlert>
-        }
-        else
-        {
-            <MudTable Items="@_analysisHistory" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Historial de Análisis</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTable Items="@_analyses" Dense="true" Striped="true" Hover="true">
                 <HeaderContent>
-                    <MudTh>Fecha</MudTh>
-                    <MudTh>Tipo</MudTh>
+                    <MudTh>ID</MudTh>
                     <MudTh>Nombre</MudTh>
-                    <MudTh>Estado</MudTh>
+                    <MudTh>Tipo</MudTh>
+                    <MudTh>Fecha</MudTh>
+                    <MudTh>Puntuación</MudTh>
+                    <MudTh>Severidad</MudTh>
                     <MudTh>Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Fecha">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
-                    <MudTd DataLabel="Tipo">@context.AnalysisType</MudTd>
-                    <MudTd DataLabel="Nombre">@context.Name</MudTd>
-                    <MudTd DataLabel="Estado">
-                        <MudChip Color="@GetStatusColor(context.Status)" Size="Size.Small">
-                            @context.Status
+                    <MudTd>@context.Id</MudTd>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.AnalysisType</MudTd>
+                    <MudTd>@context.AnalyzedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    <MudTd>@context.Score.ToString("N2")</MudTd>
+                    <MudTd>
+                        <MudChip Color="@(context.Severity switch { AlertSeverity.Critical => Color.Error, AlertSeverity.Error => Color.Error, AlertSeverity.Warning => Color.Warning, _ => Color.Info })">
+                            @context.Severity
                         </MudChip>
                     </MudTd>
                     <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
-                                     OnClick="@(() => ViewAnalysisDetails(context))"
-                                     Size="Size.Small"
-                                     Title="Ver detalles" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => ViewAnalysis(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteAnalysis(context))" />
                     </MudTd>
                 </RowTemplate>
-                <PagerContent>
-                    <MudTablePager />
-                </PagerContent>
             </MudTable>
-        }
-    </MudPaper>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/analysis/new"))">
+                Nuevo Análisis
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
 </MudContainer>
 
 @code {
-    private bool _loading = true;
-    private List<AnalysisResult>? _analysisHistory;
+    private List<AnalysisDTO> _analyses = new();
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnalysisHistory();
+        await LoadAnalyses();
     }
 
-    private async Task LoadAnalysisHistory()
+    private async Task LoadAnalyses()
     {
         try
         {
-            _loading = true;
-            _analysisHistory = (await DobackService.GetAnalysisHistoryAsync(1)).ToList(); // TODO: Obtener el ID del vehículo seleccionado
+            // TODO: Implementar carga de análisis
+            _analyses = new List<AnalysisDTO>
+            {
+                new()
+                {
+                    Id = 1,
+                    Name = "Análisis de Estabilidad",
+                    Description = "Análisis de estabilidad del vehículo",
+                    AnalysisType = AnalysisType.Stability,
+                    Score = 85.5M,
+                    AnalyzedAt = DateTime.Now,
+                    VehicleId = Guid.Empty,
+                    Severity = AlertSeverity.Info
+                }
+            };
         }
         catch (Exception ex)
         {
-            // TODO: Manejar el error
-            Console.Error.WriteLine($"Error al cargar el historial de análisis: {ex.Message}");
-        }
-        finally
-        {
-            _loading = false;
+            Snackbar.Add($"Error al cargar los análisis: {ex.Message}", Severity.Error);
         }
     }
 
-    private Color GetStatusColor(AnalysisStatus status) => status switch
+    private void ViewAnalysis(AnalysisDTO analysis)
     {
-        AnalysisStatus.Completed => Color.Success,
-        AnalysisStatus.InProgress => Color.Info,
-        AnalysisStatus.Failed => Color.Error,
-        _ => Color.Default
-    };
+        NavigationManager.NavigateTo($"/analysis/{analysis.Id}");
+    }
 
-    private void ViewAnalysisDetails(AnalysisResult analysis)
+    private async Task DeleteAnalysis(AnalysisDTO analysis)
     {
-        // TODO: Implementar la navegación a los detalles del análisis
+        var result = await DialogService.ShowMessageBox(
+            "Eliminar Análisis",
+            "¿Está seguro de que desea eliminar este análisis?",
+            yesText: "Eliminar", noText: "Cancelar");
+
+        if (result == true)
+        {
+            try
+            {
+                // TODO: Implementar eliminación
+                _analyses.Remove(analysis);
+                Snackbar.Add("Análisis eliminado correctamente", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al eliminar el análisis: {ex.Message}", Severity.Error);
+            }
+        }
     }
 } 

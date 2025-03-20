@@ -4,11 +4,13 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using IncliSafe.Client.Services.Interfaces;
-using IncliSafe.Shared.Models.Analysis;
-using IncliSafe.Shared.DTOs;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis.Extensions;
+using IncliSafe.Shared.Models.Enums;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
-using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.DTOs;
 using IncliSafe.Shared.Models;
 using Anomaly = IncliSafe.Shared.Models.Analysis.Core.Anomaly;
 using IncliSafe.Shared.Models.DTOs;
@@ -17,26 +19,26 @@ namespace IncliSafe.Client.Services
 {
     public class DobackService : ServiceBase, IDobackService
     {
-        private readonly ILogger<DobackService> _logger;
         private readonly HttpClient _httpClient;
+        private readonly ILogger<DobackService> _logger;
         private const string BaseUrl = "api/doback";
 
-        public DobackService(ILogger<DobackService> logger, HttpClient httpClient)
+        public DobackService(HttpClient httpClient, ILogger<DobackService> logger) : base(logger)
         {
-            _logger = logger;
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task<DashboardMetrics> GetDashboardMetricsAsync(int vehicleId)
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DashboardMetrics>($"api/doback/metrics/{vehicleId}");
-                return response ?? new DashboardMetrics();
+                var response = await _httpClient.GetFromJsonAsync<DashboardMetrics>($"api/doback/dashboard/{vehicleId}");
+                return response ?? throw new Exception("No se pudieron obtener las métricas del dashboard");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener métricas del dashboard para el vehículo {VehicleId}", vehicleId);
+                _logger.LogError(ex, "Error al obtener las métricas del dashboard para el vehículo {VehicleId}", vehicleId);
                 throw;
             }
         }
@@ -107,64 +109,21 @@ namespace IncliSafe.Client.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener predicciones para el vehículo {VehicleId}", vehicleId);
+                _logger.LogError(ex, "Error al obtener las predicciones para el vehículo {VehicleId}", vehicleId);
                 throw;
             }
         }
 
-        public async Task<DobackAnalysis> GetAnalysisByIdAsync(int id)
+        public async Task<DobackAnalysis> GetAnalysisAsync(int vehicleId)
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{id}");
-                return response ?? throw new InvalidOperationException($"No se encontró el análisis con ID {id}");
+                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{vehicleId}");
+                return response ?? throw new Exception("No se pudo obtener el análisis");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener análisis con ID {AnalysisId}", id);
-                throw;
-            }
-        }
-
-        public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
-        {
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<TrendAnalysis>($"api/doback/trends/{vehicleId}?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}");
-                return response ?? throw new InvalidOperationException($"No se encontró el análisis de tendencias para el vehículo {vehicleId}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener análisis de tendencias para el vehículo {VehicleId}", vehicleId);
-                throw;
-            }
-        }
-
-        public async Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysis)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync($"api/doback/analyze/{vehicleId}", analysis);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<DobackAnalysis>() ?? throw new InvalidOperationException("No se pudo realizar el análisis");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al analizar datos para el vehículo {VehicleId}", vehicleId);
-                throw;
-            }
-        }
-
-        public async Task<DobackAnalysis> GetAnalysisAsync(int id)
-        {
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/{id}");
-                return response ?? throw new InvalidOperationException($"No se encontró el análisis con ID {id}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener análisis con ID {AnalysisId}", id);
+                _logger.LogError(ex, "Error al obtener el análisis para el vehículo {VehicleId}", vehicleId);
                 throw;
             }
         }
@@ -251,9 +210,18 @@ namespace IncliSafe.Client.Services
             return series.Any() ? series.Average() : 0;
         }
 
-        public async Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId)
+        public async Task<DobackAnalysis> GetLatestAnalysisAsync(int vehicleId)
         {
-            return await _httpClient.GetFromJsonAsync<DobackAnalysis>($"{BaseUrl}/vehicle/{vehicleId}/latest");
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{vehicleId}/latest");
+                return response ?? throw new Exception("No se pudo obtener el último análisis");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el último análisis para el vehículo {VehicleId}", vehicleId);
+                throw;
+            }
         }
 
         public async Task<List<AnalysisPrediction>> GetPredictions(int vehicleId)
@@ -272,6 +240,64 @@ namespace IncliSafe.Client.Services
             var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/trends/{vehicleId}", trendDto);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<TrendAnalysis>() ?? new();
+        }
+
+        public async Task<DobackAnalysis> GetAnalysisWithDataAsync(int vehicleId, DobackData data)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync($"api/doback/analysis/{vehicleId}", data);
+                response.EnsureSuccessStatusCode();
+                var result = await response.Content.ReadFromJsonAsync<DobackAnalysis>();
+                return result ?? throw new Exception("No se pudo obtener el análisis con los datos proporcionados");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el análisis con datos para el vehículo {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<DobackAnalysis> GetTrendAnalysisAsync(int vehicleId)
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{vehicleId}/trends");
+                return response ?? throw new Exception("No se pudo obtener el análisis de tendencias");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el análisis de tendencias para el vehículo {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<DobackAnalysis> GetPatternAnalysisAsync(int vehicleId)
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{vehicleId}/patterns");
+                return response ?? throw new Exception("No se pudo obtener el análisis de patrones");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el análisis de patrones para el vehículo {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<DobackAnalysis> GetAnomalyAnalysisAsync(int vehicleId)
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<DobackAnalysis>($"api/doback/analysis/{vehicleId}/anomalies");
+                return response ?? throw new Exception("No se pudo obtener el análisis de anomalías");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el análisis de anomalías para el vehículo {VehicleId}", vehicleId);
+                throw;
+            }
         }
     }
 } 
