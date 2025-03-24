@@ -1,250 +1,249 @@
 namespace IncliSafe.Shared.Models.Enums
 {
-    public enum CycleType
+    public enum AnalysisType
     {
-        Operation,
-        Maintenance,
-        Test,
-        Calibration
-    }
-
-    public enum TrendType
-    {
-        Performance,
-        Stability,
-        Safety,
-        Maintenance
-    }
-
-    public enum PatternType
-    {
-        Anomaly,
         Trend,
-        Cycle,
-        Event,
-        Spike,
-        Drift
-    }
-
-    public enum PredictionType
-    {
-        Stability,
-        Safety,
-        Maintenance,
+        Pattern,
+        Anomaly,
+        Prediction,
         Performance,
-        System,
-        Efficiency
-    }
-
-    public enum AnomalyType
-    {
-        Stability,
-        Safety,
         Maintenance,
+        Safety,
+        Compliance
+    }
+
+    public enum AnalysisCategory
+    {
+        Technical,
+        Operational,
+        Safety,
+        Compliance,
         Performance,
-        System,
-        Efficiency,
-        Acceleration
+        Maintenance,
+        Financial,
+        Environmental
     }
 
-    public enum MaintenanceType
+    public enum AnalysisCalculation
     {
-        Preventive,
-        Corrective,
-        Predictive,
-        Emergency
+        Average,
+        Sum,
+        Count,
+        Min,
+        Max,
+        StandardDeviation,
+        Variance,
+        Median,
+        Mode,
+        Custom
     }
 
-    public enum MaintenanceStatus
+    public enum AnalysisDimension
     {
-        Pending,
-        InProgress,
-        Completed,
-        Cancelled
-    }
-
-    public enum MaintenancePriority
-    {
-        Low,
-        Medium,
-        High,
-        Critical
-    }
-
-    public enum UserRole
-    {
-        Admin,
-        Manager,
-        Operator,
-        Technician
-    }
-
-    public enum UserStatus
-    {
-        Active,
-        Inactive,
-        Suspended,
-        Deleted
-    }
-
-    public enum AnomalySeverity
-    {
-        Low,
-        Medium,
-        High,
-        Critical
-    }
-
-    public enum WidgetType
-    {
-        Chart,
-        Table,
+        Time,
+        Space,
+        Category,
         Metric,
-        Alert,
-        Status
+        Source,
+        Target,
+        Group,
+        Custom
     }
 
-    public enum JobStatus
+    public enum AnalysisFilter
     {
-        Pending,
-        Running,
-        Completed,
-        Failed,
-        Cancelled
+        DateRange,
+        Category,
+        Source,
+        Target,
+        Status,
+        Priority,
+        Custom
     }
 
-    public enum NotificationSeverity
+    public enum AnalysisFormat
     {
-        Info,
-        Warning,
-        Error,
-        Critical
+        Table,
+        Chart,
+        Report,
+        Export,
+        Custom
     }
 
-    public enum ErrorSeverity
+    public enum AnalysisGroup
     {
-        Low,
-        Medium,
-        High,
-        Critical
+        ByDate,
+        ByCategory,
+        BySource,
+        ByTarget,
+        ByStatus,
+        Custom
     }
 
-    public enum AuditAction
+    public enum AnalysisImport
     {
-        Create,
-        Update,
-        Delete,
-        View,
-        Execute
+        CSV,
+        Excel,
+        JSON,
+        XML,
+        Custom
     }
 
-    public enum QueueStatus
-    {
-        Empty,
-        Processing,
-        Paused,
-        Error
-    }
-
-    public enum LogLevel
-    {
-        Debug,
-        Info,
-        Warning,
-        Error,
-        Critical
-    }
-
-    public enum ValidationStatus
-    {
-        Pending,
-        Valid,
-        Invalid,
-        Warning
-    }
-
-    public enum PatternSeverity
-    {
-        Low,
-        Medium,
-        High,
-        Critical
-    }
-
-    public enum TrendDirection
-    {
-        Up,
-        Down,
-        Stable
-    }
-
-    public enum PerformanceTrend
-    {
-        Improving,
-        Declining,
-        Stable
-    }
-
-    public enum LicenseStatus
-    {
-        Active,
-        Expired,
-        Suspended,
-        Revoked,
-        Pending
-    }
-
-    public enum VehicleStatus
-    {
-        Active,
-        Inactive,
-        Maintenance,
-        Inspection,
-        Retired
-    }
-
-    public enum NotificationType
+    public enum AnalysisLevel
     {
         System,
-        Alert,
-        Warning,
-        Info,
-        Success
+        Component,
+        Subsystem,
+        Detail,
+        Custom
     }
 
-    public enum AlertPriority
+    public enum AnalysisMetric
+    {
+        Count,
+        Percentage,
+        Rate,
+        Ratio,
+        Custom
+    }
+
+    public enum AnalysisMode
+    {
+        RealTime,
+        Batch,
+        Scheduled,
+        OnDemand,
+        Custom
+    }
+
+    public enum AnalysisPeriod
+    {
+        Daily,
+        Weekly,
+        Monthly,
+        Quarterly,
+        Yearly,
+        Custom
+    }
+
+    public enum AnalysisScope
+    {
+        Global,
+        Regional,
+        Local,
+        Custom
+    }
+
+    public enum AnalysisSort
+    {
+        Ascending,
+        Descending,
+        Custom
+    }
+
+    public enum AnalysisSource
+    {
+        Sensor,
+        Manual,
+        External,
+        System,
+        Custom
+    }
+
+    public enum AnalysisResult
+    {
+        Success,
+        Warning,
+        Error,
+        Custom
+    }
+
+    public enum AnalysisTarget
+    {
+        Vehicle,
+        Component,
+        System,
+        Process,
+        Custom
+    }
+
+    public enum AnalysisPriority
+    {
+        Low,
+        Medium,
+        High,
+        Critical,
+        Custom
+    }
+
+    public enum AnalysisTransformation
+    {
+        Normalize,
+        Scale,
+        Filter,
+        Aggregate,
+        Custom
+    }
+
+    public enum AnalysisUnit
+    {
+        Count,
+        Percentage,
+        Time,
+        Distance,
+        Speed,
+        Custom
+    }
+
+    public enum AnalysisValidation
+    {
+        Required,
+        Range,
+        Format,
+        Custom
+    }
+
+    public enum AnalysisThreshold
+    {
+        Warning,
+        Critical,
+        Custom
+    }
+
+    public enum AnalysisFrequency
+    {
+        RealTime,
+        Hourly,
+        Daily,
+        Weekly,
+        Monthly,
+        Custom
+    }
+
+    public enum AnalysisExport
+    {
+        CSV,
+        Excel,
+        PDF,
+        JSON,
+        XML,
+        Custom
+    }
+
+    public enum AnalysisChart
+    {
+        Line,
+        Bar,
+        Pie,
+        Scatter,
+        Custom
+    }
+
+    public enum AnalysisSeverity
     {
         Low,
         Medium,
         High,
         Critical
-    }
-
-    public enum VehicleType
-    {
-        Car,
-        Truck,
-        Bus,
-        Van,
-        Other
-    }
-
-    public enum VehicleCondition
-    {
-        New,
-        Excellent,
-        Good,
-        Fair,
-        Poor,
-        Critical
-    }
-
-    public enum FuelType
-    {
-        Gasoline,
-        Diesel,
-        Electric,
-        Hybrid,
-        Other
     }
 } 

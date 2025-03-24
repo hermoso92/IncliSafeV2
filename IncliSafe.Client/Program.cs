@@ -10,6 +10,7 @@ using Blazored.LocalStorage;
 using IncliSafe.Client.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Components;
+using IncliSafe.Shared.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -108,6 +109,9 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.HideTransitionDuration = 500;
     config.SnackbarConfiguration.ShowTransitionDuration = 500;
 });
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var host = builder.Build();
 

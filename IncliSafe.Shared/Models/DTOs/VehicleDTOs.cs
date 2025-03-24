@@ -153,24 +153,6 @@ namespace IncliSafe.Shared.Models.DTOs
         public required string Notes { get; set; } = string.Empty;
     }
 
-    public enum MaintenanceType
-    {
-        Preventive,
-        Corrective,
-        Scheduled,
-        Emergency,
-        Inspection,
-        Upgrade
-    }
-
-    public enum MaintenancePriority
-    {
-        Low,
-        Medium,
-        High,
-        Critical
-    }
-
     public class VehicleMaintenanceDTO
     {
         public required int Id { get; set; }

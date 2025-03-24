@@ -5,51 +5,40 @@ using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Notifications
 {
-    public class Alert : BaseEntity
+    public class Notification
     {
-        public required string Name { get; set; }
-        public required string Description { get; set; }
-        public required IncliSafe.Shared.Models.Enums.AlertSeverity Severity { get; set; }
-        public required string Source { get; set; }
-        public required string Category { get; set; }
-        public required bool IsActive { get; set; }
-        public required DateTime AlertDate { get; set; }
-        public DateTime? ResolvedDate { get; set; }
-        public string? Resolution { get; set; }
-        public Dictionary<string, object> Parameters { get; set; } = new();
-        public List<decimal> DataPoints { get; set; } = new();
-        public List<DateTime> Timestamps { get; set; } = new();
-        public Dictionary<string, object> Metadata { get; set; } = new();
-    }
-
-    public class Notification : BaseEntity
-    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
         public required string Title { get; set; }
         public required string Message { get; set; }
-        public required IncliSafe.Shared.Models.Enums.NotificationType Type { get; set; }
-        public required IncliSafe.Shared.Models.Enums.AlertPriority Priority { get; set; }
-        public required string Recipient { get; set; }
-        public required bool IsRead { get; set; }
-        public required DateTime SentDate { get; set; }
-        public DateTime? ReadDate { get; set; }
-        public Dictionary<string, object> Parameters { get; set; } = new();
-        public List<decimal> DataPoints { get; set; } = new();
-        public List<DateTime> Timestamps { get; set; } = new();
-        public Dictionary<string, object> Metadata { get; set; } = new();
+        public NotificationType Type { get; set; }
+        public NotificationStatus Status { get; set; }
+        public NotificationChannel Channel { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ReadAt { get; set; }
     }
 
-    public class NotificationSettings : BaseEntity
+    public class Alert
     {
-        public required string UserId { get; set; }
-        public required bool EmailEnabled { get; set; }
-        public required bool SMSEnabled { get; set; }
-        public required bool PushEnabled { get; set; }
-        public required string EmailAddress { get; set; }
-        public required string PhoneNumber { get; set; }
-        public required string PushToken { get; set; }
-        public Dictionary<string, object> Parameters { get; set; } = new();
-        public List<decimal> DataPoints { get; set; } = new();
-        public List<DateTime> Timestamps { get; set; } = new();
-        public Dictionary<string, object> Metadata { get; set; } = new();
+        public int Id { get; set; }
+        public required string Title { get; set; }
+        public required string Description { get; set; }
+        public AlertSeverity Severity { get; set; }
+        public AlertPriority Priority { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public required string Resolution { get; set; }
+        public bool IsResolved { get; set; }
+        public DateTime? ResolvedAt { get; set; }
+    }
+
+    public class NotificationSettings
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+        public bool EmailNotifications { get; set; }
+        public bool PushNotifications { get; set; }
+        public NotificationFrequency Frequency { get; set; }
+        public List<NotificationType> EnabledTypes { get; set; } = new();
+        public DateTime LastNotificationSent { get; set; }
     }
 } 

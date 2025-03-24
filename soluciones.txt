@@ -280,3 +280,68 @@
 - Implementar validaciones de datos
 - Documentar todas las propiedades y métodos
 - Seguir las convenciones de nomenclatura de C# 
+
+# Historial de Soluciones - IncliSafeV2
+
+## 2024-03-21
+
+### Modelos de Análisis
+1. Creación de modelos base para análisis:
+   - AnalysisPrediction
+   - AnalysisPattern
+   - AnalysisTrend
+   - AnalysisAlert
+   - AnalysisNotification
+   - DobackData
+   - DobackAnalysis
+
+2. Creación de DTOs correspondientes:
+   - AnalysisPredictionDTO
+   - AnalysisPatternDTO
+   - AnalysisTrendDTO
+   - AnalysisAlertDTO
+   - AnalysisNotificationDTO
+   - DobackDataDTO
+
+3. Propiedades requeridas implementadas:
+   - VehicleId
+   - Timestamps (CreatedAt, UpdatedAt)
+   - Tipos específicos (Type)
+   - Descripciones
+   - Scores y Confidence
+   - Estados (IsActive, IsValidated)
+   - Resoluciones
+   - Parámetros
+   - Relaciones con otros modelos
+
+4. Enums implementados:
+   - AnalysisType
+   - PatternType
+   - TrendType
+   - AlertType
+   - NotificationType
+   - SensorType
+   - PredictionType
+   - Severity levels
+
+### Mejoras de Estructura
+1. Organización de modelos en carpetas:
+   - Core/
+   - DTOs/
+   - Extensions/
+
+2. Implementación de herencia:
+   - BaseEntity
+   - BaseDTO
+
+3. Optimizaciones:
+   - Uso de required para propiedades obligatorias
+   - Inicialización de colecciones
+   - Tipos específicos para enums
+
+### Próximos Pasos
+1. Implementar servicios de análisis
+2. Crear controladores para la API
+3. Implementar lógica de negocio
+4. Añadir validaciones
+5. Implementar tests unitarios 

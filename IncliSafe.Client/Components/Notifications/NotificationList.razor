@@ -1,0 +1,152 @@
+@using System.Collections.Generic
+@using IncliSafe.Shared.Models.Notifications
+@using IncliSafe.Shared.Services
+@inject INotificationService NotificationService
+
+<div class="notification-list">
+    @if (_notifications == null)
+    {
+        <div class="loading">Cargando notificaciones...</div>
+    }
+    else if (!_notifications.Any())
+    {
+        <div class="no-notifications">No hay notificaciones</div>
+    }
+    else
+    {
+        @foreach (var notification in _notifications)
+        {
+            <div class="notification-item @(notification.IsRead ? "read" : "unread")">
+                <div class="notification-header">
+                    <h3>@notification.Title</h3>
+                    <span class="notification-date">@notification.SentDate.ToLocalTime().ToString("g")</span>
+                </div>
+                <div class="notification-content">
+                    <p>@notification.Message</p>
+                    @if (notification.Type == NotificationType.Alert)
+                    {
+                        <div class="alert-severity @notification.Priority.ToString().ToLower()">
+                            @notification.Priority.ToString()
+                        </div>
+                    }
+                </div>
+                <div class="notification-actions">
+                    @if (!notification.IsRead)
+                    {
+                        <button class="btn btn-sm btn-primary" @onclick="() => MarkAsRead(notification.Id)">
+                            Marcar como leída
+                        </button>
+                    }
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteNotification(notification.Id)">
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Notification> _notifications;
+    private int _userId = 1; // TODO: Get from authentication
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+    }
+
+    private async Task LoadNotifications()
+    {
+        _notifications = await NotificationService.GetUserNotificationsAsync(_userId);
+        StateHasChanged();
+    }
+
+    private async Task MarkAsRead(int notificationId)
+    {
+        var result = await NotificationService.MarkAsReadAsync(notificationId);
+        if (result)
+        {
+            await LoadNotifications();
+        }
+    }
+
+    private async Task DeleteNotification(int notificationId)
+    {
+        var result = await NotificationService.DeleteNotificationAsync(notificationId);
+        if (result)
+        {
+            await LoadNotifications();
+        }
+    }
+}
+
+<style>
+    .notification-list {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .notification-item {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #fff;
+    }
+
+    .notification-item.unread {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-date {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .notification-content {
+        margin-bottom: 1rem;
+    }
+
+    .alert-severity {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .alert-severity.high {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .alert-severity.medium {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .alert-severity.low {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .notification-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .loading, .no-notifications {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+</style> 

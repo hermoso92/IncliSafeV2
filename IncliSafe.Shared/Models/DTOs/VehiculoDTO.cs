@@ -1,42 +1,77 @@
-using IncliSafe.Shared.Models.Enums;
 using System;
-using IncliSafe.Shared.Models.Common;
+using System.Collections.Generic;
+using IncliSafe.Shared.Models.DTOs.Base;
+using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.DTOs
 {
-    public class VehiculoDTO
+    public class VehiculoDTO : BaseDTO
     {
-        public required int Id { get; set; }
-        public required string Placa { get; set; } = string.Empty;
-        public required string Marca { get; set; } = string.Empty;
-        public required string Modelo { get; set; } = string.Empty;
+        public override int Id { get; set; }
+        public required string Placa { get; set; }
+        public required string Marca { get; set; }
+        public required string Modelo { get; set; }
         public int Año { get; set; }
-        public required string Color { get; set; } = string.Empty;
-        public required string VIN { get; set; } = string.Empty;
-        public required string Estado { get; set; } = string.Empty;
-        public required int PropietarioId { get; set; }
-        public required string PropietarioNombre { get; set; } = string.Empty;
-        public required DateTime UltimaInspeccion { get; set; }
-        public required DateTime ProximaInspeccion { get; set; }
-        public List<Alert> Alertas { get; set; } = new();
-        public required decimal Score { get; set; }
-        public required string NumeroSerie { get; set; } = string.Empty;
-        public required string NumeroMotor { get; set; } = string.Empty;
-        public required decimal CapacidadCarga { get; set; }
-        public required decimal PesoVacio { get; set; }
-        public required decimal PesoTotal { get; set; }
-        public required decimal LongitudTotal { get; set; }
-        public required decimal AnchoTotal { get; set; }
-        public required decimal AlturaTotal { get; set; }
-        public required decimal DistanciaEjes { get; set; }
-        public required decimal DistanciaEjePosterior { get; set; }
-        public required decimal VelocidadMaxima { get; set; }
-        public required string Status { get; set; } = string.Empty;
-        public required string Type { get; set; } = string.Empty;
-        public required DateTime CreatedAt { get; set; }
-        public required bool IsActive { get; set; }
+        public required string Color { get; set; }
+        public required string VIN { get; set; }
+        public required VehicleType Tipo { get; set; }
+        public required VehicleStatus Estado { get; set; }
+        public required string PropietarioNombre { get; set; }
+        public string? PropietarioDocumento { get; set; }
+        public string? PropietarioTelefono { get; set; }
+        public required string NumeroSerie { get; set; }
+        public decimal? Kilometraje { get; set; }
+        public decimal? CapacidadCarga { get; set; }
+        public decimal? PesoBruto { get; set; }
+        public decimal? PesoNeto { get; set; }
+        public int? NumeroEjes { get; set; }
+        public int? NumeroAsientos { get; set; }
+        public string? Observaciones { get; set; }
+        public DateTime? FechaFabricacion { get; set; }
+        public DateTime? FechaRegistro { get; set; }
+        public DateTime? UltimaInspeccion { get; set; }
+        public DateTime? ProximaInspeccion { get; set; }
+        public bool TieneSeguro { get; set; }
+        public string? NumeroPoliza { get; set; }
+        public string? CompañiaSeguro { get; set; }
+        public DateTime? VencimientoSeguro { get; set; }
+        public bool RequiereMantenimiento { get; set; }
+        public DateTime? UltimoMantenimiento { get; set; }
+        public DateTime? ProximoMantenimiento { get; set; }
+        public required string NumeroMotor { get; set; }
+        public FuelType? TipoCombustible { get; set; }
+        public decimal? CapacidadTanque { get; set; }
+        public VehicleCondition? Condicion { get; set; }
+        public string? UbicacionActual { get; set; }
+        public bool EstaActivo { get; set; }
+        public string? Categoria { get; set; }
+        public string? SubCategoria { get; set; }
+        public string? Configuracion { get; set; }
+        public string? CarroceriaTipo { get; set; }
+        public required string LicenseNumber { get; set; }
+        public DateTime? LicenseExpiry { get; set; }
+        public required LicenseStatus Status { get; set; }
+        public required LicenseType Type { get; set; }
+        public required string IssuingAuthority { get; set; }
+        public List<string> Alertas { get; set; } = new List<string>();
+        public decimal Score { get; set; }
+        public decimal LongitudTotal { get; set; }
+        public decimal DistanciaEjePosterior { get; set; }
+        public decimal VelocidadMaxima { get; set; }
     }
-} 
+
+    public class LicenseDTO : BaseDTO
+    {
+        public int VehiculoId { get; set; }
+        public required string LicenseNumber { get; set; }
+        public DateTime IssueDate { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public required string Status { get; set; }
+        public required string Type { get; set; }
+        public required string IssuingAuthority { get; set; }
+        public List<string> Restrictions { get; set; } = new List<string>();
+    }
+}
 
 
 

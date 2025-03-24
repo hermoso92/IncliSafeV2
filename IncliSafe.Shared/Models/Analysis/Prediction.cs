@@ -14,16 +14,10 @@ namespace IncliSafe.Shared.Models.Analysis
         public required decimal Probability { get; set; }
         public required decimal PredictedValue { get; set; }
         public required DateTime ValidUntil { get; set; }
-        public Dictionary<string, object> Parameters { get; set; } = new();
+        public Dictionary<string, object> Parameters { get; set; } = new Dictionary<string, object>();
         public override DateTime CreatedAt { get; set; }
-    }
-
-    public enum PredictionRisk
-    {
-        Low,
-        Medium,
-        High,
-        Critical
+        public decimal Confidence { get; set; }
+        public PredictionRisk Risk { get; set; }
     }
 } 
 
