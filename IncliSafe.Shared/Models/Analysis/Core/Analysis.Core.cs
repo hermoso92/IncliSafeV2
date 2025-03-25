@@ -73,28 +73,6 @@ public class CorePatternDataPoint
     public Dictionary<string, decimal> Metrics { get; set; } = new();
 }
 
-public class AnalysisResult : BaseEntity
-{
-    public required int VehicleId { get; set; }
-    public required string Name { get; set; }
-    public string? Description { get; set; }
-    public required AnalysisType Type { get; set; }
-    public required decimal Score { get; set; }
-    public required DateTime AnalyzedAt { get; set; }
-    public required DateTime AnalysisDate { get; set; }
-    public required decimal StabilityScore { get; set; }
-    public required decimal SafetyScore { get; set; }
-    public required decimal MaintenanceScore { get; set; }
-    public required decimal EfficiencyScore { get; set; }
-    public string? Notes { get; set; }
-    public required List<decimal> DataPoints { get; set; } = new();
-    public required List<string> Recommendations { get; set; } = new();
-    public required AnalysisSeverity Severity { get; set; }
-    public required Dictionary<string, object> Parameters { get; set; } = new();
-    public required decimal Confidence { get; set; }
-    public required string Data { get; set; }
-}
-
 public class DashboardMetrics
 {
     public required decimal StabilityScore { get; set; }
@@ -170,17 +148,6 @@ public class Anomaly : AnalysisBase
     public DateTime DetectedAt { get; set; }
     public bool IsActive { get; set; }
     public Dictionary<string, object> Parameters { get; set; } = new();
-}
-
-public class PredictionResult
-{
-    public int Id { get; set; }
-    public int VehicleId { get; set; }
-    public DateTime PredictionDate { get; set; }
-    public List<AnalysisPrediction> Predictions { get; set; } = new();
-    public decimal Accuracy { get; set; }
-    public required string ModelVersion { get; set; }
-    public Dictionary<string, string> Metadata { get; set; } = new();
 }
 
 public class Analysis : AnalysisBase

@@ -216,3 +216,65 @@ Distribuido bajo la Licencia MIT. Ver `LICENSE` para más información.
 Tu Nombre - [@tutwitter](https://twitter.com/tutwitter) - email@example.com
 
 Project Link: [https://github.com/tu-usuario/IncliSafeV2](https://github.com/tu-usuario/IncliSafeV2)
+
+# IncliSafeV2 - Scripts de Automatización
+
+Este repositorio contiene scripts de PowerShell para automatizar el inicio y fin de la jornada de trabajo en el proyecto IncliSafeV2.
+
+## Scripts Disponibles
+
+### 1. start-workday.ps1
+Script para iniciar la jornada de trabajo. Realiza las siguientes acciones:
+- Actualiza el repositorio
+- Restaura paquetes NuGet
+- Compila la solución
+- Verifica errores pendientes
+- Revisa soluciones implementadas
+- Verifica el estado de la base de datos
+- Inicia servicios necesarios
+
+### 2. end-workday.ps1
+Script para finalizar la jornada de trabajo. Realiza las siguientes acciones:
+- Verifica cambios pendientes
+- Compila la solución
+- Actualiza el historial de soluciones
+- Actualiza el registro de errores
+- Realiza commit de los cambios
+- Sube cambios al repositorio
+- Genera un resumen diario
+
+## Uso
+
+### Inicio de Jornada
+```powershell
+.\start-workday.ps1
+```
+
+### Fin de Jornada
+```powershell
+.\end-workday.ps1
+```
+
+## Archivos Generados
+
+### soluciones.txt
+Registro histórico de soluciones implementadas, organizado por fecha.
+
+### errores.txt
+Registro de errores encontrados y su estado de resolución.
+
+### daily-summary-[fecha].md
+Resumen diario de cambios, errores pendientes y próximos pasos.
+
+## Requisitos
+
+- PowerShell 5.1 o superior
+- Git instalado y configurado
+- .NET SDK instalado
+- Acceso al repositorio remoto
+
+## Notas
+
+- Los scripts deben ejecutarse desde la raíz del proyecto
+- Se recomienda revisar los archivos generados después de cada ejecución
+- Mantener actualizados los archivos de registro

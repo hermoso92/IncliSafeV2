@@ -1,13 +1,13 @@
-namespace IncliSafe.Shared.Models.Enums
+namespace IncliSafe.Shared.Models.Analysis.Core
 {
     public enum AnomalyType
     {
-        Mechanical,
-        Electrical,
-        Structural,
-        Software,
-        Sensor,
-        Unknown
+        Point,
+        Contextual,
+        Collective,
+        Seasonal,
+        Trend,
+        Custom
     }
 
     public enum AnomalySeverity
@@ -15,22 +15,63 @@ namespace IncliSafe.Shared.Models.Enums
         Low,
         Medium,
         High,
-        Critical
+        Critical,
+        Emergency
     }
 
-    public enum PredictionType
+    public enum AnomalyStatus
     {
-        Maintenance,
+        Detected,
+        Investigating,
+        Confirmed,
+        Resolved,
+        FalsePositive,
+        Ignored
+    }
+
+    public enum AnomalyCategory
+    {
         Performance,
         Safety,
-        Reliability
+        Maintenance,
+        Operational,
+        Environmental,
+        Custom
     }
 
-    public enum PredictionRisk
+    public enum AnomalyDetectionMethod
     {
+        Statistical,
+        MachineLearning,
+        RuleBased,
+        Hybrid,
+        Custom
+    }
+
+    public enum AnomalyConfidence
+    {
+        VeryLow,
         Low,
         Medium,
         High,
+        VeryHigh
+    }
+
+    public enum AnomalyImpact
+    {
+        Minimal,
+        Moderate,
+        Significant,
+        Severe,
         Critical
+    }
+
+    public enum AnomalyResolution
+    {
+        Automatic,
+        Manual,
+        Hybrid,
+        Pending,
+        NotApplicable
     }
 } 

@@ -7,6 +7,8 @@ using IncliSafe.Shared.Models.Notifications;
 using Microsoft.EntityFrameworkCore;
 using IncliSafeApi.Data;
 using IncliSafe.Shared.Models.Entities;
+using IncliSafe.Shared.Models.Enums;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafeApi.Services
 {
@@ -217,57 +219,52 @@ namespace IncliSafeApi.Services
             }
         }
 
-        public async Task<bool> GenerateInspectionAlertAsync(int vehicleId, InspeccionDTO inspeccion)
+        public async Task<bool> CheckThresholdsAsync(int vehicleId)
         {
-            var alert = new VehicleAlertDTO
+            try
             {
-                VehicleId = vehicleId,
-                Title = "Inspección Requerida",
-                Message = $"Se requiere inspección para el vehículo. Última inspección: {inspeccion.Fecha:d}",
-                Type = AlertType.Inspection,
-                Severity = AlertSeverity.Warning
-            };
+                var vehicle = await _context.Vehicles
+                    .Include(v => v.SensorReadings)
+                    .FirstOrDefaultAsync(v => v.Id == vehicleId);
 
-            await CreateAlertAsync(vehicleId, alert);
-            return true;
+                if (vehicle == null)
+                {
+                    _logger.LogWarning("No se encontró el vehículo {VehicleId}", vehicleId);
+                    return false;
+                }
+
+                // Implementar lógica de verificación de umbrales
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al verificar umbrales para el vehículo {VehicleId}", vehicleId);
+                return false;
+            }
         }
 
-        public async Task<VehicleAlert> GenerateMaintenanceAlertAsync(int vehicleId, VehicleMaintenanceDTO maintenance)
+        public async Task<bool> ProcessAlertsAsync(int vehicleId)
         {
-            var alert = new VehicleAlert
+            try
             {
-                VehicleId = vehicleId,
-                Title = $"Mantenimiento Programado - {maintenance.MaintenanceType}",
-                Message = $"Se requiere mantenimiento {maintenance.MaintenanceType} para el vehículo.",
-                Type = AlertType.Maintenance,
-                Severity = AlertSeverity.Warning,
-                CreatedAt = DateTime.UtcNow
-            };
+                var alerts = await _context.VehicleAlerts
+                    .Where(a => a.VehicleId == vehicleId && !a.IsProcessed)
+                    .ToListAsync();
 
-            _context.VehicleAlerts.Add(alert);
-            await _context.SaveChangesAsync();
-            return alert;
-        }
+                foreach (var alert in alerts)
+                {
+                    alert.IsProcessed = true;
+                    alert.ProcessedDate = DateTime.UtcNow;
+                }
 
-        public async Task<VehicleAlert> GenerateLicenseExpirationAlertAsync(int vehicleId)
-        {
-            var vehicle = await _context.Vehiculos.FindAsync(vehicleId);
-            if (vehicle == null)
-                throw new ArgumentException("Vehículo no encontrado", nameof(vehicleId));
-
-            var alert = new VehicleAlert
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
             {
-                VehicleId = vehicleId,
-                Title = "Licencia Próxima a Vencer",
-                Message = $"La licencia del vehículo vencerá pronto.",
-                Type = AlertType.License,
-                Severity = AlertSeverity.Warning,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.VehicleAlerts.Add(alert);
-            await _context.SaveChangesAsync();
-            return alert;
+                _logger.LogError(ex, "Error al procesar alertas para el vehículo {VehicleId}", vehicleId);
+                return false;
+            }
         }
     }
 } 

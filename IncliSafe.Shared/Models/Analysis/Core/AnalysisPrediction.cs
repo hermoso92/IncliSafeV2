@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using IncliSafe.Shared.Models.Base;
+using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Analysis.Core
@@ -17,9 +17,6 @@ namespace IncliSafe.Shared.Models.Analysis.Core
         public required DateTime ValidUntil { get; set; }
         public required bool IsActive { get; set; }
         public required bool IsValidated { get; set; }
-        public required DateTime CreatedAt { get; set; }
-        public required DateTime UpdatedAt { get; set; }
-        public required string Resolution { get; set; }
         public required string ModelVersion { get; set; }
         public required Dictionary<string, string> Parameters { get; set; } = new();
         public required List<DobackData> TrainingData { get; set; } = new();

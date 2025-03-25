@@ -345,3 +345,5 @@
 3. Implementar l√≥gica de negocio
 4. A√±adir validaciones
 5. Implementar tests unitarios 
+## 2025-03-25
+feat: Scripts de automatizaci+¶n para inicio y fin de jornada - Implementados scripts PowerShell para automatizar tareas diarias - A+¶adida documentaci+¶n en README.md 

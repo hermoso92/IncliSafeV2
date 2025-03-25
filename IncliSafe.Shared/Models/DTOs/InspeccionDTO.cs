@@ -10,7 +10,7 @@ namespace IncliSafe.Shared.Models.DTOs
         public required int VehicleId { get; set; }
         public required DateTime FechaInspeccion { get; set; }
         public required VehicleDTO Vehicle { get; set; } = null!;
-        public required string Resultado { get; set; } = string.Empty;
+        public required InspectionStatus Resultado { get; set; }
         public required string Observaciones { get; set; } = string.Empty;
         public required bool Aprobada { get; set; }
         public required string Inspector { get; set; } = string.Empty;

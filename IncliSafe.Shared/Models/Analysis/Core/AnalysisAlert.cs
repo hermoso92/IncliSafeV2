@@ -1,4 +1,4 @@
-using IncliSafe.Shared.Models.Base;
+using IncliSafe.Shared.Models.Common;
 using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafe.Shared.Models.Analysis.Core;
@@ -13,9 +13,6 @@ public class AnalysisAlert : BaseEntity
     public required AlertSeverity Severity { get; set; }
     public required bool IsActive { get; set; }
     public required bool IsAcknowledged { get; set; }
-    public required DateTime CreatedAt { get; set; }
-    public required DateTime UpdatedAt { get; set; }
-    public required string Resolution { get; set; }
     public required Dictionary<string, string> Parameters { get; set; } = new();
     public required List<DobackData> RelatedData { get; set; } = new();
     public required List<AnalysisNotification> Notifications { get; set; } = new();

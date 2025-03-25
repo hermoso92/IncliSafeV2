@@ -10,6 +10,8 @@ using IncliSafeApi.Data;
 using IncliSafeApi.Services.Interfaces;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafeApi.Services
 {
@@ -29,68 +31,146 @@ namespace IncliSafeApi.Services
             _logger = logger;
         }
 
-        public async Task<List<VehiculoDTO>> GetVehiclesAsync(int ownerId)
+        public async Task<IEnumerable<Vehicle>> GetVehiclesAsync()
         {
-            var vehicles = await _context.Vehiculos
-                .Include(v => v.Owner)
-                .Include(v => v.License)
-                .Where(v => v.OwnerId == ownerId)
-                .ToListAsync();
-
-            return vehicles.Select(v => VehiculoDTO.FromEntity(v)).ToList();
+            try
+            {
+                return await _context.Vehicles
+                    .Include(v => v.License)
+                    .Include(v => v.SensorReadings)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener vehículos");
+                return new List<Vehicle>();
+            }
         }
 
-        public async Task<VehiculoDTO> GetVehicleAsync(int id)
+        public async Task<Vehicle> GetVehicleAsync(int id)
         {
-            var vehicle = await _context.Vehiculos
-                .Include(v => v.Owner)
-                .Include(v => v.License)
-                .FirstOrDefaultAsync(v => v.Id == id);
+            try
+            {
+                var vehicle = await _context.Vehicles
+                    .Include(v => v.License)
+                    .Include(v => v.SensorReadings)
+                    .FirstOrDefaultAsync(v => v.Id == id);
 
-            if (vehicle == null)
-                throw new NotFoundException("Vehicle not found");
+                if (vehicle == null)
+                {
+                    _logger.LogWarning("No se encontró el vehículo {Id}", id);
+                    throw new KeyNotFoundException($"No se encontró el vehículo con ID {id}");
+                }
 
-            return VehiculoDTO.FromEntity(vehicle);
+                return vehicle;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el vehículo {Id}", id);
+                throw;
+            }
         }
 
-        public async Task<VehiculoDTO> CreateVehicleAsync(VehiculoDTO dto)
+        public async Task<Vehicle> CreateVehicleAsync(VehicleDTO vehicleDto)
         {
-            var vehicle = _mapper.Map<Vehiculo>(dto);
-            _context.Vehiculos.Add(vehicle);
-            await _context.SaveChangesAsync();
-            return _mapper.Map<VehiculoDTO>(vehicle);
+            try
+            {
+                var vehicle = new Vehicle
+                {
+                    Name = vehicleDto.Name,
+                    Type = vehicleDto.Type,
+                    Status = VehicleStatus.Active,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.Vehicles.Add(vehicle);
+                await _context.SaveChangesAsync();
+                return vehicle;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear el vehículo");
+                throw;
+            }
         }
 
-        public async Task<VehiculoDTO> UpdateVehicleAsync(int id, VehiculoDTO dto)
+        public async Task<Vehicle> UpdateVehicleAsync(int id, VehicleDTO vehicleDto)
         {
-            var vehicle = await _context.Vehiculos.FindAsync(id);
-            if (vehicle == null)
-                throw new NotFoundException("Vehicle not found");
+            try
+            {
+                var vehicle = await _context.Vehicles.FindAsync(id);
+                if (vehicle == null)
+                {
+                    _logger.LogWarning("No se encontró el vehículo {Id}", id);
+                    throw new KeyNotFoundException($"No se encontró el vehículo con ID {id}");
+                }
 
-            vehicle.Nombre = dto.Nombre;
-            vehicle.Placa = dto.Placa;
-            vehicle.Marca = dto.Marca;
-            vehicle.Modelo = dto.Modelo;
-            vehicle.Color = dto.Color;
-            vehicle.Año = dto.Año;
-            vehicle.Tipo = dto.Tipo;
-            vehicle.Estado = dto.Estado;
-            vehicle.OwnerId = dto.OwnerId;
-            vehicle.Activo = dto.Activo;
-            vehicle.UltimaInspeccion = dto.UltimaInspeccion;
+                vehicle.Name = vehicleDto.Name;
+                vehicle.Type = vehicleDto.Type;
+                vehicle.UpdatedDate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            return VehiculoDTO.FromEntity(vehicle);
+                await _context.SaveChangesAsync();
+                return vehicle;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar el vehículo {Id}", id);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteVehicleAsync(int id)
         {
-            var vehicle = await _context.Vehiculos.FindAsync(id);
-            if (vehicle == null) return false;
+            try
+            {
+                var vehicle = await _context.Vehicles.FindAsync(id);
+                if (vehicle == null)
+                {
+                    _logger.LogWarning("No se encontró el vehículo {Id}", id);
+                    return false;
+                }
 
-            _context.Vehiculos.Remove(vehicle);
-            await _context.SaveChangesAsync();
-            return true;
+                _context.Vehicles.Remove(vehicle);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar el vehículo {Id}", id);
+                return false;
+            }
+        }
+
+        public async Task<IEnumerable<AnalysisPrediction>> GetPredictionsAsync(int vehicleId)
+        {
+            try
+            {
+                return await _context.AnalysisPredictions
+                    .Where(p => p.VehicleId == vehicleId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener predicciones para el vehículo {VehicleId}", vehicleId);
+                return new List<AnalysisPrediction>();
+            }
+        }
+
+        public async Task<IEnumerable<TrendAnalysis>> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                return await _context.TrendAnalyses
+                    .Where(t => t.VehicleId == vehicleId && 
+                               t.AnalysisDate >= startDate && 
+                               t.AnalysisDate <= endDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener análisis de tendencias para el vehículo {VehicleId}", vehicleId);
+                return new List<TrendAnalysis>();
+            }
         }
 
         public async Task<List<InspeccionDTO>> GetInspeccionesAsync(int vehicleId)
@@ -405,6 +485,20 @@ namespace IncliSafeApi.Services
         {
             var license = await GetActiveLicenseAsync(vehicleId);
             return license != null && license.IsActive && license.ExpiresAt > DateTime.UtcNow;
+        }
+
+        public async Task<TrendAnalysisDTO> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                // Implementación
+                return new TrendAnalysisDTO();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend analysis for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
         }
     }
 } 

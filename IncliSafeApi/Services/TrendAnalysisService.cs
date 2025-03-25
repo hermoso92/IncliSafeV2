@@ -9,6 +9,9 @@ using IncliSafeApi.Services.Interfaces;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Analysis;
 using IncliSafe.Shared.Models.Entities;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis.DTOs;
+using IncliSafe.Shared.Models.Enums;
 
 namespace IncliSafeApi.Services
 {
@@ -29,6 +32,123 @@ namespace IncliSafeApi.Services
             _metricsService = metricsService;
             _alertService = alertService;
             _logger = logger;
+        }
+
+        public async Task<IEnumerable<TrendAnalysis>> AnalyzeTrendsAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                var historicalData = await GetHistoricalData(vehicleId, startDate, endDate);
+                var patterns = await DetectPatterns(vehicleId);
+                var predictions = await GeneratePredictions(vehicleId);
+
+                var trendAnalysis = new List<TrendAnalysis>();
+                trendAnalysis.AddRange(patterns);
+                trendAnalysis.AddRange(predictions);
+
+                return trendAnalysis;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al analizar tendencias para el vehículo {VehicleId}", vehicleId);
+                return new List<TrendAnalysis>();
+            }
+        }
+
+        private async Task<IEnumerable<AnalysisData>> GetHistoricalData(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                return await _context.AnalysisData
+                    .Where(d => d.VehicleId == vehicleId && 
+                               d.AnalysisDate >= startDate && 
+                               d.AnalysisDate <= endDate)
+                    .OrderBy(d => d.AnalysisDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos históricos para el vehículo {VehicleId}", vehicleId);
+                return new List<AnalysisData>();
+            }
+        }
+
+        private async Task<IEnumerable<TrendAnalysis>> DetectPatterns(int vehicleId)
+        {
+            try
+            {
+                var patterns = await _context.AnalysisPatterns
+                    .Where(p => p.VehicleId == vehicleId)
+                    .OrderByDescending(p => p.DetectedAt)
+                    .ToListAsync();
+
+                return patterns.Select(p => new TrendAnalysis
+                {
+                    VehicleId = vehicleId,
+                    AnalysisDate = p.DetectedAt,
+                    PatternType = p.PatternType,
+                    Description = p.Description
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al detectar patrones para el vehículo {VehicleId}", vehicleId);
+                return new List<TrendAnalysis>();
+            }
+        }
+
+        private async Task<IEnumerable<TrendAnalysis>> GeneratePredictions(int vehicleId)
+        {
+            try
+            {
+                var predictions = await _context.AnalysisPredictions
+                    .Where(p => p.VehicleId == vehicleId)
+                    .OrderByDescending(p => p.PredictionDate)
+                    .ToListAsync();
+
+                return predictions.Select(p => new TrendAnalysis
+                {
+                    VehicleId = vehicleId,
+                    AnalysisDate = p.PredictionDate,
+                    PatternType = "Predicción",
+                    Description = p.Description
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar predicciones para el vehículo {VehicleId}", vehicleId);
+                return new List<TrendAnalysis>();
+            }
+        }
+
+        public async Task<TrendAnalysisDTO> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                var trends = await AnalyzeTrendsAsync(vehicleId, startDate, endDate);
+                var historicalData = await GetHistoricalData(vehicleId, startDate, endDate);
+
+                return new TrendAnalysisDTO
+                {
+                    VehicleId = vehicleId,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Trends = trends.ToList(),
+                    HistoricalData = historicalData.ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener análisis de tendencias para el vehículo {VehicleId}", vehicleId);
+                return new TrendAnalysisDTO
+                {
+                    VehicleId = vehicleId,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Trends = new List<TrendAnalysis>(),
+                    HistoricalData = new List<AnalysisData>()
+                };
+            }
         }
 
         public async Task<TrendAnalysisDTO> AnalyzeVehicleTrendsAsync(int vehicleId)

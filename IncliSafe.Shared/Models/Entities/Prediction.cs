@@ -2,6 +2,7 @@ using IncliSafe.Shared.Models.Enums;
 using System;
 using IncliSafe.Shared.Models.DTOs;
 using IncliSafe.Shared.Models.Common;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Shared.Models.Entities
 {

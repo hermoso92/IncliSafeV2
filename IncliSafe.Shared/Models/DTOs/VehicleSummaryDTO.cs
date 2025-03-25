@@ -11,7 +11,7 @@ namespace IncliSafe.Shared.Models.DTOs
         public required int UserId { get; set; }
         public required decimal StabilityScore { get; set; }
         public required decimal SafetyScore { get; set; }
-        public required string Estado { get; set; } = string.Empty;
+        public required VehicleStatus Estado { get; set; }
         public DateTime? UltimaInspeccion { get; set; }
         public required decimal UltimoStabilityScore { get; set; }
         public required decimal UltimoSafetyScore { get; set; }

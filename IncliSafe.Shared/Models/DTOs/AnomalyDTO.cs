@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using IncliSafe.Shared.Models.DTOs.Base;
 using IncliSafe.Shared.Models.Enums;
+using IncliSafe.Shared.Models.Base;
+using IncliSafe.Shared.Models.Analysis.Core;
 
 namespace IncliSafe.Shared.Models.DTOs;
 

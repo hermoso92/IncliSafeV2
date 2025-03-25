@@ -9,9 +9,14 @@ using System.Linq;
 using IncliSafe.Shared.Models.Entities;
 using IncliSafe.Shared.Models.Patterns;
 using IncliSafe.Shared.Models.Analysis;
+using IncliSafe.Shared.Models.Analysis.Core;
 using IncliSafe.Shared.Models.Notifications;
 using IncliSafe.Shared.Models.DTOs;
+using IncliSafe.Shared.Models.Enums;
 using IncliSafe.Shared.DTOs;
+using CoreAnalysisPrediction = IncliSafe.Shared.Models.Analysis.Core.AnalysisPrediction;
+using IncliSafe.Shared.Models.Analysis.Core;
+using IncliSafe.Shared.Models.Analysis.DTOs;
 
 namespace IncliSafeApi.Services
 {
@@ -34,139 +39,173 @@ namespace IncliSafeApi.Services
             _predictiveService = predictiveService;
         }
 
-        // Implementación de los métodos de la interfaz
-        public async Task<DashboardMetrics> GetDashboardMetrics(int vehicleId)
+        public async Task<DashboardMetrics> GetDashboardMetrics()
         {
             try
             {
-                var metrics = await _analysisService.GetDashboardMetricsAsync(vehicleId);
-                return metrics;
+                var metrics = await _context.DashboardMetrics.FirstOrDefaultAsync();
+                return metrics ?? new DashboardMetrics();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting dashboard metrics for vehicle {VehicleId}", vehicleId);
-                throw;
+                _logger.LogError(ex, "Error al obtener métricas del dashboard");
+                return new DashboardMetrics();
             }
         }
 
-        public async Task<List<DobackAnalysis>> GetAnalysisHistoryAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        public async Task<DobackAnalysis> GetAnalysis(int vehicleId)
         {
             try
             {
-                var analyses = await _context.DobackAnalyses
-                    .Where(a => a.VehicleId == vehicleId && a.AnalysisDate >= startDate && a.AnalysisDate <= endDate)
-                    .OrderByDescending(a => a.AnalysisDate)
-                    .AsNoTracking()
-                    .ToListAsync();
+                var analysis = await _context.Analyses
+                    .Include(a => a.Patterns)
+                    .Include(a => a.Predictions)
+                    .FirstOrDefaultAsync(a => a.VehicleId == vehicleId);
 
-                return analyses;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting analysis history for vehicle {VehicleId}", vehicleId);
-                throw;
-            }
-        }
+                if (analysis == null)
+                {
+                    _logger.LogWarning("No se encontró análisis para el vehículo {VehicleId}", vehicleId);
+                    return null;
+                }
 
-        public async Task<DobackAnalysis?> GetAnalysis(int id)
-        {
-            return await _context.DobackAnalyses
-                .Include(a => a.Vehicle)
-                .Include(a => a.Data)
-                .Include(a => a.Anomalies)
-                .Include(a => a.Predictions)
-                .Include(a => a.Patterns)
-                .FirstOrDefaultAsync(a => a.Id == id);
-        }
-
-        public async Task<DobackAnalysis> CreateAnalysisAsync(int vehicleId, List<DobackData> data)
-        {
-            try
-            {
-                var analysis = await _analysisService.CreateAnalysisAsync(vehicleId, data);
                 return analysis;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating analysis for vehicle {VehicleId}", vehicleId);
-                throw;
+                _logger.LogError(ex, "Error al obtener análisis para el vehículo {VehicleId}", vehicleId);
+                return null;
             }
         }
 
-        public async Task<bool> UpdateAnalysisAsync(DobackAnalysis analysis)
+        public async Task<IEnumerable<DobackAnalysis>> GetAnalyses()
         {
-            _context.Entry(analysis).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return true;
+            try
+            {
+                return await _context.Analyses
+                    .Include(a => a.Patterns)
+                    .Include(a => a.Predictions)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener análisis");
+                return new List<DobackAnalysis>();
+            }
+        }
+
+        public async Task<IEnumerable<AnalysisPattern>> GetDetectedPatternsAsync(int vehicleId)
+        {
+            try
+            {
+                return await _context.Patterns
+                    .Where(p => p.VehicleId == vehicleId && p.DetectedAt != null)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener patrones detectados para el vehículo {VehicleId}", vehicleId);
+                return new List<AnalysisPattern>();
+            }
+        }
+
+        public async Task<IEnumerable<TrendAnalysis>> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                return await _context.TrendAnalyses
+                    .Where(t => t.VehicleId == vehicleId && 
+                               t.AnalysisDate >= startDate && 
+                               t.AnalysisDate <= endDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener análisis de tendencias para el vehículo {VehicleId}", vehicleId);
+                return new List<TrendAnalysis>();
+            }
+        }
+
+        public async Task<AnalysisResult> GetAnalysisResult(int vehicleId)
+        {
+            try
+            {
+                var analysis = await _context.Analyses
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.AnalysisDate)
+                    .FirstOrDefaultAsync();
+
+                return analysis?.Result ?? AnalysisResult.Unknown;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener resultado de análisis para el vehículo {VehicleId}", vehicleId);
+                return AnalysisResult.Unknown;
+            }
         }
 
         public async Task<bool> DeleteAnalysisAsync(int id)
         {
-            var analysis = await _context.DobackAnalyses.FindAsync(id);
-            if (analysis == null) return false;
-            
-            _context.DobackAnalyses.Remove(analysis);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<List<PatternDetails>> GetDetectedPatternsAsync(int vehicleId, DateTime startDate, DateTime endDate)
-        {
             try
             {
-                var patterns = await _context.PatternDetails
-                    .Where(p => p.VehicleId == vehicleId && p.DetectionDate >= startDate && p.DetectionDate <= endDate)
-                    .OrderByDescending(p => p.DetectionDate)
-                    .AsNoTracking()
-                    .ToListAsync();
-
-                return patterns;
+                var analysis = await _context.DobackAnalyses.FindAsync(id);
+                if (analysis == null) return false;
+                
+                _context.DobackAnalyses.Remove(analysis);
+                await _context.SaveChangesAsync();
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting detected patterns for vehicle {VehicleId}", vehicleId);
-                throw;
+                _logger.LogError(ex, "Error deleting analysis {AnalysisId}", id);
+                return false;
             }
-        }
-
-        public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId)
-        {
-            // Implementación del análisis de tendencias
-            return new TrendAnalysis();
         }
 
         public async Task<List<DobackData>> GetDobackDataAsync(int analysisId)
         {
-            var analysis = await _context.DobackAnalyses
-                .Include(a => a.Data)
-                .FirstOrDefaultAsync(a => a.Id == analysisId);
+            try
+            {
+                var analysis = await _context.DobackAnalyses
+                    .Include(a => a.Data)
+                    .FirstOrDefaultAsync(a => a.Id == analysisId);
 
-            return analysis?.Data.OrderBy(d => d.Timestamp).ToList() ?? new List<DobackData>();
+                return analysis?.Data.OrderBy(d => d.Timestamp).ToList() ?? new List<DobackData>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting doback data for analysis {AnalysisId}", analysisId);
+                throw;
+            }
         }
 
         public async Task<List<DobackData>> GetDobackData(int vehicleId, DateTime start, DateTime end)
         {
-            return await _context.DobackData
-                .Where(d => d.Analysis != null && 
-                       d.Analysis.VehicleId == vehicleId &&
-                       d.Timestamp >= start &&
-                       d.Timestamp <= end)
-                .OrderBy(d => d.Timestamp)
-                .ToListAsync();
+            try
+            {
+                return await _context.DobackData
+                    .Where(d => d.VehicleId == vehicleId &&
+                           d.Timestamp >= start &&
+                           d.Timestamp <= end)
+                    .OrderBy(d => d.Timestamp)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting doback data for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
         }
 
         public async Task<List<Alert>> GetRecentAlertsAsync(int vehicleId, int count = 10)
         {
             try
             {
-                var alerts = await _context.Alerts
+                return await _context.Alerts
                     .Where(a => a.VehicleId == vehicleId)
                     .OrderByDescending(a => a.CreatedAt)
                     .Take(count)
                     .AsNoTracking()
                     .ToListAsync();
-
-                return alerts;
             }
             catch (Exception ex)
             {
@@ -175,33 +214,46 @@ namespace IncliSafeApi.Services
             }
         }
 
-        public async Task<List<Anomaly>> GetRecentAnomalies(int vehicleId)
-        {
-            return await _context.Anomalies
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.DetectedAt)
-                .Take(10)
-                .ToListAsync();
-        }
-
-        public async Task<TrendAnalysis> GetTrendAnalysis(int vehicleId)
-        {
-            // Implementación del análisis de tendencias
-            return new TrendAnalysis();
-        }
-
-        public async Task<AnalysisResult> GetAnalysisResult(int analysisId)
-        {
-            // Implementación del resultado del análisis
-            return new AnalysisResult();
-        }
-
-        public async Task<List<AnalysisPrediction>> GetPredictionsAsync(int vehicleId, PredictionType type)
+        public async Task<List<AnalysisAnomaly>> GetAnomalies(int vehicleId)
         {
             try
             {
-                var predictions = await _predictiveService.GetPredictionsAsync(vehicleId, type);
-                return predictions;
+                return await _context.Anomalies
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.DetectedAt)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting anomalies for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<List<AnalysisPattern>> GetPatterns(int vehicleId)
+        {
+            try
+            {
+                return await _context.Patterns
+                    .Where(p => p.VehicleId == vehicleId)
+                    .OrderByDescending(p => p.DetectedAt)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting patterns for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<List<AnalysisPrediction>> GetPredictions(int vehicleId)
+        {
+            try
+            {
+                return await _context.AnalysisPredictions
+                    .Where(p => p.VehicleId == vehicleId)
+                    .OrderByDescending(p => p.GeneratedAt)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -210,226 +262,94 @@ namespace IncliSafeApi.Services
             }
         }
 
-        public async Task<DobackAnalysis> ProcessDobackDataAsync(List<DobackData> data)
-        {
-            var analysis = new DobackAnalysis
-            {
-                Data = data,
-                Timestamp = DateTime.UtcNow,
-                VehicleId = data.First().CycleId,
-                StabilityIndex = Convert.ToDecimal(data.Average(d => d.StabilityIndex)),
-                DetectedPatterns = new List<IncliSafe.Shared.Models.Patterns.DetectedPattern>()
-            };
-
-            // Detectar patrones
-            var patterns = await DetectPatternsAsync(data);
-            analysis.DetectedPatterns = patterns;
-
-            return analysis;
-        }
-
-        private AnomalyType DetermineAnomalyType(Anomaly anomaly)
-        {
-            if (anomaly.Deviation > 0.8)
-                return AnomalyType.Performance;
-            if (anomaly.Deviation > 0.5)
-                return AnomalyType.Safety;
-            return AnomalyType.Stability;
-        }
-
-        private NotificationSeverity CalculateAnomalySeverity(Anomaly anomaly)
-        {
-            return anomaly.Deviation switch
-            {
-                > 0.8 => NotificationSeverity.Critical,
-                > 0.5 => NotificationSeverity.Warning,
-                _ => NotificationSeverity.Info
-            };
-        }
-
-        private async Task<List<IncliSafe.Shared.Models.Patterns.DetectedPattern>> DetectPatternsAsync(List<DobackData> data)
-        {
-            var patterns = new List<IncliSafe.Shared.Models.Patterns.DetectedPattern>();
-            
-            // Detectar patrones de estabilidad
-            if (data.Any(d => d.StabilityIndex < 0.5))
-            {
-                patterns.Add(new IncliSafe.Shared.Models.Patterns.DetectedPattern
-                {
-                    PatternName = "Baja Estabilidad",
-                    Description = "Se detectó un patrón de baja estabilidad",
-                    Type = "Stability",
-                    DetectionTime = DateTime.UtcNow,
-                    ConfidenceScore = 0.85,
-                    DetectedValues = data.Select(d => d.StabilityIndex).ToList()
-                });
-            }
-
-            return patterns;
-        }
-
-        private async Task<List<Anomaly>> DetectAnomaliesAsync(List<DobackData> data)
-        {
-            var anomalies = new List<Anomaly>();
-            
-            // Detectar anomalías en aceleración
-            var avgAccX = data.Average(d => d.AccelerationX);
-            if (Math.Abs(avgAccX) > 2.0)
-            {
-                anomalies.Add(new Anomaly
-                {
-                    Description = "Aceleración lateral anormal",
-                    ExpectedValue = 0,
-                    ActualValue = avgAccX,
-                    Deviation = Math.Abs(avgAccX),
-                    Type = AnomalyType.Acceleration
-                });
-            }
-
-            return anomalies;
-        }
-
-        public async Task<decimal> CalculateStabilityIndex(List<DobackData> data)
-        {
-            if (!data.Any()) return 0;
-
-            var avgAccX = Convert.ToDecimal(data.Average(d => d.AccelerationX));
-            var avgAccY = Convert.ToDecimal(data.Average(d => d.AccelerationY));
-            var avgAccZ = Convert.ToDecimal(data.Average(d => d.AccelerationZ));
-
-            return Math.Round(
-                (1m - (Math.Abs(avgAccX) + Math.Abs(avgAccY) + Math.Abs(avgAccZ)) / 3m) * 100m, 
-                2);
-        }
-
-        public List<decimal> GetDataSeries(ICollection<DobackData> data, string property)
-        {
-            if (data == null || !data.Any())
-                return new List<decimal>();
-
-            return data.Select(d => property switch
-            {
-                "AccelerationX" => d.AccelerationX,
-                "AccelerationY" => d.AccelerationY,
-                "AccelerationZ" => d.AccelerationZ,
-                "Roll" => d.Roll,
-                "Pitch" => d.Pitch,
-                "Yaw" => d.Yaw,
-                "Speed" => d.Speed,
-                "StabilityIndex" => d.StabilityIndex,
-                _ => 0M
-            }).ToList();
-        }
-
-        public decimal GetAverageValue(ICollection<DobackData> data, string property)
-        {
-            var series = GetDataSeries(data, property);
-            return series.Any() ? series.Average() : 0M;
-        }
-
-        private bool IsStabilityAnomaly(decimal value)
-        {
-            return value < 0.5M;
-        }
-
-        private bool IsSpeedAnomaly(decimal value, decimal threshold)
-        {
-            if (value > 1.5M || value < -0.5M)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private async Task<List<decimal>> GetHistoricalValues(int vehicleId, string metric)
-        {
-            var data = await _context.DobackData
-                .Where(d => d.CycleId == vehicleId)
-                .OrderBy(d => d.Timestamp)
-                .ToListAsync();
-
-            return metric switch
-            {
-                "stability" => data.Select(d => d.StabilityIndex).ToList(),
-                "speed" => data.Select(d => d.Speed).ToList(),
-                _ => new List<decimal>()
-            };
-        }
-
-        private List<double> ConvertToDoubleList(List<decimal> values)
-        {
-            return values.Select(v => Convert.ToDouble(v)).ToList();
-        }
-
         public async Task<AnalysisPrediction> GeneratePredictionAsync(int vehicleId)
         {
-            var prediction = new AnalysisPrediction
+            try
             {
-                VehicleId = vehicleId,
-                PredictedAt = DateTime.UtcNow,
-                Type = PredictionType.Stability
-            };
-            
-            _context.AnalysisPredictions.Add(prediction);
-            await _context.SaveChangesAsync();
-            return prediction;
+                return await _predictiveService.GeneratePredictionAsync(vehicleId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating prediction for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
         }
 
         public async Task<CoreMetrics> GetMetricsAsync()
         {
-            var metrics = new CoreMetrics
+            try
             {
-                TotalAnalyses = await _context.DobackAnalyses.CountAsync(),
-                TotalAnomalies = await _context.Anomalies.CountAsync(),
-                TotalPredictions = await _context.AnalysisPredictions.CountAsync(),
-                TotalPatterns = await _context.PatternDetails.CountAsync(),
-                AverageStabilityScore = await _context.DobackAnalyses.AverageAsync(a => a.StabilityScore),
-                AverageSafetyScore = await _context.DobackAnalyses.AverageAsync(a => a.SafetyScore),
-                AverageMaintenanceScore = await _context.DobackAnalyses.AverageAsync(a => a.MaintenanceScore)
-            };
-
-            // Get trend data for the last 30 days
-            var startDate = DateTime.UtcNow.AddDays(-30);
-            var analyses = await _context.DobackAnalyses
-                .Where(a => a.AnalysisDate >= startDate)
-                .OrderBy(a => a.AnalysisDate)
-                .ToListAsync();
-
-            metrics.StabilityTrend = analyses.Select(a => new TrendData
+                return await _analysisService.GetMetricsAsync();
+            }
+            catch (Exception ex)
             {
-                Timestamp = a.AnalysisDate,
-                Value = a.StabilityScore
-            }).ToList();
-
-            metrics.SafetyTrend = analyses.Select(a => new TrendData
-            {
-                Timestamp = a.AnalysisDate,
-                Value = a.SafetyScore
-            }).ToList();
-
-            metrics.MaintenanceTrend = analyses.Select(a => new TrendData
-            {
-                Timestamp = a.AnalysisDate,
-                Value = a.MaintenanceScore
-            }).ToList();
-
-            return metrics;
+                _logger.LogError(ex, "Error getting metrics");
+                throw;
+            }
         }
 
         public async Task<DobackAnalysis> GetLatestAnalysisAsync(int vehicleId)
         {
-            return await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.Timestamp)
-                .FirstOrDefaultAsync();
+            try
+            {
+                return await _context.DobackAnalyses
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.AnalysisDate)
+                    .FirstOrDefaultAsync() ?? throw new InvalidOperationException("No analysis found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting latest analysis for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
         }
 
-        public async Task<List<DobackAnalysis>> GetAnalyses(int vehicleId)
+        public async Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId)
         {
-            return await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.Timestamp)
-                .ToListAsync();
+            try
+            {
+                return await _context.DobackAnalyses
+                    .Where(a => a.VehicleId == vehicleId)
+                    .OrderByDescending(a => a.AnalysisDate)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting latest analysis for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysisDto)
+        {
+            try
+            {
+                return await _analysisService.AnalyzeDobackAsync(vehicleId, analysisDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing doback for vehicle {VehicleId}", vehicleId);
+                throw;
+            }
+        }
+
+        public async Task<DobackAnalysis> GetAnalysisByIdAsync(int analysisId)
+        {
+            try
+            {
+                return await _context.DobackAnalyses
+                    .Include(a => a.Vehicle)
+                    .Include(a => a.Data)
+                    .Include(a => a.Anomalies)
+                    .Include(a => a.Predictions)
+                    .Include(a => a.Patterns)
+                    .FirstOrDefaultAsync(a => a.Id == analysisId) ?? throw new InvalidOperationException("Analysis not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting analysis by id {AnalysisId}", analysisId);
+                throw;
+            }
         }
 
         public async Task<TrendAnalysis> GetTrendAnalysis(int analysisId)
@@ -443,179 +363,12 @@ namespace IncliSafeApi.Services
             return analysis;
         }
 
-        public async Task<List<Anomaly>> GetAnomalies(int vehicleId)
-        {
-            return await _context.Anomalies
-                .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.DetectedAt)
-                .ToListAsync();
-        }
-
-        public async Task<List<Pattern>> GetPatterns(int vehicleId)
-        {
-            return await _context.Patterns
-                .Where(p => p.VehicleId == vehicleId)
-                .OrderByDescending(p => p.DetectedAt)
-                .ToListAsync();
-        }
-
-        public async Task<List<AnalysisPrediction>> GetAnalysisPredictions(int vehicleId)
-        {
-            return await _context.Predictions
-                .Where(p => p.VehicleId == vehicleId)
-                .OrderByDescending(p => p.Timestamp)
-                .ToListAsync();
-        }
-
-        public async Task<DobackAnalysis?> GetLatestAnalysis(int vehicleId)
+        public async Task<List<DobackAnalysis>> GetAnalyses(int vehicleId)
         {
             return await _context.DobackAnalyses
-                .Include(a => a.Vehicle)
-                .Include(a => a.Data)
-                .Include(a => a.Anomalies)
-                .Include(a => a.Predictions)
-                .Include(a => a.Patterns)
                 .Where(a => a.VehicleId == vehicleId)
-                .OrderByDescending(a => a.AnalysisDate)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<DobackAnalysis> AnalyzeDobackAsync(int vehicleId, DobackAnalysisDTO analysisDto)
-        {
-            try
-            {
-                var analysis = await _analysisService.AnalyzeDobackAsync(vehicleId, analysisDto);
-                return analysis;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error analyzing doback for vehicle {VehicleId}", vehicleId);
-                throw;
-            }
-        }
-
-        public async Task<TrendAnalysis> AnalyzeTrendsAsync(int vehicleId, DateTime startDate, DateTime endDate)
-        {
-            var vehicle = await _context.Vehiculos.FindAsync(vehicleId)
-                ?? throw new InvalidOperationException($"Vehicle with ID {vehicleId} not found.");
-
-            var analyses = await _context.DobackAnalyses
-                .Where(a => a.VehicleId == vehicleId && a.AnalysisDate >= startDate && a.AnalysisDate <= endDate)
-                .OrderBy(a => a.AnalysisDate)
+                .OrderByDescending(a => a.Timestamp)
                 .ToListAsync();
-
-            if (!analyses.Any())
-                throw new InvalidOperationException("No analyses found for the specified period.");
-
-            var trendAnalysis = new TrendAnalysis
-            {
-                VehicleId = vehicleId,
-                Vehicle = vehicle,
-                AnalysisDate = DateTime.UtcNow,
-                Type = AnalysisType.Trend,
-                StartDate = startDate,
-                EndDate = endDate,
-                StabilityScore = analyses.Average(a => a.StabilityScore),
-                SafetyScore = analyses.Average(a => a.SafetyScore),
-                MaintenanceScore = analyses.Average(a => a.MaintenanceScore),
-                TrendValue = CalculateTrendValue(analyses),
-                Seasonality = CalculateSeasonality(analyses),
-                Correlation = CalculateCorrelation(analyses),
-                Data = analyses.Select(a => new TrendData
-                {
-                    Timestamp = a.AnalysisDate,
-                    Value = (a.StabilityScore + a.SafetyScore + a.MaintenanceScore) / 3
-                }).ToList()
-            };
-
-            _context.TrendAnalyses.Add(trendAnalysis);
-            await _context.SaveChangesAsync();
-
-            return trendAnalysis;
-        }
-
-        private decimal CalculateTrendValue(List<DobackAnalysis> analyses)
-        {
-            // Simple linear regression for trend
-            var n = analyses.Count;
-            var sumX = 0.0m;
-            var sumY = 0.0m;
-            var sumXY = 0.0m;
-            var sumX2 = 0.0m;
-
-            for (var i = 0; i < n; i++)
-            {
-                var x = i;
-                var y = (analyses[i].StabilityScore + analyses[i].SafetyScore + analyses[i].MaintenanceScore) / 3;
-                sumX += x;
-                sumY += y;
-                sumXY += x * y;
-                sumX2 += x * x;
-            }
-
-            var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            return slope;
-        }
-
-        private decimal CalculateSeasonality(List<DobackAnalysis> analyses)
-        {
-            // Simple seasonality calculation based on weekly patterns
-            var weeklyAverages = analyses
-                .GroupBy(a => a.AnalysisDate.DayOfWeek)
-                .Select(g => g.Average(a => (a.StabilityScore + a.SafetyScore + a.MaintenanceScore) / 3))
-                .ToList();
-
-            var overallAverage = weeklyAverages.Average();
-            var seasonalityIndex = weeklyAverages.Max(w => Math.Abs((decimal)(w - overallAverage)));
-
-            return seasonalityIndex;
-        }
-
-        private decimal CalculateCorrelation(List<DobackAnalysis> analyses)
-        {
-            // Calculate correlation between stability and safety scores
-            var n = analyses.Count;
-            var sumX = analyses.Sum(a => a.StabilityScore);
-            var sumY = analyses.Sum(a => a.SafetyScore);
-            var sumXY = analyses.Sum(a => a.StabilityScore * a.SafetyScore);
-            var sumX2 = analyses.Sum(a => a.StabilityScore * a.StabilityScore);
-            var sumY2 = analyses.Sum(a => a.SafetyScore * a.SafetyScore);
-
-            var correlation = (n * sumXY - sumX * sumY) /
-                (decimal)Math.Sqrt((double)((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)));
-
-            return correlation;
-        }
-
-        public async Task<DobackAnalysis> GetAnalysisByIdAsync(int analysisId)
-        {
-            try
-            {
-                var analysis = await _context.DobackAnalyses
-                    .Include(a => a.Data)
-                    .FirstOrDefaultAsync(a => a.Id == analysisId);
-
-                return analysis;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting analysis by id {AnalysisId}", analysisId);
-                throw;
-            }
-        }
-
-        public async Task<TrendAnalysis> GetTrendAnalysisAsync(int vehicleId, DateTime startDate, DateTime endDate)
-        {
-            try
-            {
-                var analysis = await _analysisService.GetTrendAnalysisAsync(vehicleId, startDate, endDate);
-                return analysis;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting trend analysis for vehicle {VehicleId}", vehicleId);
-                throw;
-            }
         }
     }
 } 
